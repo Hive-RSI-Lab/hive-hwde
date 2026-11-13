@@ -13,7 +13,9 @@ JLC guidance replicated here:
   - Drill: Excellon, millimetres (kicad-cli defaults pos+drill sanely once the
     kc.py wrappers force units; LEARNINGS [kicad-cli]).
   - IPC-D-356 netlist `<name>.ipc` (kicad-cli pcb export ipcd356) in the
-    gerber dir and zip: the fab's flying-probe E-test runs against it.
+    gerber dir and zip: the fab's flying-probe E-test runs against it. A net
+    joined only inside a part (jumper_pad_groups) gets one name per bare-board
+    island (`USB_DP`, `USB_DP~J1`), else the tester reads it as open (#962).
   - Pos (CPL source): both sides, csv, mm. bom_cpl.py reformats it into JLC's
     CPL with rotation corrections.
   - Gerbers use KiCad's standard extensions/X2, which current JLC accepts. No
@@ -31,6 +33,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 import zipfile
@@ -200,7 +203,52 @@ def aux_origin(pcb: Path) -> tuple[float, float] | None:
     return None
 
 
-def export_ipc_absolute(cli: Path, pcb: Path, ipc_file: Path) -> dict:
+def name_jumper_islands(pcb: Path, ipc_file: Path, gerber_dir: Path,
+                        bg=None) -> list[dict]:
+    """#962: a net a part joins only inside itself (the footprint's
+    `jumper_pad_groups`, e.g. a flow-through USBLC6's pins 1-6 and 3-4) is
+    two copper islands on the bare board, but kicad-cli names both alike, so
+    the fab's E-test reads a good board as open. Give each island its own
+    D-356 name, from the gerbers' own connectivity. -> the renames."""
+    import geom
+    import ipcd356
+    pcb_text = pcb.read_text(encoding="utf-8", errors="replace")
+    jumpers = ipcd356.jumper_groups(pcb_text)
+    if not jumpers:
+        return []
+    # bytes, so a CRLF file stays CRLF
+    text = ipc_file.read_bytes().decode("utf-8", errors="replace")
+    d = ipcd356.parse(text)
+    bg = bg if bg is not None else geom.load_board(pcb)
+    ipcd356.resolve(d, bg)
+    res = ipcd356.compare(gerblib.open_fab(gerber_dir), d,
+                          ipcd356.net_tie_classes(pcb_text, bg), jumpers)
+    new, renames = ipcd356.split_jumper_islands(text, res["jumper_splits"])
+    if renames:
+        # beside the file, then one rename: a failed write ships no half file
+        part = ipc_file.with_name(ipc_file.name + ".part")
+        part.write_text(new, encoding="utf-8", newline="")
+        os.replace(part, ipc_file)
+    return renames
+
+
+def export_ipc_absolute(cli: Path, pcb: Path, ipc_file: Path,
+                        gerber_dir: Path | None = None, bg=None) -> dict:
+    """The netlist, then (with `gerber_dir`, the gerbers it ships beside)
+    each jumper island named apart (name_jumper_islands). If the naming
+    fails, the file stays kicad-cli's (a later netlist compare reports the
+    jumper open) and `jumper_rename_error` says why."""
+    res = _export_ipc_absolute(cli, pcb, ipc_file)
+    if gerber_dir is not None and res.get("status") == "pass":
+        try:
+            res["jumper_renames"] = name_jumper_islands(pcb, ipc_file,
+                                                        gerber_dir, bg)
+        except Exception as exc:  # noqa: BLE001 (the export itself stands)
+            res["jumper_rename_error"] = f"{type(exc).__name__}: {exc}"
+    return res
+
+
+def _export_ipc_absolute(cli: Path, pcb: Path, ipc_file: Path) -> dict:
     """IPC-D-356 in the gerbers' coordinates. kicad-cli writes it from the
     board's aux (drill/place) origin when the board has one, while gerbers
     and drill are absolute: an Altium import keeps Altium's origin there, and
@@ -367,9 +415,13 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
     # against a netlist they extract from the same gerbers (so an export
     # defect would test good). dfm_check compares the gerbers with it.
     ipc_file = gerber_dir / f"{name}.ipc"
-    n = export_ipc_absolute(cli, pcb, ipc_file)
+    n = export_ipc_absolute(cli, pcb, ipc_file, gerber_dir)
     if n.get("status") != "pass":
         raise RuntimeError(f"ipcd356 export failed: {n.get('stderr_tail') or n}")
+    if n.get("jumper_rename_error"):
+        print(f"fab_export: jumper islands not named apart in {ipc_file.name} "
+              f"({n['jumper_rename_error']}); dfm_check will report the "
+              "E-test open", file=sys.stderr)
     pos_file = out_dir / f"{name}-pos.csv"
     p = kc.export_pos(cli, pcb, pos_file, side="both", fmt="csv", units="mm")
     if p.get("status") != "pass":
@@ -405,6 +457,10 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
         "gerber_dir": str(gerber_dir),
         "pos_file": str(pos_file),
         "ipc_netlist": str(ipc_file),
+        **({"ipc_jumper_renames": n["jumper_renames"]}
+           if n.get("jumper_renames") else {}),
+        **({"ipc_jumper_rename_error": n["jumper_rename_error"]}
+           if n.get("jumper_rename_error") else {}),
         "files": files_meta,
         "gerber_zip": str(zip_path) if zip_path else None,
         "gerber_zip_sha256": zip_sha,
