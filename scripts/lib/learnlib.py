@@ -199,6 +199,19 @@ def _exists(rel: str) -> bool:
     return (SKILL / rel).is_file() or (REPO / rel).is_file()
 
 
+def _artifact_exists(rel: str, ws: Path | None = None) -> bool:
+    """A promotion artifact lives in the module, or (a workspace that keeps
+    its own copy of what it was promoted into, e.g. an archive the module no
+    longer carries) in the workspace - but never the workspace's own
+    LEARNINGS.md: an entry is not promoted into the file it came from."""
+    if _exists(rel):
+        return True
+    if ws is None:
+        return False
+    p = Path(ws) / rel
+    return p.is_file() and p.resolve() != learnings_path(ws).resolve()
+
+
 def _target_exists(rel: str, ws: Path | None = None, board: str | None = None) -> bool:
     """A target is a file the entry NAMES: a module file, or (U15) one of the
     workspace's own research outputs. Those were compiled as
@@ -381,7 +394,7 @@ def validate_queue(ws: Path) -> tuple[list[str], list[str]]:
                 problems.append(f"{where}: promoted with no artifacts - a "
                                 "promotion writes somewhere")
             for a in res.get("artifacts") or []:
-                if not _exists(a.split("#")[0]):
+                if not _artifact_exists(a.split("#")[0], ws):
                     problems.append(f"{where}: artifact {a} does not exist")
             if not row["proposed_level"]:
                 problems.append(f"{where}: promoted with no level")

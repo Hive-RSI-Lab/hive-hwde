@@ -63,3 +63,13 @@ def test_no_learnings_no_queue_is_a_warning(tmp_path):
 def test_missing_workspace_is_a_problem(tmp_path):
     problems, _ = learnlib.validate_queue(tmp_path / "no-such-board")
     assert problems and "does not exist" in problems[0]
+
+
+def test_artifact_in_workspace_but_not_its_own_learnings(tmp_path):
+    ws = _ws(tmp_path)
+    (ws / "archive").mkdir()
+    (ws / "archive" / "LEARNINGS.md").write_text("# archive\n")
+    assert learnlib._artifact_exists("archive/LEARNINGS.md", ws)
+    assert not learnlib._artifact_exists("LEARNINGS.md", ws)
+    assert not learnlib._artifact_exists("archive/missing.md", ws)
+    assert learnlib._artifact_exists("agents/router.md", ws)
