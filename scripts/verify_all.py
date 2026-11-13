@@ -66,6 +66,17 @@ checks entry reads status nothing_to_judge. An error finding keeps it in
 fails neither mode (a board with no MCU is fine); it is said out loud.
 `not_judged` lists what a check that judged other things had to leave out.
 
+The connector checks are the exception (#910, the laptop board's backwards
+SD socket): check_mating or check_connector_fit reporting nothing_to_judge
+while its not_judged names connectors means the board HAS connectors and no
+one of them was checked. Under --strict (the release gate) merge() adds a
+verify_all error, kind connector_check_unjudged, naming them; mid-pipeline
+runs keep it in coverage only (nothing_to_judge, not_judged), as for any
+other check, so an early board isn't buried in it. The way past it is a verify-waivers.json
+entry for that kind whose refs and reason name the connectors (durable,
+since the release gate is strict). check_mate_pins is left out: it has
+nothing to judge on any board without a mating pair, which is most.
+
 Exit: 0 all pass, 1 any violations, 2 any check errored (could not verify),
 a strict coverage failure, or a bad invocation.
 
@@ -369,6 +380,30 @@ def coverage_matrix(results: list[dict], na: dict, strict: bool) -> dict:
     }
 
 
+CONNECTOR_CHECKS = ("check_mating", "check_connector_fit")
+
+
+def connector_unjudged(r: dict, strict: bool) -> dict | None:
+    """A connector check that judged no connector on a board that has some
+    (#910): an error naming them, under strict only. None otherwise."""
+    if not strict or r["name"] not in CONNECTOR_CHECKS or not r.get("nothing_to_judge") \
+            or not r.get("not_judged"):
+        return None
+    left = [str(x) for x in r["not_judged"]]
+    refs = sorted({x.split(":")[0].split()[0] for x in left if x.split()})
+    return checklib.violation(
+        "verify_all", "error", None, None, None,
+        refs,
+        f"{r['name']} judged no connector, but the board has "
+        f"{len(left)}: {'; '.join(left[:8])}"
+        + (" ..." if len(left) > 8 else "")
+        + " - teach the check these parts (a connector_mating.yaml family, "
+        "an extraction) or waive kind connector_check_unjudged in "
+        "verify-waivers.json with a reason naming each connector",
+        "verify_all", kind="connector_check_unjudged", unjudged_by=r["name"],
+        not_judged=left)
+
+
 def merge(board, results: list[dict], na: dict | None = None,
           strict: bool = False) -> dict:
     all_v: list[dict] = []
@@ -379,6 +414,9 @@ def merge(board, results: list[dict], na: dict | None = None,
         for v in r["violations"]:
             all_v.append(v)
         by_check[r["name"]] = len(r["violations"])
+        if (hole := connector_unjudged(r, strict)) is not None:
+            all_v.append(hole)
+            by_check["verify_all"] = by_check.get("verify_all", 0) + 1
         if r["status"] in ("error", "skipped_error"):
             errored = True  # skipped_error only exists under strict
         entry = {"status": r["status"], "counts": r["counts"],
@@ -445,8 +483,9 @@ def run(argv=None):
     if drift is not None:
         summary["violations"].append(drift)
         counts = checklib.summarize(summary["violations"])
-        counts["by_check"] = {**summary["counts"]["by_check"],
-                              "verify_all": 1}
+        prior = summary["counts"]["by_check"]
+        counts["by_check"] = {**prior,
+                              "verify_all": prior.get("verify_all", 0) + 1}
         summary["counts"] = counts
         if summary["status"] == "pass":
             summary["status"] = "violations"

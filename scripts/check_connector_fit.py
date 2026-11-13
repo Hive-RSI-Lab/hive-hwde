@@ -455,10 +455,18 @@ def run(argv=None):
         raise checklib.CheckError(f"board not found: {pcb}")
     parts = Path(args.parts) if args.parts else None
     viols, facts = check(pcb, parts if parts and parts.is_dir() else None)
+    # A board with connectors none of which this could judge (no extraction,
+    # no stock lead) has had nothing checked: say so rather than pass (#910).
+    # verify_all turns that into a release-gate error.
+    judged = {p["ref"] for p in facts["parts"]}
+    nothing = None
+    if facts["unverified"] and not judged:
+        nothing = (f"{len(facts['unverified'])} connector(s) on the board, "
+                   "none with an extraction or a stock lead to check against")
     return checklib.report(
         SCRIPT, pcb, viols, **facts,
-        not_judged=[f"{u['ref']}: {u['why']}" for u in facts["unverified"]]
-        ), args.out
+        not_judged=[f"{u['ref']}: {u['why']}" for u in facts["unverified"]],
+        nothing_to_judge=nothing), args.out
 
 
 def main(argv=None) -> int:
