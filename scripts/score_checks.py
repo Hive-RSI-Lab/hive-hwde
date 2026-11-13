@@ -17,6 +17,8 @@ check on its own:
            a miss.
            A mutant dir's own constraints.json / decoupling.json / parts/
            override the golden's (a fault may be planted in a sidecar).
+           A mutant's `no_sidecars: [constraints, ...]` drops those inputs
+           (a fault on a board that never had them).
   boards   finished boards in the boards repo (env.boards_root(); state.json
            phase P9 or later, i.e. past the verify gate). A finding matching a
            triage.yaml entry for that board takes its verdict (real / fp);
@@ -261,10 +263,13 @@ def mutant_jobs(manifest: dict, names: list[str],
         if m["check"] not in names:
             continue    # e.g. dfm_check: a fab check, not in the verify suite
         d = golden / "mutants" / name
+        inputs = {"pcb": str(d / f"{m['board']}.kicad_pcb"),
+                  **sidecars(d, golden / m["board"])}
+        for key in m.get("no_sidecars") or []:
+            inputs.pop(key, None)   # a fault on a board without that input
         jobs.append({"corpus": "mutants", "item": name,
                      "board": f"golden:{m['board']}",
-                     "inputs": {"pcb": str(d / f"{m['board']}.kicad_pcb"),
-                                **sidecars(d, golden / m["board"])},
+                     "inputs": inputs,
                      "checks": [m["check"]], "target": m["check"],
                      "expect": m.get("expect") or {}})
     return jobs

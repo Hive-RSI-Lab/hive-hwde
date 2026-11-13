@@ -2186,12 +2186,14 @@ def run(argv=None):
     ap = argparse.ArgumentParser(
         description="Trace width / pour neck / via count vs current (IPC-2152).")
     ap.add_argument("--pcb", required=True, help="path to .kicad_pcb")
-    ap.add_argument("--constraints", required=True,
-                    help="constraints.json with a power list")
+    ap.add_argument("--constraints",
+                    help="constraints.json with a power list; without it only "
+                         "the switch nodes inferred from the parts are judged")
     ap.add_argument("--out", help="write JSON report here instead of stdout")
     args = ap.parse_args(argv)
 
-    cons = checklib.load_json(args.constraints, "constraints")
+    cons = (checklib.load_json(args.constraints, "constraints")
+            if args.constraints else {})
     entries = cons.get("power", [])
     bg = geom.load_board(Path(args.pcb))
     bg.assert_fresh()
