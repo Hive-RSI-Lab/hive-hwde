@@ -568,14 +568,21 @@ def archive_rows(triage_file: Path | None = None) -> list[dict]:
     return rows
 
 
-def _need_root_files(root: Path, tri: Path) -> None:
-    """A copy of the skill vendored outside the hwde repo (the boards repo)
-    has no root LEARNINGS.md or triage register: say so as a ValueError, which
-    a promotion pass reports per entry, instead of a bare FileNotFoundError."""
-    for f in (root, tri):
-        if not f.is_file():
-            raise ValueError(f"{f} not found - root promotion runs from the "
-                             "hwde checkout, not a vendored copy of the skill")
+def _need_lessons_dir(lessons: Path) -> None:
+    """The lesson files are the root learnings' home: the module ships
+    learnings.d/ (with its README) so a promotion always has somewhere to go.
+    A copy without it says so as a ValueError, which a promotion pass reports
+    per entry, instead of quietly creating a directory nobody reads."""
+    if not lessons.is_dir():
+        raise ValueError(f"{lessons} not found - root lessons live in the "
+                         "module's learnings.d/; restore it from main")
+
+
+def _archive_texts(root: Path, tri: Path) -> list[str]:
+    """The closed archive, when this checkout carries one. The archive and
+    its triage register come as a pair; neither is required, because new
+    lessons are files of their own."""
+    return [root.read_text(encoding="utf-8")] if root.is_file() else []
 
 
 def promote_to_root(ws: Path, entry_id: str, triage: dict,
@@ -612,8 +619,8 @@ def promote_to_root(ws: Path, entry_id: str, triage: dict,
     if not block.isascii():
         raise ValueError(f"{entry_id}: non-ASCII text cannot be promoted")
 
-    _need_root_files(root, tri)
-    carried = [root.read_text(encoding="utf-8")] + [
+    _need_lessons_dir(lessons)
+    carried = _archive_texts(root, tri) + [
         p.read_text(encoding="utf-8") for p in lesson_files(lessons)]
     if any(header in t.splitlines() for t in carried):
         raise ValueError(f"{entry_id}: the root learnings already carry "
@@ -623,7 +630,6 @@ def promote_to_root(ws: Path, entry_id: str, triage: dict,
     while path.exists():
         k += 1
         path = lessons / f"{base}-{k}.md"
-    lessons.mkdir(parents=True, exist_ok=True)
     path.write_text(block, encoding="utf-8", newline="\n")
     return {"file": f"{lessons.name}/{path.name}", "row": row}
 
@@ -636,16 +642,25 @@ def triage_summary(triage_file: Path | None = None,
     design/ladder-triage.md restates these numbers, so nothing goes stale."""
     tri = Path(triage_file) if triage_file else TRIAGE
     root = Path(root) if root else ROOT_LEARNINGS
-    if not (tri.is_file() and root.is_file()):
-        return {"rows": 0, "learnings_entries": 0, "archive_entries": 0,
-                "lessons": 0, "levels": {}, "by_status": {}, "climbing": 0,
-                "open_by_owner": {}, "problems": [],
-                "absent": "no root LEARNINGS.md / triage register here "
-                          "(vendored copy of the skill)"}
-    rows = archive_rows(tri)
-    archive = _root_entries(root.read_text(encoding="utf-8"))
+    lessons = Path(lessons_dir) if lessons_dir else LESSONS
     problems: list[str] = []
-    files = lesson_files(lessons_dir)
+    # The archive (root LEARNINGS.md) and its register come as a pair: both
+    # present is a hwde checkout, both absent is the module, where the
+    # archive was retired. One without the other, or no learnings.d/, is a
+    # broken checkout and must not print a clean pass with zero counts.
+    if root.is_file() != tri.is_file():
+        gone = tri if root.is_file() else root
+        problems.append(f"{gone} not found but "
+                        f"{root if gone is tri else tri} is - the archive "
+                        "and its triage register come as a pair")
+    if not lessons.is_dir():
+        problems.append(f"{lessons} not found - the root lessons' home "
+                        "is missing, so these counts would be empty")
+    has_archive = root.is_file() and tri.is_file()
+    rows = archive_rows(tri) if has_archive else []
+    archive = (_root_entries(root.read_text(encoding="utf-8"))
+               if has_archive else [])
+    files = lesson_files(lessons)
     for p in files:
         lesson, bad = parse_lesson(p)
         problems += bad
@@ -669,6 +684,9 @@ def triage_summary(triage_file: Path | None = None,
                             and LEVELS.index(r["target"]) > LEVELS.index(r["now"])),
             "open_by_owner": dict(sorted(owners.items(),
                                          key=lambda kv: (-kv[1], kv[0]))),
+            "sources": {"archive": root.as_posix() if has_archive else None,
+                        "register": tri.as_posix() if has_archive else None,
+                        "lessons": lessons.as_posix()},
             "problems": problems}
 
 

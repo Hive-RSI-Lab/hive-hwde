@@ -19,10 +19,12 @@ The run-close and promotion halves of v3 design decision 3. Subcommands:
             performs the move: the entry is written verbatim to a new lesson
             file, learnings.d/<id>.md, whose last line is its triage row.
   sweep     every workspace's queue state (the general-agent operator mode).
-  triage    the knowledge-ladder counts, computed from design/ladder-triage.md's
-            archive table plus every learnings.d/ lesson's triage line (the
-            register keeps no count by hand). exit 1 when a lesson file is
-            malformed.
+  triage    the knowledge-ladder counts, computed from every learnings.d/
+            lesson's triage line, plus design/ladder-triage.md's archive table
+            when the checkout carries the archive (no count is kept by hand).
+            exit 1 naming the file when learnings.d/ is missing, when only one
+            of LEARNINGS.md / the register is present, or when a lesson file
+            is malformed.
 
 Contract (SPEC section 6): argparse, JSON to stdout or --out, exit 0/1/2,
 ASCII, no interactivity.
