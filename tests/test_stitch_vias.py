@@ -416,6 +416,97 @@ def test_multi_net_power_first_gnd_last(tmp_path):
     assert net_order.index("+3V3") < net_order.index("GND")
 
 
+def test_pads_only_skips_the_area_grid(tmp_path):
+    """--pads-only (#923 point 1): the pad vias, none of the grid."""
+    body = _fp("U1", 10, 10, _pad("1", 0, 0, "GND"))
+    body += _zone(1, "GND", "In1.Cu", 1, 1, 29, 29)
+    body += _zone(1, "GND", "B.Cu", 1, 1, 29, 29)
+    pcb = tmp_path / "padsonly.kicad_pcb"
+    pcb.write_text(PCB4_HDR + '  (gr_rect (start 0 0) (end 30 30) (stroke'
+                   ' (width 0.1)) (fill no) (layer "Edge.Cuts"))\n'
+                   + body + ")\n", encoding="utf-8")
+    full, _ = stitch_vias.run(["--pcb", str(pcb), "--dry-run", "--pitch", "4"])
+    assert full["nets"]["GND"]["area"]["placed"] > 0   # the grid has room
+    payload, _ = stitch_vias.run(["--pcb", str(pcb), "--dry-run", "--pitch",
+                                  "4", "--pads-only"])
+    gnd = payload["nets"]["GND"]
+    assert payload["pads_only"] is True
+    assert gnd["pads"]["placed"] == 1
+    assert gnd["area"]["candidates"] == 0 and gnd["area"]["placed"] == 0
+    assert payload["ops"] == full["ops"][:1]
+
+
+PCB4_HDR = """(kicad_pcb (version 20260206) (generator "test")
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (4 "In1.Cu" signal) (6 "In2.Cu" signal)
+    (2 "B.Cu" signal) (25 "Edge.Cuts" user))
+  (setup)
+  (net 0 "") (net 1 "GND") (net 2 "SIG") (net 3 "+3V3") (net 4 "SW")
+  (net 5 "+5V") (net 6 "+1V8")
+"""
+
+
+def _power_board(tmp_path: Path) -> tuple[Path, Path]:
+    """4 layers: +3V3 has an In2 plane, SW (a switch node) an In1 patch,
+    +5V only an F.Cu pour, +1V8 no pour at all. U9 stands in for a BGA."""
+    body = _fp("U1", 6, 6, _pad("1", 0, 0, "+3V3") + _pad("2", 0, 3, "SW")
+               + _pad("3", 0, 6, "+5V") + _pad("4", 0, 9, "+1V8"))
+    body += _fp("U9", 20, 6, _pad("1", 0, 0, "+3V3"))
+    body += _zone(3, "+3V3", "In2.Cu", 1, 1, 29, 29)
+    body += _zone(4, "SW", "In1.Cu", 4, 7, 8, 11)
+    body += _zone(5, "+5V", "F.Cu", 10, 20, 14, 24)
+    text = (PCB4_HDR + '  (gr_rect (start 0 0) (end 30 30) (stroke (width'
+            ' 0.1)) (fill no) (layer "Edge.Cuts"))\n' + body + ")\n")
+    pcb = tmp_path / "power.kicad_pcb"
+    pcb.write_text(text, encoding="utf-8")
+    cons = tmp_path / "constraints.json"
+    cons.write_text(json.dumps({"power": [
+        {"net": "+5V", "current_a": 1.0},
+        {"net": "SW", "current_a": 2.0, "switch_node": True},
+        {"net": "+3V3", "current_a": 1.0},
+        {"net": "+1V8", "current_a": 0.5},
+        {"net": "NOT_ON_BOARD", "current_a": 1.0}]}), encoding="utf-8")
+    return pcb, cons
+
+
+def test_power_plane_nets_are_inner_plane_power_only(tmp_path):
+    """Only a power net with an inner plane counts: a switch node, an
+    outer-only pour, no pour and an absent net are all left out."""
+    pcb, cons = _power_board(tmp_path)
+    bg = geom.BoardGeom.from_file(pcb)
+    c = json.loads(cons.read_text())
+    assert stitch_vias.power_plane_nets(c, bg) == ["+3V3"]
+    # planted fault: drop the switch_node flag and SW's inner patch counts
+    c["power"][1].pop("switch_node")
+    assert stitch_vias.power_plane_nets(c, bg) == ["SW", "+3V3"]
+    assert stitch_vias.power_plane_nets({}, bg) == []
+    assert stitch_vias.power_plane_nets(None, bg) == []
+
+
+def test_nets_power_stitches_power_pads_and_skips_refs(tmp_path):
+    pcb, cons = _power_board(tmp_path)
+    payload, _ = stitch_vias.run(
+        ["--pcb", str(pcb), "--constraints", str(cons), "--dry-run",
+         "--nets", "power", "--pads-only", "--skip-refs", "U9"])
+    assert list(payload["nets"]) == ["+3V3"]
+    p3 = payload["nets"]["+3V3"]
+    assert p3["pads"] == {"requested": 1, "placed": 1, "skipped": 0}
+    vias = [op for op in payload["ops"] if op["op"] == "add_via"]
+    assert len(vias) == 1 and vias[0]["net"] == "+3V3"
+    assert math.hypot(vias[0]["at"][0] - 6, vias[0]["at"][1] - 6) < 1.5
+    # without --skip-refs the stand-in BGA's pad is stitched too
+    p2, _ = stitch_vias.run(
+        ["--pcb", str(pcb), "--constraints", str(cons), "--dry-run",
+         "--nets", "power", "--pads-only"])
+    assert p2["nets"]["+3V3"]["pads"]["placed"] == 2
+    # no inner-plane power net at all: an empty pass, not an error
+    cons.write_text(json.dumps({"power": [{"net": "+5V"}]}))
+    p3, _ = stitch_vias.run(
+        ["--pcb", str(pcb), "--constraints", str(cons), "--dry-run",
+         "--nets", "power"])
+    assert p3["status"] == "pass" and p3["ops"] == [] and p3["nets"] == {}
+
+
 def test_stitch_impossible_violation_and_strict_gate(tmp_path):
     # SIG ring boxes the GND pad in: no ring candidate can clear it
     body = _fp("U1", 10, 10, _pad("1", 0, 0, "GND"))

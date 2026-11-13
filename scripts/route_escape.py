@@ -81,6 +81,16 @@ ball whose net has an inner plane gets a stack to that plane.
 Power and ground balls are not fanned (KRT treats them as plane balls: they
 want one via straight to their plane - stitch_vias' job).
 
+Power first (#923 point 1): before any field is escaped, the SMD pads of
+the constraints' inner-plane power nets on the other parts (a PMIC's supply
+pins, a regulator's output) get their plane vias (stitch_vias --nets power
+--pads-only, ball-grid parts skipped). Escaped and routed signal tracks
+otherwise take the room beside those pins first, and the stitch step that
+runs after route_critical finds no spot: on a 0.5 mm SoC board close then
+stalled at 125 opens until the signals around the PMIC and the USB-C power
+pins were ripped by hand. The vias are graded by DRC on their own and
+dropped as a set if they add an error type. --no-power-first skips it.
+
 Pad fanout (#929): --pads U5.3,U5.7,L1.1 fans out named pads of any part
 (QFN and SOT power pins, inductor and regulator pads) instead of ball grids:
 a via beside each pad that clears every other net's copper and hole, and a
@@ -115,6 +125,7 @@ import hdilib  # noqa: E402
 import kc  # noqa: E402
 import route_critical as rc  # noqa: E402  (KRT staging, floors, DRC delta, rip)
 import routelib  # noqa: E402
+import stitch_vias  # noqa: E402
 import zrules  # noqa: E402
 from checklib import CheckError, violation  # noqa: E402
 
@@ -488,6 +499,30 @@ def hdi_result(plan: hdilib.FieldPlan) -> dict:
 
 # ------------------------------------------------------------ KRT steps
 
+def power_first_ops(staged: Path, cons: Path | None,
+                    skip_refs: list[str]) -> tuple[list[dict], dict]:
+    """Plane vias for the constraints' inner-plane power nets' SMD pads,
+    skipping skip_refs (the ball grids: their gap sites are the escape's).
+    Returns (route_edit ops, fact); never touches the board."""
+    if cons is None:
+        return [], {"placed": 0, "note": "no constraints.json"}
+    argv = ["--pcb", str(staged), "--constraints", str(cons), "--dry-run",
+            "--nets", "power", "--pads-only"]
+    if skip_refs:
+        argv += ["--skip-refs", ",".join(sorted(skip_refs))]
+    payload, _ = stitch_vias.run(argv)
+    ops = payload["ops"]
+    nets = payload.get("nets") or {}
+    fact = {"nets": list(nets),
+            "placed": sum(1 for o in ops if o["op"] == "add_via"),
+            "requested": payload["requested"],
+            "no_spot": sorted(f"{s['ref']}" for s in payload["skipped"]
+                              if s["reason"] == "no_clear_spot")}
+    if not nets:
+        fact["note"] = "no power net with an inner plane"
+    return ops, fact
+
+
 def _run(krt: Path, script: str, args: list[str], timeout_s: int,
          log: Path, launch: list[str] | None = None) -> tuple[int, str]:
     """KRT script through lib/krt_launch.py (hwde's KRT patches, #552/#547)."""
@@ -599,6 +634,9 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--stackup", default=None,
                     help="stackups.yaml entry (default: the one the board's "
                          "stack block matches)")
+    ap.add_argument("--no-power-first", action="store_true",
+                    help="skip the power pads' plane vias placed before "
+                         "the escape (#923)")
     ap.add_argument("--plan", action="store_true",
                     help="no routing: report the BGAs, geometry and budget")
     ap.add_argument("--grid-step", type=float, default=DEFAULT_GRID)
@@ -707,6 +745,22 @@ def run(argv: list[str] | None = None):
     if bg0.zones_of():
         kc.run_drc(cli, staged, refill=True, save_board=True)
     before = kc.run_drc(cli, staged, all_track_errors=True)
+    power_first: dict = {"placed": 0, "note": "--no-power-first"}
+    if not args.no_power_first:
+        all_bgas = sorted(b.ref for b in bgalib.find_bgas(bg0, None))
+        pf_ops, power_first = power_first_ops(staged, cons, all_bgas)
+        if pf_ops:
+            saved = staged.read_bytes()
+            rc.route_edit.apply_ops(staged, pf_ops)
+            if bg0.zones_of():
+                kc.run_drc(cli, staged, refill=True, save_board=True)
+            pf_after = kc.run_drc(cli, staged, all_track_errors=True)
+            pf_new = rc.drc_delta(before, pf_after)["new"]
+            if pf_new:     # drop the set; the escape runs as before
+                staged.write_bytes(saved)
+                power_first.update(placed=0, dropped_for_drc=pf_new)
+            else:
+                before = pf_after
     old_uuids = rc._copper_uuids(staged)
 
     wide = rc.dru_net_floors(dru, "track_width")
@@ -837,7 +891,8 @@ def run(argv: list[str] | None = None):
             "escape left new DRC errors after ripping (original board "
             f"untouched): {delta['new']}; work dir kept at {work}")
 
-    board_updated = bool(kept_nets) or bool(moved)
+    board_updated = (bool(kept_nets) or bool(moved)
+                     or bool(power_first.get("placed")))
     if board_updated:
         routelib.swap_in(staged, pcb)
         if rules_changed:
@@ -846,6 +901,7 @@ def run(argv: list[str] | None = None):
     payload = checklib.report(SCRIPT, str(pcb), violations, facts={
         "bgas": results,
         "caps_moved": moved,
+        "power_first": power_first,
         "dru_rules": rules_changed if board_updated else [],
         "drc_delta": delta,
         "floors": floors,
