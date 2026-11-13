@@ -5,9 +5,11 @@ creates them via the SWIG bundled-python worker (lib/route_swig.py add_zones -
 zones are saved UNFILLED, ZONE_FILLER segfaults headless), drops thermal-via
 grids into exposed pads that sit on a plane net (route_edit op list), refills
 via `kicad-cli pcb drc --refill-zones --save-board`, then verifies every
-planned zone actually filled (geom re-parse). Inner plane layers (In*.Cu) are
-marked LT_POWER and SAVED with the board so route_auto's DSN export carries
-"(type power)".
+planned zone actually filled (geom re-parse). Inner plane layers (In*.Cu)
+whose pours cover the board and that carry no other net's tracks are marked
+LT_POWER and SAVED with the board so route_auto's DSN export carries
+"(type power)"; an inner layer with only a region pour, or with signal
+routing, keeps its type and gets a note (#925).
 
 Contract:
   planes_gen.py --pcb B.kicad_pcb [--constraints c.json] [--out-report r.json]
@@ -98,6 +100,8 @@ EP_MIN_MM2 = 4.0        # exposed-pad heuristic floor (largest netted SMD pad)
 FILL_EPS_MM2 = 0.01     # below this a planned zone counts as unfilled
 EXISTING_COVER = 0.80   # existing-fill coverage above which an entry is skipped
 REGROW_TOL_MM2 = 1.0    # zone-outline shortfall below which a pour is current
+PLANE_LAYER_COVER = 0.80  # outline share an inner layer's pours must cover
+                          # before the layer is typed power (#925)
 
 _INNER_RE = re.compile(r"^In\d+\.Cu$")
 _PLANE_KEYS = {"net", "layer", "region", "priority", "min_island_mm2",
@@ -450,9 +454,45 @@ def worker_zones(plan: list[dict]) -> list[dict]:
             for z in plan]
 
 
-def plane_layer_types(plan: list[dict]) -> dict[str, str]:
-    """INNER plane layers -> "power" (outer pours stay signal)."""
-    return {z["layer"]: "power" for z in plan if _INNER_RE.match(z["layer"])}
+def plane_layer_types(plan: list[dict], bg: geom.BoardGeom
+                      ) -> tuple[dict[str, str], list[str]]:
+    """-> ({layer: "power"}, notes). An INNER layer becomes "power" only
+    when it is a plane: its planned pours cover at least PLANE_LAYER_COVER
+    of the board outline and it carries no track of a net not poured on it.
+    A layer with only a region pour (a power island) or with signal routing
+    is left as it is, with a note naming it (#925): marking it power makes
+    the stackup describe a routing layer as a plane, and fill, no-track
+    rules, the DSN export and fab notes read that type. Outer pours stay
+    signal."""
+    types: dict[str, str] = {}
+    notes: list[str] = []
+    outline = bg.outline
+    for layer in sorted({z["layer"] for z in plan
+                         if _INNER_RE.match(z["layer"])},
+                        key=bg.copper_layers.index):
+        zs = [z for z in plan if z["layer"] == layer]
+        nets = {z["net"] for z in zs}
+        cover = unary_union([_shape(z) for z in zs])
+        frac = (cover.intersection(outline).area / outline.area
+                if not outline.is_empty and outline.area > 0 else 0.0)
+        foreign = sorted({t.net or "" for t in bg.tracks_of(layer=layer)
+                          if t.net not in nets})
+        n_tracks = sum(1 for t in bg.tracks_of(layer=layer)
+                       if t.net not in nets)
+        if frac >= PLANE_LAYER_COVER and not foreign:
+            types[layer] = "power"
+            continue
+        why = []
+        if frac < PLANE_LAYER_COVER:
+            why.append(f"its pours cover {frac:.0%} of the board")
+        if foreign:
+            shown = ", ".join(n or "(no net)" for n in foreign[:5])
+            more = f" +{len(foreign) - 5} more" if len(foreign) > 5 else ""
+            why.append(f"it carries {n_tracks} track(s) of other nets "
+                       f"({shown}{more})")
+        notes.append(f"{layer} layer type not set to power: "
+                     + " and ".join(why))
+    return types, notes
 
 
 # ------------------------------------------------------------- thermal vias
@@ -719,7 +759,8 @@ def run(argv: list[str] | None = None):
     plan, meta = build_plan(bg, constraints, args.inset_mm)
     to_add = [z for z in plan if not z.get("_existing")]
     zones = worker_zones(to_add)
-    layer_types = plane_layer_types(plan)
+    layer_types, type_notes = plane_layer_types(plan, bg)
+    meta["notes"] += type_notes
     plane_nets = {z["net"] for z in plan}
     removes = [r for z in plan for r in z.get("_regrow") or []]
     pre_counts = {(n, l): len(bg.zones_of(net=n, layer=l))
