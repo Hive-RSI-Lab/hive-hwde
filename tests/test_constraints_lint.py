@@ -109,6 +109,14 @@ def test_pin_modes_shape(tmp_path):
     assert [e["kind"] for e in errors(vs)] == ["bad_type"]
 
 
+def test_io_supply_shape(tmp_path):
+    vs, _ = lint_doc(tmp_path, {"io_supply": {"U101": "VDDD", "U3": "23"}})
+    assert vs == []
+    for bad in ({"U101": {"pin": "VDDD"}}, {"U101": ""}, ["U101", "VDDD"]):
+        vs, _ = lint_doc(tmp_path, {"io_supply": bad})
+        assert [e["kind"] for e in errors(vs)] == ["bad_type"], bad
+
+
 def test_bool_is_not_a_number(tmp_path):
     vs, _ = lint_doc(tmp_path, {"voltages": [{"net": "X", "voltage": True}]})
     assert [e["kind"] for e in errors(vs)] == ["bad_type"]
