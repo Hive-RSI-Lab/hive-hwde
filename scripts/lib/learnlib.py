@@ -199,6 +199,26 @@ def _exists(rel: str) -> bool:
     return (SKILL / rel).is_file() or (REPO / rel).is_file()
 
 
+def _target_exists(rel: str, ws: Path | None = None, board: str | None = None) -> bool:
+    """A target is a file the entry NAMES: a module file, or (U15) one of the
+    workspace's own research outputs. Those were compiled as
+    `boards/<board>/research/...` while workspaces lived under the repo's
+    boards/; a workspace elsewhere (HWDE_BOARDS_ROOT) still holds them, at the
+    same path under the workspace. Promotion artifacts do not use this: they
+    name what a ruling wrote into the module."""
+    if _exists(rel):
+        return True
+    if ws is None:
+        return False
+    ws = Path(ws)
+    if (ws / rel).is_file():
+        return True
+    parts = Path(rel).parts
+    return (len(parts) > 2 and parts[0] == "boards"
+            and parts[1] in {ws.name, board}
+            and (ws.joinpath(*parts[2:])).is_file())
+
+
 _TARGET_PATTERNS = (
     (re.compile(r"(?<![\w/])scripts/lib/([a-z_0-9]+)\.py"), "scripts/lib/{}.py"),
     (re.compile(r"(?<![\w/])lib/([a-z_0-9]+)\.py"), "scripts/lib/{}.py"),
@@ -217,14 +237,15 @@ _TARGET_PATTERNS = (
 )
 
 
-def scan_targets(text: str, limit: int = 8) -> list[str]:
+def scan_targets(text: str, limit: int = 8, ws: Path | None = None,
+                 board: str | None = None) -> list[str]:
     """Artifacts the entry NAMES and that exist here. Deterministic: this is a
     compile step, not a judgment - a promoter edits the list when ruling."""
     hits: set[str] = set()
     for rx, shape in _TARGET_PATTERNS:
         for m in rx.finditer(text):
             rel = shape.format(m.group(1))
-            if _exists(rel):
+            if _target_exists(rel, ws, board):
                 hits.add(rel)
     return sorted(hits)[:limit]
 
@@ -276,7 +297,8 @@ def compile_queue(ws: Path, board: str | None = None) -> tuple[dict, dict]:
             "title": e["title"], "tags": e["tags"], "stage": e["stage"],
             "proposed_level": (prev or {}).get("proposed_level"),
             "targets": (prev or {}).get("targets")
-                       or scan_targets(f"{e['title']}\n{e['body']}"),
+                       or scan_targets(f"{e['title']}\n{e['body']}", ws=ws,
+                                       board=board or old.get("board")),
             "status": (prev or {}).get("status", "pending"),
         }
         if (prev or {}).get("resolution"):
@@ -305,8 +327,13 @@ def validate_queue(ws: Path) -> tuple[list[str], list[str]]:
     ws = Path(ws)
     problems: list[str] = []
     warnings: list[str] = []
+    if not ws.is_dir():
+        return [f"{ws}: workspace does not exist"], []
     queue = load_queue(ws)
     if queue is None:
+        if not learnings_path(ws).is_file():
+            # A workspace that never wrote a LEARNINGS.md has nothing to rule.
+            return [], [f"{ws.name}: no LEARNINGS.md and no queue - nothing to rule"]
         return [f"{queue_path(ws)}: no queue (run `learnings.py compile`)"], []
     try:
         jsonschema.validate(queue, QUEUE_SCHEMA)
@@ -335,7 +362,7 @@ def validate_queue(ws: Path) -> tuple[list[str], list[str]]:
             warnings.append(f"{where}: line {row['line']} moved to {e['line']}"
                             " - re-compile")
         for t in row["targets"]:
-            if not _exists(t):
+            if not _target_exists(t, ws, queue.get("board")):
                 problems.append(f"{where}: target {t} does not exist")
         res = row.get("resolution")
         if row["status"] == "pending":
