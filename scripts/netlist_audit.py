@@ -1371,6 +1371,13 @@ def _export_netlist(sch: Path) -> Path:
     return out
 
 
+def _have_kicad_cli() -> bool:
+    """A host with no KiCad install can't export a schematic; a bad
+    explicit pin still raises (env.EnvError) rather than passing."""
+    from lib import env  # noqa: PLC0415
+    return env.find_kicad_cli() is not None
+
+
 def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--netlist", help="kicadsexpr netlist to audit")
@@ -1395,15 +1402,21 @@ def run(argv=None):
     sch = Path(args.sch) if args.sch else None
     if not netlist and not sch:
         pcb = Path(args.pcb)
-        if pcb.with_suffix(".kicad_sch").is_file():
-            sch = pcb.with_suffix(".kicad_sch")
-        elif pcb.with_suffix(".net").is_file():
-            netlist = pcb.with_suffix(".net")
+        own_sch, own_net = (pcb.with_suffix(".kicad_sch"),
+                            pcb.with_suffix(".net"))
+        why = None
+        if own_sch.is_file() and _have_kicad_cli():
+            sch = own_sch
+        elif own_net.is_file():
+            netlist = own_net
+        elif own_sch.is_file():
+            why = (f"no kicad-cli on this host to export {own_sch.name}, "
+                   f"and no {own_net.name} beside the board")
         else:
-            payload = checklib.report(
-                SCRIPT, str(pcb), [], mode="audit",
-                nothing_to_judge=f"no {pcb.stem}.kicad_sch or {pcb.stem}.net "
-                                 f"beside the board")
+            why = f"no {own_sch.name} or {own_net.name} beside the board"
+        if why:
+            payload = checklib.report(SCRIPT, str(pcb), [], mode="audit",
+                                      nothing_to_judge=why)
             payload["status"] = "pass"
             return payload, args.out
     if sch and not netlist:

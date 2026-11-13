@@ -79,3 +79,14 @@ def test_power_undeclared_needs_a_constraints_file(tmp_path):
     assert any(v["kind"] == "power_undeclared" for v in with_c["violations"])
     assert not any(v["kind"] == "power_undeclared"
                    for v in without["violations"])
+
+
+def test_no_kicad_cli_is_nothing_to_judge_not_a_crash(tmp_path,
+                                                      monkeypatch):
+    """A host with no KiCad can't export the schematic: the audit says so
+    (and uses a .net beside the board when there is one)."""
+    monkeypatch.setattr(netlist_audit, "_have_kicad_cli", lambda: False)
+    pcb = _board(tmp_path)
+    payload, _ = netlist_audit.run(["--pcb", str(pcb)])
+    assert payload["status"] == "pass"
+    assert "no kicad-cli" in payload["nothing_to_judge"]
