@@ -1804,6 +1804,59 @@ def test_adjustable_divider_with_no_vref_says_so(tmp_path):
     assert "regulator_vref.yaml" in u[0]["msg"]
 
 
+@pytest.mark.parametrize("mpn, top, bot, rail, other", [
+    ("TPS56637RPAR", "73.2k", "10k", "+5V", "+3V3"),    # 0.6 x 8.32 = 4.99 V
+    ("TLV62595DMQR", "453k", "100k", "+3V3", "+5V")])   # 0.6 x 5.53 = 3.32 V
+def test_verified_ti_vref_rows_judge_known_dividers(tmp_path, mpn, top, bot,
+                                                    rail, other):
+    """Known answer: a voice board's U102 TPS56637 and U201 TLV62595 dividers
+    make their rails from the datasheets' 0.6 V VFB, judged on verified rows
+    (before the rows, both outputs were left unjudged), and the same divider
+    on the other rail blocks."""
+    p = _run(_adj_ws(tmp_path / "ok", rail, top, bot, mpn))
+    assert _out_errs(p) == [] and _unjudged(p) == []
+    errs = _out_errs(_run(_adj_ws(tmp_path / "bad", other, top, bot, mpn)))
+    assert len(errs) == 1 and errs[0]["net"] == other
+    assert "Vref 0.6 V" in errs[0]["msg"]
+    assert "unverified" not in errs[0]["msg"]
+
+
+@pytest.mark.parametrize("mpn, top, bot, rail, worst, errs", [
+    ("TPS56637RPAR", "73.2k", "10k", "+5V", 5.25, 0),    # 4.99 V (4.83-5.16)
+    ("TLV62595DMQR", "453k", "100k", "+3V3", 3.47, 0),   # 3.32 V (3.23-3.41)
+    ("TLV62595DMQR", "453k", "100k", "+3V3", 3.32, 0),   # a set point fits
+    ("TLV62595DMQR", "453k", "100k", "+5V", 5.25, 1),    # 3.32 V isn't +5V
+    ("TPS56637RPAR", "73.2k", "10k", "+5V", 5.6, 1),     # > 10 % over 4.99
+    ("TPS56637RPAR", "73.2k", "10k", "+5V", 4.75, 1)])   # under the window
+def test_constraints_voltage_is_the_rails_worst_case(tmp_path, mpn, top, bot,
+                                                     rail, worst, errs):
+    """constraints `voltages` give a rail's worst case, not its set point
+    (constraints_schema.md): a voice board's +5V at 5.25 V over U102's 4.99 V
+    divider fits, as it would over a fixed 5.0 V part; a worst case more than
+    10 % over the divider's nominal, or under its window, still blocks."""
+    c = tmp_path / "c.json"
+    c.write_text(json.dumps({"voltages": [{"net": rail, "voltage": worst}]}))
+    found = _out_errs(_run(_adj_ws(tmp_path, rail, top, bot, mpn), c))
+    assert len(found) == errs
+    if errs:
+        assert f"a worst case of {worst:g} V" in found[0]["msg"]
+
+
+def test_power_tree_voltage_is_still_a_set_point(tmp_path):
+    """Only a constraints voltage is a worst case: the power tree's 5.25 V
+    over the same 4.99 V divider is a set point outside its window."""
+    tree = "| Rail | Nom V |\n|---|---|\n| /V5 | 5.25 |\n"
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("FB_DIV")),
+                        ("R1", "C1", {"1": "/V5", "2": "FB_DIV"}, "R_0402",
+                         "73.2k"),
+                        ("R2", "C2", {"1": "FB_DIV", "2": "GND"}, "R_0402",
+                         "10k")],
+             {"C9": _fixed_buck("TPS56637RPAR", **ADJ)}, tree=tree)
+    errs = _out_errs(_run(ws))
+    assert [e["net"] for e in errs] == ["/V5"]
+    assert "/V5 = 5.25 V" in errs[0]["msg"]
+
+
 def test_fixed_part_with_a_vref_row_keeps_its_fixed_judgement(tmp_path):
     """AP63205 matches the AP6320x Vref row too, but its FB on its own rail
     is a fixed output, not a 0.8 V divider tap."""

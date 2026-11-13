@@ -68,6 +68,29 @@ regulators:
     tol: 0.02
     source: TI TLV62569 datasheet, VFB
     verified: false
+  - match: '^TLV62595($|[^0-9])'   # TLV62595DMQR
+    vref: 0.6
+    tol: 0.01
+    source: >-
+      TI SLUSDR2A (Dec 2020, rev. Jan 2023), p.5, 6.5 Electrical
+      Characteristics: 'VFB Feedback regulation voltage PWM mode, 2.5 V ≤ VIN
+      ≤ 5.5 V, TJ = -40°C to 125°C 594 600 606 mV'; p.11, 8.2.2.2 Equation 4:
+      'R1 = R2 x (VOUT/0.6V - 1)'. In power save mode the output sits
+      slightly above target (7.3.2, no figure given). URL
+      https://www.ti.com/lit/ds/symlink/tlv62595.pdf
+      sha256 7358282471ea620792003d5e85ddf39b0a3b412f7b2699f7451919b7d354760a
+    verified: true
+  - match: '^TPS56637($|[^0-9])'   # TPS56637RPAR
+    vref: 0.6
+    tol: 0.015
+    source: >-
+      TI SLVSEG1A (July 2018, rev. Sept 2019), p.5, 6.5 Electrical
+      Characteristics: 'VFB Feedback voltage VOUT = 5V, continuous mode
+      operation, TJ=-40°C to 150°C 0.591 0.6 0.609 V' (0.594-0.606 V at
+      TJ=25°C); p.19, 8.2.2.1 Equation 5: 'VOUT = 0.6 x (1 + R6/R7)'. URL
+      https://www.ti.com/lit/ds/symlink/tps56637.pdf
+      sha256 18edaff6769b0d5c3d0cdef66df1232538cd357bbaac214df138969f9b0d6745
+    verified: true
   - match: '^MP1584'
     vref: 0.8
     tol: 0.02

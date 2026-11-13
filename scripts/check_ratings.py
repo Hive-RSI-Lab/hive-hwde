@@ -111,7 +111,9 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    also come from the extraction. Adjustable (#832): the Vout its FB divider
    and datasheet Vref (reference/regulator_vref.yaml) make, worst case over
    both tolerances (engcalc.fb_vout), outside the rail the divider's top
-   sits on or the vout_v of a constraints block that names the ref; FB
+   sits on or the vout_v of a constraints block that names the ref; a
+   constraints `voltages` figure is the rail's worst case, so it fits from
+   the window's bottom to 10 % over the nominal (worst_case_fits); FB
    straight on a stated rail makes Vref, judged only for a part nothing
    calls fixed.
  - rating_regulator_output_unjudged (warning): a regulator where nothing says
@@ -1905,6 +1907,21 @@ def fb_divider(b: dict, fb_pins: list[str], ctx: dict) -> dict | None:
     return None
 
 
+def worst_case_top(fbv: dict) -> float:
+    """The highest worst case a rail stated in constraints `voltages` may
+    give over a divider that makes fbv (engcalc.fb_vout): REG_OUT_TOL over
+    its nominal, as a fixed part's rail may sit, and never under its window."""
+    return max(fbv["max"], fbv["nom"] * (1 + REG_OUT_TOL))
+
+
+def worst_case_fits(fbv: dict, v: float) -> bool:
+    """constraints `voltages` give a rail's worst case, not its set point
+    (reference/constraints_schema.md), so the figure fits from the divider's
+    lowest output up to worst_case_top: +5V's 5.25 V over a 4.99 V divider is
+    that rail, over a 3.32 V one it is not."""
+    return fbv["min"] - EPS <= abs(v) <= worst_case_top(fbv) + EPS
+
+
 def divider_findings(b: dict, part: str, texts: list[str],
                      fb_pins: list[str], ctx: dict | None, emit,
                      fixed: bool = False) -> tuple[bool, bool]:
@@ -1913,9 +1930,11 @@ def divider_findings(b: dict, part: str, texts: list[str],
     the rail its top resistor sits on, when the board states that rail, and
     the vout_v of a constraints block that names the part (#832). Only a
     stated value outside the worst-case window (engcalc.fb_vout over Vref and
-    resistor tolerance) is an error. An FB pad straight on a rail is judged
-    only with a known Vref and when nothing calls the part fixed (fixed: its
-    row, extraction or MPN names an output, so FB may be its output sense).
+    resistor tolerance) is an error, except that a rail's constraints voltage
+    is its worst case and may sit above the window (worst_case_fits). An FB
+    pad straight on a rail is judged only with a known Vref and when nothing
+    calls the part fixed (fixed: its row, extraction or MPN names an output,
+    so FB may be its output sense).
     (judged, emitted): judged when a divider was found, so the output needs
     no other 'unjudged' warning; emitted when it raised a finding."""
     if not ctx or not fb_pins:
@@ -1946,15 +1965,22 @@ def divider_findings(b: dict, part: str, texts: list[str],
         ("" if verified else "; unverified") + ")"
     stated = []
     if ctx["vsrc"].get(div["out"]) in RAIL_SOURCES:
-        stated.append((div["out"], ctx["volts"][div["out"]],
-                       f"{div['out']} = {_fmt(ctx['volts'][div['out']])} V"))
+        v = ctx["volts"][div["out"]]
+        if ctx["vsrc"][div["out"]] == "constraints":
+            stated.append((div["out"], v, True,
+                           f"constraints give {div['out']} a worst case of "
+                           f"{_fmt(v)} V (over this divider it may be "
+                           f"{_fmt(lo)}-{_fmt(worst_case_top(fbv))} V)"))
+        else:
+            stated.append((div["out"], v, False, f"{div['out']} = {_fmt(v)} V"))
     if ref in ctx["blocks"]:
         v, blk = ctx["blocks"][ref]
-        stated.append((div["out"], v, f"constraints {blk} vout_v = {_fmt(v)} V"))
+        stated.append((div["out"], v, False,
+                       f"constraints {blk} vout_v = {_fmt(v)} V"))
     on = sorted(p for p, n in b["pads"].items() if n == div["fb"])
     emitted = False
-    for net, v, what in stated:
-        if lo - EPS <= abs(v) <= hi + EPS:
+    for net, v, worst, what in stated:
+        if worst_case_fits(fbv, v) if worst else lo - EPS <= abs(v) <= hi + EPS:
             continue
         emit("rating_regulator_output", "error", ref, net,
              f"{part} makes {_fmt(fbv['nom'])} V ({_fmt(lo)}-{_fmt(hi)} V) "

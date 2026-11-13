@@ -480,6 +480,44 @@ def test_fb_divider_series_bottom_chain(tmp_path):
     assert v["refs"] == ["R1", "R2", "R3", "U4"]
 
 
+@pytest.mark.parametrize("mpn, top, bot, rail, volts, how, kinds", [
+    # a voice board's U102 (4.99 V) and U201 (3.32 V) under their rails'
+    # constraints worst cases, 4.9 % and 4.4 % above the dividers' nominals
+    ("TPS56637RPAR", "73.2k", "10k", "+5V", 5.25, "constraints", []),
+    ("TLV62595DMQR", "453k", "100k", "+3V3", 3.47, "constraints", []),
+    # the same 5.25 V given with --rail is a set point, 4.9 % off
+    ("TPS56637RPAR", "73.2k", "10k", "+5V", 5.25, "--rail",
+     [("fb_divider_mismatch", "warning")]),
+    # a 3.32 V divider under +5V's worst case is not that rail
+    ("TLV62595DMQR", "453k", "100k", "+5V", 5.25, "constraints",
+     [("fb_divider_mismatch", "error")])])
+def test_fb_divider_constraints_voltage_is_a_worst_case(tmp_path, mpn, top,
+                                                        bot, rail, volts,
+                                                        how, kinds):
+    """constraints `voltages` give a rail's worst case (constraints_schema.md),
+    not its set point: one from the divider's lowest output to 10 % over its
+    nominal is that rail, as check_ratings judges it."""
+    board = [
+        ("U1", mpn, "QFN-16", {"1": ("GND", "GND"), "2": ("+9V", "VIN"),
+                               "3": ("/FB", "FB")}),
+        ("R1", top, "R_0402_1005Metric", {"1": (rail, ""), "2": ("/FB", "")}),
+        ("R2", bot, "R_0402_1005Metric", {"1": ("/FB", ""), "2": ("GND", "")}),
+    ]
+    b = sim_board.load_board(write_net(tmp_path / "b.net", board))
+    cons = {"voltages": [{"net": rail, "voltage": volts}]}
+    rails = (sim_board.resolve_rails(b, {}, cons, None, {})
+             if how == "constraints" else
+             sim_board.resolve_rails(b, {}, None, None, {rail: volts}))
+    assert rails[rail] == (volts, how)
+    model = sim_board.build_model(b, {}, rails)
+    vios, unknowns, facts = [], [], {}
+    sim_board.regulator_findings(b, {}, rails, model, {"vref": {}}, vios,
+                                 unknowns, facts)
+    (row,) = facts["regulators_fb"]
+    assert row["vref_verified"] and row["declared_source"] == how
+    assert [(v["kind"], v["severity"]) for v in vios] == kinds
+
+
 # ------------------------------------- SoC pads, pin modes, pin ratings
 
 # An i.MX-style SoC whose pads carry their default function: ENET2_TX_EN

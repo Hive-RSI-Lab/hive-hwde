@@ -36,7 +36,10 @@ Findings (violation kind; severity):
                           (warning: it loses much of its capacitance)
   fb_divider_mismatch     an adjustable regulator's FB divider sets a Vout
                           more than 3 % (warning) / 5 % (error) off the
-                          output rail's declared voltage
+                          output rail's declared voltage; a constraints
+                          voltage is the rail's worst case, so one from
+                          the divider's lowest output to 10 % over its
+                          nominal fits (check_ratings.worst_case_fits)
   led_overcurrent         LED current above 20 mA, or the part's own
                           figure, in some scenario (warning)
   led_dark                an LED that never reaches 0.5 mA (warning)
@@ -1175,7 +1178,11 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                 row.update({"declared_v": declared[0],
                             "declared_source": declared[1],
                             "delta": checklib.rnd(d, 4)})
-                if abs(d) > 0.03:
+                # a constraints voltage is the rail's worst case, not its
+                # set point: 5.25 V over a 4.99 V divider is that rail
+                worst_ok = declared[1] == "constraints" and \
+                    check_ratings.worst_case_fits(fbv, declared[0])
+                if abs(d) > 0.03 and not worst_ok:
                     vios.append(_vio(
                         "fb_divider_mismatch",
                         "error" if abs(d) > 0.05 else "warning",
