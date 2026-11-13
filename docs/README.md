@@ -696,6 +696,23 @@ and nets, and what to try next, so there is no chunk log to read. Each chunk
 goes through `--runner` (`heavy --quick` where `heavy` exists, else run
 directly).
 
+When what is left is a few connections you can name, route them by hand
+with the same maze router (`scripts/lib/mazeroute.py`) through `route_edit`.
+The edit is applied atomically and DRC-checked like any other op.
+- `route` takes a net and its two ends. An end is `REF.PAD`, `REF`,
+  `x,y@Layer`, or several of these joined by `|`.
+- `route_group` routes several jobs together (PathFinder). Use it for a
+  channel that two nets both need, which greedy one-at-a-time order can't
+  fill.
+- `reroute` takes a net and a region. It rips the other signal tracks
+  crossing the region, routes the net, then routes each ripped net back.
+  It is refused if any ripped net ends with more copper islands than it
+  started with.
+
+`zone_patch --from END --to END --half-width W` draws a pour strip along
+the path the router finds. Use it for a corridor of plane between two
+pads, or one that dodges a via fence.
+
 On hifi-receiver-2's core (278 parts, 4 layers), with every signal track
 ripped, one Freerouting rung left 54 unconnected and 16 DRC errors.
 `route_auto` with `route_finish` then took it to a handful unconnected with

@@ -59,8 +59,38 @@ worker ops above, so they share the atomic apply + verify:
                                            revision); after a rip of the
                                            same selector it puts a net's
                                            routing back - set5v.py
+    route {net, from, to, [width], [layers], [grid]}   a new route
+                                           from END to END on route_finish's
+                                           grid and rules (lib/mazeroute.py);
+                                           END is "REF.PAD", "REF" (its pads
+                                           on net), "x,y@Layer", "x,y", or
+                                           several joined by "|" - pr.py
+                                           (#926). layers default to the
+                                           routable ones, grid to 0.05 mm
+    route_group {jobs: [{net, from, to, [width]}], [iterations], [layers],
+                 [grid]}                   every job routed together
+                                           (PathFinder: cells two nets want
+                                           cost more each round until none
+                                           is shared), for a channel greedy
+                                           order can't fill - pf.py (#928)
+    reroute {net, region, [from, to], [width], [layers], [grid], [keep]}
+                                           rips other signal nets' tracks
+                                           crossing the box (and their vias
+                                           in it), routes net (from -> to,
+                                           or joining its islands), routes
+                                           each ripped net back, trying
+                                           other orders; refused unless no
+                                           ripped net ends with more copper
+                                           islands than it had (and net
+                                           with fewer) - rr.py/grp.py (#927).
+                                           Never ripped: power and pour
+                                           nets, nets with a width rule,
+                                           keep's, copper wider than its
+                                           net's width
   Every op in one list is resolved against the board as it was before the
   list ran, so an op can't select what an earlier op in it added or moved.
+  The routing ops are the exception: each routes around what the ops before
+  it removed and added.
   SELECTOR (all given keys must match; at least one of net, pads, at,
   region, uuid_prefix):
     net: NAME | [NAME...]       only these nets
@@ -135,7 +165,13 @@ ECO_FIELDS = {  # selector ops, resolved by the driver into OP_FIELDS ops
     "join_end": ({"at"}, {"net", "layer", "radius"}),
     "copy_from": ({"pcb"}, SELECT_KEYS),
     "fill_vias": (set(), SELECT_KEYS | {"filled"}),
+    "route": ({"net", "from", "to"}, {"width", "layers", "grid"}),
+    "route_group": ({"jobs"}, {"layers", "grid", "iterations"}),
+    "reroute": ({"net", "region"}, {"from", "to", "width", "layers",
+                                    "grid", "keep"}),
 }
+ROUTE_OPS = ("route", "route_group", "reroute")
+JOB_KEYS = {"net", "from", "to", "width"}
 SELECTOR_OPS = ("rip", "renet", "set_width", "copy_from", "fill_vias")
 AT_TOL = 0.02    # mm: default `at` radius (the hand scripts' 20000 nm)
 JOIN_RADIUS = 0.6  # mm: join_end's default reach (fix_dangle.py's)
@@ -168,6 +204,8 @@ def validate_ops(doc: dict) -> list[dict]:
         unknown = op.keys() - req - opt - {"op"}
         if unknown:
             raise CheckError(f"ops[{i}] ({kind}): unknown keys {sorted(unknown)}")
+        if kind in ROUTE_OPS:
+            _validate_route(i, op)
         for k in ("start", "end", "at") + (("to",) if kind == "move_via"
                                            else ()):
             if k in op and not _pt(op[k]):
@@ -210,6 +248,46 @@ def validate_ops(doc: dict) -> list[dict]:
         if kind == "rename_net" and op["from"] == op["to"]:
             raise CheckError(f"ops[{i}]: from and to are the same net")
     return ops
+
+
+def _validate_route(i: int, op: dict) -> None:
+    kind = op["op"]
+    if "layers" in op and _strs(op["layers"]) is None:
+        raise CheckError(f"ops[{i}]: layers must be a layer or a list of "
+                         "layers")
+    if "grid" in op and not (_num(op["grid"]) and 0.005 <= op["grid"] <= 0.5):
+        raise CheckError(f"ops[{i}]: grid must be 0.005 to 0.5 mm")
+    if "iterations" in op and not (isinstance(op["iterations"], int)
+                                   and 1 <= op["iterations"] <= 200):
+        raise CheckError(f"ops[{i}]: iterations must be 1 to 200")
+    if "keep" in op and _strs(op["keep"]) is None:
+        raise CheckError(f"ops[{i}]: keep must be a net or a list of nets")
+    if kind == "reroute":
+        r = op["region"]
+        if not (isinstance(r, list) and len(r) == 4
+                and all(_num(x) for x in r) and r[0] < r[2] and r[1] < r[3]):
+            raise CheckError(f"ops[{i}]: region must be [x0, y0, x1, y1] "
+                             "with x0 < x1, y0 < y1")
+        if ("from" in op) != ("to" in op):
+            raise CheckError(f"ops[{i}]: reroute takes from and to together"
+                             " (or neither: join the net's islands)")
+    if kind == "route_group":
+        jobs = op["jobs"]
+        if not (isinstance(jobs, list) and jobs):
+            raise CheckError(f"ops[{i}]: jobs must be a non-empty list")
+        for n, jb in enumerate(jobs):
+            if not isinstance(jb, dict) or not {"net", "from", "to"} <= jb.keys():
+                raise CheckError(f"ops[{i}].jobs[{n}]: needs net, from, to")
+            if jb.keys() - JOB_KEYS:
+                raise CheckError(f"ops[{i}].jobs[{n}]: unknown keys "
+                                 f"{sorted(jb.keys() - JOB_KEYS)}")
+            for k in ("net", "from", "to"):
+                if not (isinstance(jb[k], str) and jb[k]):
+                    raise CheckError(f"ops[{i}].jobs[{n}]: {k} must be a "
+                                     "non-empty string")
+            if "width" in jb and not (_num(jb["width"]) and jb["width"] > 0):
+                raise CheckError(f"ops[{i}].jobs[{n}]: width must be a "
+                                 "positive number")
 
 
 def _strs(v) -> list[str] | None:
@@ -307,16 +385,25 @@ def select_items(bg, op: dict) -> list:
     return out
 
 
-def resolve_ops(bg, ops: list[dict]) -> tuple[list[dict], list[list[int]]]:
+def resolve_ops(bg, ops: list[dict], guards: dict | None = None
+                ) -> tuple[list[dict], list[list[int]]]:
     """ECO ops -> worker ops. Returns (worker ops, for each input op the
     indices of the worker ops it became). rename_net passes through (the
-    worker does it board-wide; there is nothing to pre-select)."""
+    worker does it board-wide; there is nothing to pre-select). The routing
+    ops search around what the ops before them in the list removed and
+    added; reroute puts {net: "le" | "lt"} in guards: each ripped net must
+    end with no more islands (DRC-free copper islands, route_finish's
+    net_islands) than it had, its target with fewer."""
     flat: list[dict] = []
     spans: list[list[int]] = []
+    router = None
     for op in ops:
         kind = op["op"]
         start = len(flat)
-        if kind == "rip":
+        if kind in ROUTE_OPS:
+            router = _router(bg, op, router, flat)
+            flat += _resolve_route(router, op, guards)
+        elif kind == "rip":
             flat += [{"op": "remove", "uuid": it.uuid}
                      for it in select_items(bg, op)]
         elif kind == "renet":
@@ -348,6 +435,66 @@ def resolve_ops(bg, ops: list[dict]) -> tuple[list[dict], list[list[int]]]:
             flat.append(dict(op))
         spans.append(list(range(start, len(flat))))
     return flat, spans
+
+
+def _router(bg, op: dict, router, flat: list[dict]):
+    """The Router for a routing op: one per list while layers and grid stay
+    the same, so each route keeps clear of the last; it sees the copper the
+    ops before it removed (hidden) and added."""
+    import mazeroute
+    import route_finish as rf
+
+    layers = _strs(op["layers"]) if "layers" in op else None
+    grid = op.get("grid", mazeroute.GRID)
+    if router is None or router.g != grid or (
+            layers is not None and router.layers != layers):
+        router = mazeroute.Router(bg, layers=layers, grid=grid)
+        router.synced = 0
+    new = flat[router.synced:]
+    router.obs.hidden |= {f["uuid"] for f in new if f["op"] == "remove"}
+    adds = [f for f in new if f["op"] in ("add_track", "add_via")]
+    if adds:
+        router.commit(adds)
+    router.synced = len(flat)
+    return router
+
+
+def _resolve_route(router, op: dict, guards: dict | None) -> list[dict]:
+    kind = op["op"]
+    if kind == "route":
+        out = router.route(op["net"], op["from"], op["to"], op.get("width"))
+    elif kind == "route_group":
+        out = router.group(op["jobs"], **({"iterations": op["iterations"]}
+                                          if "iterations" in op else {}))
+    else:
+        removed, out, _ = router.reroute(
+            op["net"], op["region"], op.get("from"), op.get("to"),
+            width=op.get("width"), keep=set(_strs(op.get("keep")) or ()))
+        out = [{"op": "remove", "uuid": u} for u in removed] + out
+        victims = {it.net for it in router.obs.items
+                   if it.uuid in set(removed)}
+        if guards is not None:
+            for v in victims:
+                guards.setdefault(v, "le")
+            if "from" not in op:
+                guards[op["net"]] = "lt"
+    # route_edit's synthetic adds carry no uuid: the router's own
+    # bookkeeping is already committed, so mark these as seen
+    router.synced += len(out)
+    return out
+
+
+def check_guards(before_bg, after_bg, guards: dict) -> list[str]:
+    """Problems with reroute's island guards, [] when every one holds."""
+    import route_finish as rf
+
+    bad = []
+    for net, how in sorted(guards.items()):
+        b = len(rf.net_islands(before_bg, net))
+        a = len(rf.net_islands(after_bg, net))
+        if a > b or (how == "lt" and a >= b):
+            bad.append(f"{net}: {b} -> {a} islands")
+    return bad
 
 
 def _straight(t) -> bool:
@@ -596,6 +743,14 @@ def apply_ops(pcb: Path, ops: list[dict], *, refill: bool = False) -> list:
         for n in want:
             if n not in known_nets:
                 raise CheckError(f"ops[{i}]: net '{n}' not on board")
+        for jb in op.get("jobs", []) if op["op"] == "route_group" else []:
+            if jb["net"] not in known_nets:
+                raise CheckError(f"ops[{i}]: net '{jb['net']}' not on board")
+        for ly in _strs(op.get("layers")) or [] \
+                if op["op"] in ROUTE_OPS else []:
+            if ly not in copper:
+                raise CheckError(f"ops[{i}]: layer '{ly}' is not a copper "
+                                 "layer of this board")
         if "layer" in op and op["layer"] not in copper:
             raise CheckError(f"ops[{i}]: layer '{op['layer']}' is not a "
                              f"copper layer of this board")
@@ -606,7 +761,8 @@ def apply_ops(pcb: Path, ops: list[dict], *, refill: bool = False) -> list:
             if gone:
                 raise CheckError(f"ops[{i}]: pads of parts not on board: "
                                  f"{gone}")
-    flat, spans = resolve_ops(bg, ops)
+    guards: dict = {}
+    flat, spans = resolve_ops(bg, ops, guards)
 
     cli = env.find_kicad_cli()
     bp = env.find_kicad_python(cli) if cli else None
@@ -622,6 +778,9 @@ def apply_ops(pcb: Path, ops: list[dict], *, refill: bool = False) -> list:
                  "out": str(staged), "ops": flat}, stage)["results"] \
             if flat else []
         problems = _verify(staged, flat)
+        if guards and not problems:
+            problems = [f"reroute guard: {p}" for p in check_guards(
+                bg, geom.BoardGeom.from_file(staged), guards)]
         if problems:
             raise CheckError("post-apply verify failed (rolled back): "
                              + "; ".join(problems[:10]))
@@ -644,6 +803,7 @@ def _fold(op: dict, results: list[dict], flat: list[dict]) -> dict:
            {"rip": "removed", "renet": "renetted", "add_path": "added",
             "set_width": "changed", "move_via": "moved",
             "join_end": "added", "copy_from": "added",
+            "route": "added", "route_group": "added", "reroute": "rerouted",
             "fill_vias": "filled" if op.get("filled", True)
             else "unfilled"}[op["op"]]}
     if op["op"] in ("rip", "renet", "set_width", "move_via", "fill_vias"):
