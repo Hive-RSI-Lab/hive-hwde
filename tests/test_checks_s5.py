@@ -672,6 +672,46 @@ def test_silk_rotated_refdes_no_false_positive(tmp_path_factory):
     assert [v for v in vs if v["kind"] == "silk_over_pad"] == []
 
 
+def _phase_conn(tmp_path_factory, name, nets, label=None):
+    pads = "".join(f'    (pad "{i}" thru_hole circle (at {i * 2.5} 0) '
+                   f'(size 1.8 1.8) (drill 1) (layers "*.Cu") (net "{n}"))\n'
+                   for i, n in enumerate(nets, 1))
+    body = ('  (footprint "t:Conn" (at 5 5) (layer "F.Cu")\n'
+            '    (property "Reference" "J8" (at 0 -3 0) (layer "F.SilkS"))\n'
+            + pads + '  )\n')
+    if label:
+        body += (f'  (gr_text "{label}" (at 10 8.5 0) (layer "F.SilkS") '
+                 '(effects (font (size 1 1) (thickness 0.15))))\n')
+    bg = _board(tmp_path_factory, name, body)
+    root = __import__("sexpdata").loads(bg.path.read_text(encoding="utf-8"))
+    return [v for v in check_silk.check_pin_labels(bg, check_silk.parse_silk(root))
+            if v["kind"] == "pin_labels_missing"]
+
+
+def test_silk_pin_labels_missing_on_phase_connector(tmp_path_factory):
+    """#886 planted fault: minuet J8 carries the fan motor's three phases
+    with no A/B/C on silk; any cable order fits."""
+    vs = _phase_conn(tmp_path_factory, "ph", ["/fan/A", "/fan/B", "/fan/C"])
+    assert len(vs) == 1 and vs[0]["refs"] == ["J8"]
+    assert vs[0]["phases"] == ["A", "B", "C"]
+    # U/V/W behind a prefix is the same fault
+    assert _phase_conn(tmp_path_factory, "uvw",
+                       ["/m/PH_U", "/m/PH_V", "/m/PH_W"])
+
+
+def test_silk_pin_labels_present_or_not_phases(tmp_path_factory):
+    nets = ["/fan/A", "/fan/B", "/fan/C"]
+    # labelled one by one, or run together, beside the pins: clean
+    assert _phase_conn(tmp_path_factory, "lab", nets, "A B C") == []
+    assert _phase_conn(tmp_path_factory, "lab2", nets, "ABC") == []
+    # a label naming only some phases does not count
+    assert _phase_conn(tmp_path_factory, "lab3", nets, "A B")
+    # a two-pin power input is not a phase connector (oasis J1, digits J3)
+    assert _phase_conn(tmp_path_factory, "pwr", ["+18V", "GND"]) == []
+    assert _phase_conn(tmp_path_factory, "sig",
+                       ["/SDA", "/SCL", "/VCC"]) == []
+
+
 def _silk_just_hits(tmp_path_factory, name, x, justify, side="F"):
     eff = f" (justify {justify})" if justify else ""
     body = (f'  (footprint "t:J" (at 10 6) (layer "{side}.Cu")\n'
