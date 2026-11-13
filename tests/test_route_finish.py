@@ -507,3 +507,98 @@ def test_c_search_finds_the_same_path_as_python(monkeypatch):
         slow = rf.astar(gr, (57, 20), search_weight=1.5)
         monkeypatch.undo()
         assert fast == slow
+
+
+# ------------------------------------------------------- neck widths (#924)
+
+NECK_DRU = DRU + """(rule "aiee_pwr_width_+3V3"
+	(constraint track_width (min 1.0000mm))
+	(condition "A.NetName == '+3V3' && A.Type == 'track'")
+)
+(rule "aiee_pwr_neck_3V3_U1"
+	(constraint track_width (min 0.2500mm))
+	(condition "A.NetName == '+3V3' && A.Type == 'track' && A.intersectsCourtyard('U1')")
+)
+"""
+
+
+def _fine_pitch(ref, x, y, crtyd=1.2):
+    """Five 0.25 x 0.8 pads at 0.5 pitch, the middle one +3V3, the rest GND:
+    a 1 mm track can't leave the middle pad between its neighbours."""
+    pads = "".join(
+        f'    (pad "{n}" smd rect (at {(n - 3) * 0.5} 0) (size 0.25 0.8)'
+        f' (layers "F.Cu") (net "{"+3V3" if n == 3 else "GND"}"))\n'
+        for n in range(1, 6))
+    return (f'  (footprint "t:{ref}" (layer "F.Cu") (at {x} {y})\n'
+            f'    (property "Reference" "{ref}" (at 0 0 0))\n'
+            f'    (fp_rect (start -1.6 -{crtyd}) (end 1.6 {crtyd})'
+            ' (stroke (width 0.05)) (layer "F.CrtYd"))\n'
+            + pads + "  )\n")
+
+
+def _neck_board(tmp_path, dru):
+    body = _fine_pitch("U1", 10, 15) + _pad("U2", 10, 5, "+3V3", size=1.5)
+    return _board(tmp_path, body, dru=dru)
+
+
+def _neck_pair():
+    return _pair("+3V3", (10, 15), (10, 5),
+                 amsg="Pad 3 [+3V3] of U1 on F.Cu",
+                 bmsg="Pad 1 [+3V3] of U2 on F.Cu")
+
+
+def test_neck_rules_are_read_apart_from_the_net_floor(tmp_path):
+    import route_critical as rc
+    dru = tmp_path / "t.kicad_dru"
+    dru.write_text(NECK_DRU, encoding="utf-8")
+    assert rc.dru_net_floors(dru, "track_width") == {"SIG": 0.3, "+3V3": 1.0}
+    assert rc.dru_neck_rules(dru) == [
+        {"net": "+3V3", "ref": "U1", "min_mm": 0.25}]
+    assert rc.dru_neck_rules(None) == []
+
+
+def test_without_a_neck_rule_the_fine_pitch_pad_is_boxed_in(tmp_path):
+    """The planted fault of #924: the net's full width everywhere."""
+    pcb = _neck_board(tmp_path, NECK_DRU.split('(rule "aiee_pwr_neck')[0])
+    rules, jobs = _plan(pcb, [_neck_pair()], grid=0.05, margin=4)
+    assert not rules.necks
+    assert jobs[0]["status"] != "routed"
+
+
+def test_a_power_pad_leaves_its_courtyard_at_the_neck_width(tmp_path):
+    pcb = _neck_board(tmp_path, NECK_DRU)
+    rules, jobs = _plan(pcb, [_neck_pair()], grid=0.05, margin=4)
+    assert set(rules.necks) == {"+3V3"} and set(rules.necks["+3V3"]) == {"F.Cu"}
+    job = jobs[0]
+    assert job["status"] == "routed", job
+    tracks = _tracks(job)
+    widths = {op["width"] for op in tracks}
+    assert widths == {0.25, 1.001}
+    zone = rules.necks["+3V3"]["F.Cu"][0][0]
+    crtyd = box(8.4, 13.8, 11.6, 16.2)
+    for op in tracks:
+        seg = LineString([op["start"], op["end"]])
+        if op["width"] == 0.25:
+            # DRC's neck rule: the track meets the courtyard; and it is a
+            # pad exit, inside check_current's 1 mm bound
+            assert seg.intersects(crtyd)
+            assert seg.distance(zone) <= 0.05 + 1e-6
+        else:
+            # the full width only where the full width was cleared
+            assert not seg.intersects(zone.buffer(-0.05))
+    neck_len = sum(LineString([o["start"], o["end"]]).length
+                   for o in tracks if o["width"] == 0.25)
+    assert neck_len <= 1.0
+    route_edit.validate_ops({"version": 1, "ops": job["ops"]})
+
+
+def test_straights_split_where_the_neck_ends():
+    gr = rf.Grid(x0=0, y0=0, nx=10, ny=10, g=0.1, layers=["F.Cu"],
+                 blk=[], vblk=b"", via=(0.6, 0.3), cost=[], in_a=[], in_b=[],
+                 a_plane=b"", b_plane=b"",
+                 neck={(0, 0): 0.2, (0, 1): 0.2})
+    run = [(i, 0, 0) for i in range(5)] + [(4, 1, 0)]
+    got = [(a[:2], b[:2], w) for a, b, w in rf._straights(gr, run, 0.8)]
+    # the step off the last neck cell is still the neck's
+    assert got == [((0, 0), (2, 0), 0.2), ((2, 0), (4, 0), 0.8),
+                   ((4, 0), (4, 1), 0.8)]

@@ -102,6 +102,8 @@ SAME_NET_HOLE_MM = 0.13       # JLC HDI, one net, edge to edge (jlc_capabilities
 EXIT_MM = 1.0                 # #784, how far an open stub tip's corridor runs
 VIA_PAD_KEEP_MM = 0.1         # drill edge to an own-net SMD pad: past its
 #                               mask opening and registration (check_wicking)
+NECK_REACH_MM = 0.75          # #924, how far past its pads a neck may run:
+#                               inside check_current's 1 mm pad exit
 VIA_RETRIES = 6               # #784, searches again for a route's too-close vias
 
 
@@ -127,6 +129,8 @@ class Rules:
     copper: list = field(default_factory=list)
     via_in_pad_refs: frozenset = frozenset()   # refs whose own-net SMD pads
     #                                          take a via (filled + capped)
+    necks: dict = field(default_factory=dict)  # net -> {layer: [(zone,
+    #                    width)]}: where its tracks may narrow (#924)
 
     def width(self, net: str) -> float:
         w = max(self.net_width.get(net, 0.0) + 0.001, self.min_width)
@@ -200,7 +204,39 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         via_size=vs, via_drill=vd,
         net_width=rc.dru_net_floors(dru, "track_width"),
         net_clearance=rc.dru_net_floors(dru, "clearance"),
+        necks=board_necks(pcb, bg, rc.dru_neck_rules(dru, "track_width")),
         margin=margin, **hdi)
+
+
+def board_necks(pcb: Path, bg: geom.BoardGeom, neck_rules: list) -> dict:
+    """Where a net's tracks may run at its courtyard-held neck width (#924,
+    rules_gen's aiee_pwr_neck): {net: {layer: [(zone, width)]}}. A zone is
+    the footprint's courtyard (what the rule's intersectsCourtyard reads) cut
+    to NECK_REACH_MM round the net's own pads of that part on the layer, so
+    a neck stays the pad's escape check_current accepts (its 1 mm pad-exit
+    bound), not a narrow trace across the part."""
+    if not neck_rules:
+        return {}
+    import check_courtyard
+    import placelib
+    fps = placelib.PlaceModel(pcb).footprints
+    out: dict = {}
+    for r in neck_rules:
+        f = fps.get(r["ref"])
+        cy = check_courtyard.courtyard_abs(f) if f is not None else None
+        if cy is None or cy.is_empty:
+            continue
+        for layer in bg.copper_layers:
+            pads = [p.poly for p in bg.pads_of(r["net"], layer)
+                    if p.ref == r["ref"]]
+            if not pads:
+                continue
+            zone = cy.intersection(
+                shapely.union_all(pads).buffer(NECK_REACH_MM))
+            if not zone.is_empty:
+                out.setdefault(r["net"], {}).setdefault(layer, []).append(
+                    (zone, r["min_mm"]))
+    return out
 
 
 # ---------------------------------------------------------------- islands
@@ -349,6 +385,8 @@ class Grid:
     # #477, per k: (k2, span, its via mask, the k its via must find clear)
     span_moves: list = field(default_factory=list)
     gave_up: bool = False   # astar stopped at max_nodes, not out of cells
+    neck: dict = field(default_factory=dict)   # (k, cell) -> the narrower
+    #                          width a track there is cleared for (#924)
 
     def xy(self, i: int, j: int) -> tuple[float, float]:
         return (round(self.x0 + i * self.g, 4), round(self.y0 + j * self.g, 4))
@@ -385,7 +423,10 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
                side_b: dict, layers: list, window, g: float,
                pour_cost: float = 3.0, inner_cost: float = 2.0,
                width: float | None = None, via=None,
-               rip_cost: float = 40.0) -> Grid:
+               rip_cost: float = 40.0, necks: bool = True) -> Grid:
+    """The search grid of one connection. Where the net has a neck zone
+    (Rules.necks) a cell is cleared for the neck width, and path_to_ops lays
+    the neck width there (#924). necks=False: the full width everywhere."""
     bg = obs.bg
     minx, miny, maxx, maxy = _on_board(window, bg.outline)
     x0 = math.floor(minx / g) * g
@@ -507,6 +548,11 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         return out
 
     a, b = side(side_a, False), side(side_b, False)
+    neck: dict = {}
+    if necks:
+        _narrow_necks(obs, rules, net, layers, window, g, w, via, blk, X, Y,
+                      neck, dict(pour_cost=pour_cost, inner_cost=inner_cost,
+                                 rip_cost=rip_cost))
     span_moves = _span_moves(obs, rules, net, layers, win, args, K, blk, outline)
     return Grid(
         x0=x0, y0=y0, nx=nx, ny=ny, g=g, layers=list(layers),
@@ -518,7 +564,39 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         in_b=[m.ravel().astype(np.uint8).tobytes() for m in b],
         a_plane=side(side_a, True).ravel().astype(np.uint8).tobytes(),
         b_plane=side(side_b, True).ravel().astype(np.uint8).tobytes(),
-        span_moves=span_moves)
+        span_moves=span_moves, neck=neck)
+
+
+def _narrow_necks(obs, rules: Rules, net: str, layers: list, window, g: float,
+                  w: float, via, blk: list, X, Y, neck: dict, kw: dict) -> None:
+    """Clear the net's neck zones for its neck width (#924): a cell inside
+    one takes the walls a track of that width sees, built on the same grid,
+    and is noted in `neck` for path_to_ops. Only zones narrower than w."""
+    zones = rules.necks.get(net) or {}
+    by_w: dict = {}
+    for layer, zs in zones.items():
+        if layer not in layers:
+            continue
+        for zone, nw in zs:
+            if nw < w - 1e-6:
+                by_w.setdefault(nw, {}).setdefault(layer, []).append(zone)
+    ny, nx = X.shape
+    for nw in sorted(by_w, reverse=True):     # the narrowest is laid last
+        inside = {}
+        for layer, zs in by_w[nw].items():
+            m = shapely.contains_xy(shapely.union_all(zs), X, Y)
+            if m.any():
+                inside[layers.index(layer)] = m
+        if not inside:
+            continue
+        gn = build_grid(obs, rules, net, {}, {}, layers, window, g, width=nw,
+                        via=via, necks=False, **kw)
+        assert (gn.nx, gn.ny) == (nx, ny)
+        for k, m in inside.items():
+            blk[k][m] = np.frombuffer(gn.blk[k], np.uint8).reshape(
+                ny, nx)[m].astype(bool)
+            for c in np.flatnonzero(m.ravel()):
+                neck[(k, int(c))] = nw
 
 
 def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
@@ -919,6 +997,26 @@ def _merged(gr: Grid, path: list, rules: Rules) -> list:
         lambda run, k2: _can_move_run(gr, run, k2))
 
 
+def _straights(gr: Grid, run: list, width: float) -> list:
+    """One layer's run of cells -> (start, end, width) per straight piece. A
+    step that touches a neck cell takes the neck width it was cleared for
+    (#924): the neck reaches one step past its zone, onto a cell cleared for
+    the full width, so the wide track starts where it was checked."""
+    def step_w(q0, q1):
+        ws = [gr.neck.get((q[2], q[1] * gr.nx + q[0])) for q in (q0, q1)]
+        return min([x for x in ws if x] or [width])
+    out = []
+    for q0, q1 in zip(run, run[1:]):
+        if q0[:2] == q1[:2]:
+            continue
+        d, w = (q1[0] - q0[0], q1[1] - q0[1]), step_w(q0, q1)
+        if out and out[-1][3] == d and out[-1][2] == w:
+            out[-1][1] = q1
+        else:
+            out.append([q0, q1, w, d])
+    return [(a, b, w) for a, b, w, _ in out]
+
+
 def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
     """Grid path -> route_edit ops: one track per straight run, a via at
     every layer change and at a plane drop (k = -1). A layer change on an HDI
@@ -940,18 +1038,10 @@ def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
                              span_for(gr, runs[-1][0][2], k, j * gr.nx + i)))
             runs.append([(i, j, k)])
     for run in runs:
-        corners = [run[0]]
-        for q0, q1, q2 in zip(run, run[1:], run[2:]):
-            if (q1[0] - q0[0], q1[1] - q0[1]) != (q2[0] - q1[0], q2[1] - q1[1]):
-                corners.append(q1)
-        if len(run) > 1:
-            corners.append(run[-1])
         layer = gr.layers[run[0][2]]
-        for c0, c1 in zip(corners, corners[1:]):
-            if c0[:2] == c1[:2]:
-                continue
+        for c0, c1, w in _straights(gr, run, width):
             ops.append({"op": "add_track", "start": list(gr.xy(*c0[:2])),
-                        "end": list(gr.xy(*c1[:2])), "width": width,
+                        "end": list(gr.xy(*c1[:2])), "width": w,
                         "layer": layer, "net": net})
     seen = set()
     for at, sp in vias:

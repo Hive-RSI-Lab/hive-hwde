@@ -433,22 +433,53 @@ def parse_dru_rules(text: str) -> list[dict]:
     return out
 
 
+_DRU_COURTYARD_RE = re.compile(r"intersectsCourtyard\('([^']+)'\)")
+
+
+def _dru_text(dru_path: Path | None) -> str | None:
+    if dru_path is None or not Path(dru_path).is_file():
+        return None
+    try:
+        return Path(dru_path).read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
 def dru_net_floors(dru_path: Path | None, constraint: str) -> dict[str, float]:
     """Per-net minimums of one constraint type from a .kicad_dru
-    (e.g. 'track_width' -> {net: floor_mm}). Missing file -> {}."""
-    if dru_path is None or not Path(dru_path).is_file():
-        return {}
-    try:
-        text = Path(dru_path).read_text(encoding="utf-8")
-    except OSError:
+    (e.g. 'track_width' -> {net: floor_mm}). Missing file -> {}. A rule
+    held to a footprint's courtyard (rules_gen's aiee_pwr_neck) is not the
+    net's floor: dru_neck_rules reads those (#924)."""
+    text = _dru_text(dru_path)
+    if text is None:
         return {}
     floors: dict[str, float] = {}
     for rule in parse_dru_rules(text):
         if rule["constraint"] != constraint:
             continue
+        if _DRU_COURTYARD_RE.search(rule["condition"] or ""):
+            continue
         for net in rule["nets"]:
             floors[net] = max(floors.get(net, 0.0), rule["min_mm"])
     return floors
+
+
+def dru_neck_rules(dru_path: Path | None,
+                   constraint: str = "track_width") -> list[dict]:
+    """The .kicad_dru's courtyard-held minimums of one constraint, such as
+    rules_gen's aiee_pwr_neck: [{"net", "ref", "min_mm"}], one per net and
+    courtyard the rule names (#924). Missing file -> []."""
+    text = _dru_text(dru_path)
+    if text is None:
+        return []
+    out = []
+    for rule in parse_dru_rules(text):
+        refs = _DRU_COURTYARD_RE.findall(rule["condition"] or "")
+        if rule["constraint"] != constraint or not refs:
+            continue
+        out += [{"net": net, "ref": ref, "min_mm": rule["min_mm"]}
+                for net in rule["nets"] for ref in refs]
+    return out
 
 
 def build_net_clearances(pro_path: Path | None, dru_path: Path | None,
