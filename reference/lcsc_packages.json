@@ -1,0 +1,420 @@
+{
+ "source": "JLC's parts record (stocklib.jlc_record): componentModelEn and componentSpecificationEn, read on the date given",
+ "parts": {
+  "C1523": {
+   "package": "0402",
+   "model": "0402B102K500NT",
+   "read": "2026-11-13"
+  },
+  "C1525": {
+   "package": "0402",
+   "model": "CL05B104KO5NNNC",
+   "read": "2026-11-13"
+  },
+  "C1588": {
+   "package": "0603",
+   "model": "CL10B102KB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C1620": {
+   "package": "0603",
+   "model": "0603B471K500NT",
+   "read": "2026-11-13"
+  },
+  "C1622": {
+   "package": "0603",
+   "model": "CL10B473KB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C1634": {
+   "package": "0603",
+   "model": "CL10C100JB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C1653": {
+   "package": "0603",
+   "model": "CL10C220JB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C1671": {
+   "package": "0603",
+   "model": "CL10C470JB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C1779": {
+   "package": "0805",
+   "model": "CL21A475KAQNNNE",
+   "read": "2026-11-13"
+  },
+  "C1848": {
+   "package": "1206",
+   "model": "CL31B105KBHNNNE",
+   "read": "2026-11-13"
+  },
+  "C2297": {
+   "package": "0805",
+   "model": "KT-0805G",
+   "read": "2026-11-13"
+  },
+  "C4109": {
+   "package": "0402",
+   "model": "0402WGF2001TCE",
+   "read": "2026-11-13"
+  },
+  "C4184": {
+   "package": "0603",
+   "model": "0603WAF2002T5E",
+   "read": "2026-11-13"
+  },
+  "C4190": {
+   "package": "0603",
+   "model": "0603WAF2201T5E",
+   "read": "2026-11-13"
+  },
+  "C4216": {
+   "package": "0603",
+   "model": "0603WAF3302T5E",
+   "read": "2026-11-13"
+  },
+  "C11702": {
+   "package": "0402",
+   "model": "0402WGF1001TCE",
+   "read": "2026-11-13"
+  },
+  "C13585": {
+   "package": "1206",
+   "model": "CL31A106KBHNNNE",
+   "read": "2026-11-13"
+  },
+  "C14663": {
+   "package": "0603",
+   "model": "CC0603KRX7R9BB104",
+   "read": "2026-11-13"
+  },
+  "C14709": {
+   "package": "0603",
+   "model": "BLM18PG121SN1D",
+   "read": "2026-11-13"
+  },
+  "C14858": {
+   "package": "0603",
+   "model": "CL10C101JB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C15195": {
+   "package": "0402",
+   "model": "CL05B103KB5NNNC",
+   "read": "2026-11-13"
+  },
+  "C15849": {
+   "package": "0603",
+   "model": "CL10A105KB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C15850": {
+   "package": "0805",
+   "model": "CL21A106KAYNNNE",
+   "read": "2026-11-13"
+  },
+  "C16780": {
+   "package": "0805",
+   "model": "CL21A476MQYNNNE",
+   "read": "2026-11-13"
+  },
+  "C17168": {
+   "package": "0402",
+   "model": "0402WGF0000TCE",
+   "read": "2026-11-13"
+  },
+  "C19666": {
+   "package": "0603",
+   "model": "CL10A475KO8NNNC",
+   "read": "2026-11-13"
+  },
+  "C19702": {
+   "package": "0603",
+   "model": "CL10A106KP8NNNC",
+   "read": "2026-11-13"
+  },
+  "C21117": {
+   "package": "0603",
+   "model": "CL10B333KB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C21120": {
+   "package": "0603",
+   "model": "CL10B224KA8NNNC",
+   "read": "2026-11-13"
+  },
+  "C21122": {
+   "package": "0603",
+   "model": "CL10B223KB8NNNC",
+   "read": "2026-11-13"
+  },
+  "C21189": {
+   "package": "0603",
+   "model": "0603WAF0000T5E",
+   "read": "2026-11-13"
+  },
+  "C21190": {
+   "package": "0603",
+   "model": "0603WAF1001T5E",
+   "read": "2026-11-13"
+  },
+  "C22775": {
+   "package": "0603",
+   "model": "0603WAF1000T5E",
+   "read": "2026-11-13"
+  },
+  "C22797": {
+   "package": "0603",
+   "model": "0603WAF1302T5E",
+   "read": "2026-11-13"
+  },
+  "C22807": {
+   "package": "0603",
+   "model": "0603WAF1503T5E",
+   "read": "2026-11-13"
+  },
+  "C22809": {
+   "package": "0603",
+   "model": "0603WAF1502T5E",
+   "read": "2026-11-13"
+  },
+  "C22843": {
+   "package": "0603",
+   "model": "0603WAF1501T5E",
+   "read": "2026-11-13"
+  },
+  "C22859": {
+   "package": "0603",
+   "model": "0603WAF100JT5E",
+   "read": "2026-11-13"
+  },
+  "C22935": {
+   "package": "0603",
+   "model": "0603WAF1004T5E",
+   "read": "2026-11-13"
+  },
+  "C22961": {
+   "package": "0603",
+   "model": "0603WAF2203T5E",
+   "read": "2026-11-13"
+  },
+  "C23162": {
+   "package": "0603",
+   "model": "0603WAF4701T5E",
+   "read": "2026-11-13"
+  },
+  "C23164": {
+   "package": "0603",
+   "model": "0603WAF470KT5E",
+   "read": "2026-11-13"
+  },
+  "C23179": {
+   "package": "0603",
+   "model": "0603WAF4700T5E",
+   "read": "2026-11-13"
+  },
+  "C23186": {
+   "package": "0603",
+   "model": "0603WAF5101T5E",
+   "read": "2026-11-13"
+  },
+  "C23196": {
+   "package": "0603",
+   "model": "0603WAF5102T5E",
+   "read": "2026-11-13"
+  },
+  "C23231": {
+   "package": "0603",
+   "model": "0603WAF6802T5E",
+   "read": "2026-11-13"
+  },
+  "C23630": {
+   "package": "0603",
+   "model": "CL10A225KO8NNNC",
+   "read": "2026-11-13"
+  },
+  "C25076": {
+   "package": "0402",
+   "model": "0402WGF1000TCE",
+   "read": "2026-11-13"
+  },
+  "C25077": {
+   "package": "0402",
+   "model": "0402WGF100JTCE",
+   "read": "2026-11-13"
+  },
+  "C25105": {
+   "package": "0402",
+   "model": "0402WGF330JTCE",
+   "read": "2026-11-13"
+  },
+  "C25117": {
+   "package": "0402",
+   "model": "0402WGF4700TCE",
+   "read": "2026-11-13"
+  },
+  "C25120": {
+   "package": "0402",
+   "model": "0402WGF499JTCE",
+   "read": "2026-11-13"
+  },
+  "C25741": {
+   "package": "0402",
+   "model": "0402WGF1003TCE",
+   "read": "2026-11-13"
+  },
+  "C25744": {
+   "package": "0402",
+   "model": "0402WGF1002TCE",
+   "read": "2026-11-13"
+  },
+  "C25752": {
+   "package": "0402",
+   "model": "0402WGF1202TCE",
+   "read": "2026-11-13"
+  },
+  "C25756": {
+   "package": "0402",
+   "model": "0402WGF1502TCE",
+   "read": "2026-11-13"
+  },
+  "C25765": {
+   "package": "0402",
+   "model": "0402WGF2002TCE",
+   "read": "2026-11-13"
+  },
+  "C25768": {
+   "package": "0402",
+   "model": "0402WGF2202TCE",
+   "read": "2026-11-13"
+  },
+  "C25790": {
+   "package": "0402",
+   "model": "0402WGF4703TCE",
+   "read": "2026-11-13"
+  },
+  "C25792": {
+   "package": "0402",
+   "model": "0402WGF4702TCE",
+   "read": "2026-11-13"
+  },
+  "C25798": {
+   "package": "0402",
+   "model": "0402WGF7502TCE",
+   "read": "2026-11-13"
+  },
+  "C25803": {
+   "package": "0603",
+   "model": "0603WAF1003T5E",
+   "read": "2026-11-13"
+  },
+  "C25804": {
+   "package": "0603",
+   "model": "0603WAF1002T5E",
+   "read": "2026-11-13"
+  },
+  "C25808": {
+   "package": "0603",
+   "model": "0603WAF1203T5E",
+   "read": "2026-11-13"
+  },
+  "C25819": {
+   "package": "0603",
+   "model": "0603WAF4702T5E",
+   "read": "2026-11-13"
+  },
+  "C25866": {
+   "package": "0402",
+   "model": "0402WGF1301TCE",
+   "read": "2026-11-13"
+  },
+  "C25867": {
+   "package": "0402",
+   "model": "0402WGF1501TCE",
+   "read": "2026-11-13"
+  },
+  "C25879": {
+   "package": "0402",
+   "model": "0402WGF2201TCE",
+   "read": "2026-11-13"
+  },
+  "C25900": {
+   "package": "0402",
+   "model": "0402WGF4701TCE",
+   "read": "2026-11-13"
+  },
+  "C28233": {
+   "package": "0805",
+   "model": "CL21B104KCFNNNE",
+   "read": "2026-11-13"
+  },
+  "C28323": {
+   "package": "0805",
+   "model": "CL21B105KBFNNNE",
+   "read": "2026-11-13"
+  },
+  "C29823": {
+   "package": "1206",
+   "model": "1206B475K500NT",
+   "read": "2026-11-13"
+  },
+  "C31850": {
+   "package": "0603",
+   "model": "0603WAF2202T5E",
+   "read": "2026-11-13"
+  },
+  "C45783": {
+   "package": "0805",
+   "model": "CL21A226MAQNNNE",
+   "read": "2026-11-13"
+  },
+  "C52923": {
+   "package": "0402",
+   "model": "CL05A105KA5NQNC",
+   "read": "2026-11-13"
+  },
+  "C57112": {
+   "package": "0603",
+   "model": "0603B103K500NT",
+   "read": "2026-11-13"
+  },
+  "C137689": {
+   "package": "0603",
+   "model": "RC0603FR-0769K8L",
+   "read": "2026-11-13"
+  },
+  "C307331": {
+   "package": "0402",
+   "model": "CL05B104KB54PNC",
+   "read": "2026-11-13"
+  },
+  "C377773": {
+   "package": "0805",
+   "model": "CL21A225KBQNNNE",
+   "read": "2026-11-13"
+  },
+  "C393070": {
+   "package": "2512",
+   "model": "RLP25FEGR010",
+   "read": "2026-11-13"
+  },
+  "C440198": {
+   "package": "0805",
+   "model": "GRM21BR61H106KE43L",
+   "read": "2026-11-13"
+  },
+  "C844504": {
+   "package": "0402",
+   "model": "CRCW040222K1FKED",
+   "read": "2026-11-13"
+  },
+  "C2998176": {
+   "package": "0402",
+   "model": "FRC0402F2103TS",
+   "read": "2026-11-13"
+  }
+ }
+}
