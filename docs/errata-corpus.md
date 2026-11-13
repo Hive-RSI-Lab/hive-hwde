@@ -24,7 +24,7 @@ what pcb-flow's checks do with the first revision. Written by
 |---|---|---|---|
 | oasis-1: Q1/Q3 SI2328DS on Q_NMOS_GDS + stock SOT-23-3, so gate and source are swapped | LIB (symbol pin map vs package) | caught on rev A, gone on rev B (`netlist_audit` sot23_pinout) | v0.3 keeps the GDS symbol and moves to lib:SOT-23-3-pinswapped-mosfet, so the rule is quiet there. |
 | oasis-2: Rfbb1 BOM part an 0402 resistor (C844504) on an 0603 footprint | DFA (BOM part vs footprint package) | caught on rev A, gone on rev B (`check_bom_sync` bom_package_mismatch) | check_bom_sync --live reads each LCSC number off the board and JLC's package for it; on an pcb-flow fab package stock_check makes the same comparison against BOM.csv's footprint. v0.3 buys C844759, an 0603. |
-| oasis-3: MISTER1 connector placed 180 deg off at JLC assembly | DFA (CPL rotation) | missed | none new - cpl_verify covers it on an pcb-flow fab package |
+| oasis-3: MISTER1 connector placed 180 deg off at JLC assembly | DFA (CPL rotation) | missed | none new - dfm's shipped-CPL check catches it on the pinned board (#880) |
 
 ## minuet: v3 -> v4
 

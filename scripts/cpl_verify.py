@@ -15,7 +15,10 @@ per LCSC number) and fits it onto the board footprint:
             360 on the top and (180 - board rotation + c) mod 360 on the
             bottom (see "bottom side"); anything else is `wrong_rotation`,
             with the rotation it needs. A two-pad part that is not polarised
-            may also sit at c + 180.
+            or keyed (a JST/Molex housing, a battery: is_keyed) may also sit
+            at c + 180, and so may an unkeyed single-row pin header/socket.
+            A switch whose pads share numbers (TS-1187A: 1,1,2,2 on the
+            board, 1-4 in its model) is fitted by pad geometry.
   polarity  Diodes, LEDs and polarised caps are also matched BY ROLE: the
             model's cathode / + pin (its symbol pin names) must land on the
             board's cathode / + pad (the pad's pinfunction, else the KiCad
@@ -411,7 +414,8 @@ def role(name: str) -> str:
 def is_polar(fp: Footprint, model=None) -> bool:
     """Diodes, LEDs and polarised caps: by pad function, refdes, the board
     footprint's name or the LCSC model's package name."""
-    if any(role(p.function) for p in fp.pads) or (model and model_roles(model)):
+    if _role_pair({p.number: role(p.function) for p in fp.pads}) or (
+            model and _role_pair(model_roles(model))):
         return True
     return bool(_POLAR_REF.match(fp.ref) or _POLAR_FP.search(fp.name)
                 or (model and _POLAR_FP.search(model.package or "")))
@@ -443,6 +447,35 @@ def board_roles(fp: Footprint, model) -> dict[str, str]:
 
 def model_roles(model) -> dict[str, str]:
     return {num: role(nm) for num, nm in model.pin_names.items() if role(nm)}
+
+
+def _role_pair(roles: dict[str, str]) -> bool:
+    """A polarity needs both ends named: K and A, or + and -. A lone "A" is a
+    switch's pin A (LCSC C318884, TS-1187A, names pin 1 A), not an anode."""
+    got = set(roles.values())
+    return {"K", "A"} <= got or {"+", "-"} <= got
+
+
+# A keyed housing (JST, Molex, a battery holder) goes on one way: its two pads
+# are pin 1 and pin 2, not either way round. oasis v0.2's mister1 (JST PH,
+# C5251182, whose model numbers the pads the other way to KiCad's) went to JLC
+# 180 deg off for want of this.
+_KEYED_FP = re.compile(r"JST|Molex|Conn|Terminal|Battery|Header|Socket|"
+                       r"^CONN-|^HDR-|^BAT|USB", re.I)
+_KEYED_REF = re.compile(r"^(J|CN|P|BT|X)\d")
+# An unkeyed single row (pin header or socket) is the same part turned 180.
+_ROW_FP = re.compile(r"Pin(Header|Socket)_1x\d", re.I)
+_SWITCH_FP = re.compile(r"^SW_|Button|Switch|^SW-|^KEY-", re.I)
+
+
+def is_keyed(fp: Footprint, model=None) -> bool:
+    return bool(_KEYED_REF.match(fp.ref) or _KEYED_FP.search(fp.name)
+                or (model and _KEYED_FP.search(model.package or "")))
+
+
+def is_switch(fp: Footprint, model=None) -> bool:
+    return bool(_SWITCH_REF.match(fp.ref) or _SWITCH_FP.search(fp.name)
+                or (model and _SWITCH_FP.search(model.package or "")))
 
 
 # -------------------------------------------------------------- verdicts
@@ -503,6 +536,20 @@ def analyse(fp: Footprint, model) -> dict:
     tol = max(0.2, 0.5 * min(gaps, default=0.5))
     num_fit = _fit(_centres(model.pads, lambda p: _pin_number(p.number)),
                    _centres(kpads, lambda p: _pin_number(p.number)), tol)
+    if not num_fit:
+        # An exposed pad numbered differently on the two sides (oasis U1:
+        # the ESP32-C3-WROOM-02 model's pad 19 is nine entries, the board's
+        # one corner of a 21-number grid) drags its centre off: fit again on
+        # the numbers drawn as alike on both sides.
+        mc = Counter(_pin_number(p.number) for p in model.pads)
+        kn = Counter(_pin_number(p.number) for p in kpads)
+        same = {n for n, c in mc.items() if kn.get(n) == c}
+        if len(same) >= 2 and same != set(mc) & set(kn):
+            num_fit = _fit(
+                _centres([p for p in model.pads if _pin_number(p.number) in same],
+                         lambda p: _pin_number(p.number)),
+                _centres([p for p in kpads if _pin_number(p.number) in same],
+                         lambda p: _pin_number(p.number)), tol)
     polar = is_polar(fp, model)
     out = {"polar": polar, "tol_mm": round(tol, 3), "basis": "pad number"}
     corr = [c for c, _ in num_fit]
@@ -527,9 +574,12 @@ def analyse(fp: Footprint, model) -> dict:
             # LCSC symbols for polarised caps are usually pins "1"/"2" with
             # pad 1 the + (and K for diodes), which is KiCad's numbering too.
             out["basis"] = "pad number (no K/A or +/- names on both sides)"
-    elif len(model.pads) == 2 and len(kpads) == 2 and corr:
+    elif corr and (_ROW_FP.search(fp.name) or (
+            len(model.pads) == 2 and len(kpads) == 2 and not is_keyed(fp, model))):
         corr = sorted({c % 360 for c in corr} | {(c + 180) % 360 for c in corr})
-    elif not corr and _SWITCH_REF.match(fp.ref) and len(model.pads) == len(kpads):
+        out["basis"] = "pad number, either way round (unkeyed)"
+    elif is_switch(fp, model) and len(model.pads) == len(kpads) and (
+            not corr or len({p.number for p in kpads}) < len(kpads)):
         # A tact switch's pin numbers carry no order (LCSC's C&K KMR2 model
         # numbers 1, 2 across the short side; the part commons the long-axis
         # pairs): what has to hold is its pads landing on the board's. The
@@ -580,8 +630,10 @@ def offset_limit_mm(fp: Footprint) -> float:
     pad centres, at most OFFSET_WARN_MM. A 1206's pads are 3 mm apart, a 0.5 mm
     BGA's 0.5, and 0.24 mm off lands the first on its pads and the second not."""
     pts = [(p.x, p.y) for p in fp.pads]
+    # 0.01 mm: KiCad stores pads a micron or two apart (Sensirion DFN-8's
+    # -1.174999 / -1.175001), which is one pad row, not a 2 um pitch
     gaps = [d for i, a in enumerate(pts) for b in pts[i + 1:]
-            if (d := math.hypot(a[0] - b[0], a[1] - b[1])) > 1e-6]
+            if (d := math.hypot(a[0] - b[0], a[1] - b[1])) > 0.01]
     if not gaps:
         return OFFSET_WARN_MM
     return min(OFFSET_WARN_MM, OFFSET_PITCH_FRAC * min(gaps))
@@ -790,9 +842,10 @@ def _footprint_row(fp: Footprint, cpl: dict, row: dict, a1: dict | None) -> dict
 # ------------------------------------------------------------------- run
 
 def read_cpl(path: Path) -> dict[str, dict]:
-    """CPL.csv -> {ref: {x, y (board frame, y down), rot, layer}}."""
+    """CPL.csv -> {ref: {x, y (board frame, y down), rot, layer}}. A byte
+    order mark is read past (Fabrication Toolkit writes one: oasis v0.2)."""
     out = {}
-    with Path(path).open(newline="", encoding="utf-8") as fh:
+    with Path(path).open(newline="", encoding="utf-8-sig") as fh:
         for r in csv.DictReader(fh):
             out[r["Designator"].strip()] = {
                 "x": float(r["Mid X"]), "y": -float(r["Mid Y"]),
@@ -822,16 +875,31 @@ def lcsc_map(pcb: Path, parts_json: Path | None) -> dict[str, str]:
 
 def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
            cache_dir: Path, fetch: bool = True,
-           fps: dict[str, Footprint] | None = None) -> dict:
+           fps: dict[str, Footprint] | None = None,
+           unsourced_placed: bool = True) -> dict:
+    """unsourced_placed=False: a row with no LCSC number is a part JLC does
+    not place (a foreign board's BOM line with no part: oasis v0.2's D1-D5,
+    hand-fitted LEDs), so it is `not_placed`, not `no_model`. hwde's own CPL
+    holds only smt_placed parts, so there it stays a failure."""
     fps = fps if fps is not None else board_footprints(pcb)
+    # Exporters upper-case designators (Fabrication Toolkit: oasis's mister1
+    # ships as MISTER1) and JLC matches them so; an exact match comes first.
+    folded = {r.upper(): r for r in fps}
     rows = []
     for ref in sorted(cpl, key=_natural):
-        fp = fps.get(ref)
+        board_ref = ref if ref in fps else folded.get(ref.upper(), ref)
+        fp = fps.get(board_ref)
         if fp is None:
             rows.append({"ref": ref, "verdict": "no_fit",
                          "why": "CPL designator is not on the board"})
             continue
-        code = lcsc.get(ref, "")
+        code = lcsc.get(board_ref, "")
+        if not code and not unsourced_placed:
+            rows.append({"ref": board_ref, "footprint": fp.name, "lcsc": None,
+                         "verdict": "not_placed", "silk_mark": None,
+                         "why": "no LCSC number on the board: JLC does not "
+                                "place it"})
+            continue
         errors: dict = {}
         model = easyeda.get(code, cache_dir, fetch=fetch, pace_s=1.0,
                             errors=errors)

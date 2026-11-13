@@ -257,3 +257,38 @@ def test_foreign_pin_copies_only_kicad_sources_and_the_licence(tmp_path):
                    "kicad/x.kicad_pro", "state.json"]
     st = json.loads((dest / "state.json").read_text())
     assert st["workspace"] == "pinned/x"
+
+
+def test_foreign_pin_keeps_the_cpl_it_shipped_as_fab_cpl(tmp_path):
+    """--cpl: the pick-and-place file the project sent its assembler is pinned
+    byte for byte as fab/CPL.csv (oasis v0.2's positions.csv, with its BOM
+    mark), where the dfm gate checks its rotations."""
+    import subprocess
+    import pin as pinmod
+    repo = tmp_path / "repo"
+    (repo / "hw" / "fab").mkdir(parents=True)
+    body = "﻿Designator,Mid X,Mid Y,Layer,Rotation\nJ1,1,-1,top,90\n"
+    for rel, text in {"LICENSE": "MIT", "hw/x.kicad_pro": "{}",
+                      "hw/x.kicad_pcb": "(kicad_pcb)",
+                      "hw/fab/positions.csv": body}.items():
+        (repo / rel).write_text(text, encoding="utf-8")
+    git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run(git[:3] + ["init", "-q"], check=True)
+    subprocess.run(git + ["add", "."], check=True)
+    subprocess.run(git + ["commit", "-qm", "x"], check=True)
+    sha = subprocess.run(git[:3] + ["rev-parse", "HEAD"], check=True,
+                         capture_output=True, text=True).stdout.strip()
+    dest = tmp_path / "pinned" / "x"
+    pinmod.foreign(repo, sha, "hw", "x", dest, cpl="hw/fab/positions.csv")
+    assert (dest / "fab" / "CPL.csv").read_bytes() == body.encode("utf-8")
+    # the CSV is no KiCad source: only the --cpl copy lands in the pin
+    assert not (dest / "kicad" / "fab").exists()
+
+
+def test_a_pinned_shipped_cpl_keeps_its_models():
+    """oasis-v0-2 ships its CPL; the LCSC models its dfm run needs are pinned
+    beside it, so a scratch copy never asks EasyEDA (rate-limited) again."""
+    d = ROOT / "pinned" / "oasis-v0-2"
+    src = json.loads((ROOT / "pinned" / "oasis-v0-2.json").read_text())["source"]
+    assert src["cpl"].endswith("positions.csv") and (d / "fab" / "CPL.csv").is_file()
+    assert len(list((d / "fab" / "easyeda").glob("C*.json"))) >= 20

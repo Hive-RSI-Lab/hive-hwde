@@ -1441,13 +1441,31 @@ def _shipped_file(fab_dir: Path | None, name: str) -> Path | None:
     return None
 
 
+def _placement_cache(cpl: Path, parts: Path | None, shipped: bool) -> Path:
+    """The model cache: a shipped CPL's models where its pin keeps them
+    (fab/easyeda), only if that dir is there - a shipped package checked in
+    place (a bench fixture, a fab/ dir) is never written into - else the
+    board's cache beside parts.json, else the shared one."""
+    import cpl_verify
+    if shipped:
+        kept = Path(cpl).parent / "easyeda"
+        if kept.is_dir():
+            return kept
+        return cpl_verify.default_cache(None)
+    return cpl_verify.default_cache(parts)
+
+
 def check_placement(pcb: Path, cpl: Path, parts: Path | None,
                     visual: Path | None, cache: Path | None, fetch: bool,
-                    vios: list) -> dict:
+                    vios: list, shipped: bool = False) -> dict:
+    """shipped: the CPL is the one a foreign board sent its assembler (no
+    parts.json): its models are kept beside it (fab/easyeda) and a row the
+    board gives no LCSC number is a part JLC did not place."""
     import cpl_verify
     rep = cpl_verify.verify(
         pcb, cpl_verify.read_cpl(cpl), cpl_verify.lcsc_map(pcb, parts),
-        cache or cpl_verify.default_cache(parts), fetch=fetch)
+        cache or _placement_cache(cpl, parts, shipped),
+        fetch=fetch, unsourced_placed=not shipped)
     vis = (json.loads(visual.read_text(encoding="utf-8"))
            if visual is not None else None)
     rows = cpl_verify.merge_visual(rep["parts"], vis)
@@ -2017,16 +2035,25 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         if fab_dir is not None:
             facts.update(check_via_fill_note(pcb, Path(fab_dir), vios))
 
-        if parts_report is not None and "placement" not in skip:
+        fd = Path(fab_dir) if fab_dir else None
+        shipped_cpl = cpl or _shipped_file(fd, "CPL.csv")
+        # A foreign board has no parts.json but its pin keeps the CPL it
+        # shipped with that CPL's models beside it (pinned oasis-v0-2/fab/
+        # CPL.csv + fab/easyeda): its LCSC numbers then come off the board.
+        # A CPL with no models kept beside it and no parts.json (our own fab
+        # package checked alone) is left as before: its verdicts would hang
+        # on whatever models this machine happens to have cached.
+        foreign = (parts_report is None and shipped_cpl is not None
+                   and (shipped_cpl.parent / "easyeda").is_dir())
+        if (parts_report is not None or foreign) \
+                and "placement" not in skip:
             import cpl_verify
-            fd = Path(fab_dir) if fab_dir else None
-            cpl_path = (cpl or _shipped_file(fd, "CPL.csv")
-                        or Path(parts_report["cpl"]))
+            cpl_path = shipped_cpl or Path(parts_report["cpl"])
             vis = visual or _shipped_file(fd, "cpl_visual.json")
             facts["placement"] = check_placement(
                 pcb, Path(cpl_path), parts, vis, easyeda_cache,
                 (not cpl_verify.offline()) if fetch_models is None
-                else fetch_models, vios)
+                else fetch_models, vios, shipped=parts_report is None)
 
         # JLC's Standard PCBA rule, on the CPL that ships
         pcba_cpl = (cpl or _shipped_file(Path(fab_dir) if fab_dir else None,

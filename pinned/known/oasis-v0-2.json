@@ -3885,19 +3885,6 @@
   },
   {
    "gate": "verify",
-   "check": "cpl_verify",
-   "kind": "cpl_rotation",
-   "net": null,
-   "refs": [
-    "mister1"
-   ],
-   "pos": null,
-   "verdict": "real",
-   "reason": "erratum: mister1 is placed 180 deg off in the JLC CPL from the KiCad layout",
-   "source": "https://github.com/justbuchanan/oasis/blob/3462f162f80e11c78705218441af37639d87bfdc/pcb/fabricated-boards/v0.2/errata.md"
-  },
-  {
-   "gate": "verify",
    "check": "netlist_audit",
    "kind": "sot23_pinout",
    "net": null,
@@ -3934,6 +3921,94 @@
    "verdict": "real",
    "reason": "erratum: the power input (J1) holes are too big",
    "source": "https://github.com/justbuchanan/oasis/blob/3462f162f80e11c78705218441af37639d87bfdc/pcb/fabricated-boards/v0.2/errata.md"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "L3"
+   ],
+   "pos": null,
+   "kind": "cpl_no_model",
+   "verdict": "false",
+   "reason": "EasyEDA has no footprint model for L3's part (C844983, Vishay IHLP-2020 10uH; fetched 2026-11-13, no data): the check can't judge it, which says nothing of the board"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "mister1"
+   ],
+   "pos": null,
+   "kind": "cpl_rotation",
+   "verdict": "real",
+   "reason": "erratum: mister1 is placed 180 deg off in the JLC CPL from the KiCad layout (the designer had JLC support turn it before assembly)",
+   "source": "https://github.com/justbuchanan/oasis/blob/3462f162f80e11c78705218441af37639d87bfdc/pcb/fabricated-boards/v0.2/errata.md"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "PS1"
+   ],
+   "pos": null,
+   "kind": "cpl_rotation",
+   "verdict": "real",
+   "reason": "the shipped CPL gives PS1 its KiCad rotation (308.75) with no correction; the LCSC model (C17353291, SMD-12 module) is drawn with its pin rows 90 deg from the footprint's, so at 308.75 its pins land across the pads, not on them: the file is wrong for it. Not in the errata: the board works, so JLC's engineers turned it in their review (mister1 they missed until the designer asked)",
+   "source": "https://github.com/justbuchanan/oasis/blob/3462f162f80e11c78705218441af37639d87bfdc/pcb/fabricated-boards/v0.2/positions.csv"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "U4"
+   ],
+   "pos": null,
+   "kind": "cpl_rotation",
+   "verdict": "real",
+   "reason": "the shipped CPL gives bottom-side U4 (SHT30, C77361, DFN-8) 46 = 180 - 134 with no correction; the LCSC model's pad rows run 90 deg from the footprint's, so at 46 the part can't sit on its pads: the file is wrong for it. Not in the errata: the board works, so JLC's review turned it",
+   "source": "https://github.com/justbuchanan/oasis/blob/3462f162f80e11c78705218441af37639d87bfdc/pcb/fabricated-boards/v0.2/positions.csv"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "C4"
+   ],
+   "pos": null,
+   "kind": "cpl_bottom_preview",
+   "verdict": "false",
+   "reason": "an ask to confirm C4's bottom-side rotation in JLC's order preview, not a defect: C4 is an unkeyed 0805 cap the CPL places right either way round under the 180 - rotation convention, and the board was built and works"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    30.0,
+    30.0
+   ],
+   "kind": "both_sides_needs_panel",
+   "verdict": "false",
+   "reason": "oasis v0.2 was assembled by JLC from this CPL with parts on both sides (the errata: JLC flagged Rfbb1 and turned mister1 before assembly), with no fiducials on the board: JLC adds the rails and fiducials, so it is a cost note, not a defect (errata.md at the pinned commit)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "kind": "cpl_fetch_failed",
+   "net": null,
+   "refs": [
+    "L3"
+   ],
+   "pos": null,
+   "verdict": "false",
+   "reason": "a rate-limited run can't ask EasyEDA for L3's model (C844983; every other part's model is pinned in fab/easyeda, and EasyEDA has none for this one): the check couldn't run, not a board fault"
   }
  ]
 }

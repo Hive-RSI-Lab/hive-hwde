@@ -3,10 +3,12 @@
     hwde pin BOARD --from CLONE --commit SHA   copy CLONE's boards/BOARD at SHA
                                                into pinned/BOARD/
     hwde pin BOARD --from CLONE --commit SHA --path DIR --url URL --license L
-             [--errata FILE]               pin a foreign KiCad project: copy
+             [--errata FILE] [--cpl FILE]  pin a foreign KiCad project: copy
                                            only DIR's KiCad sources into
-                                           pinned/BOARD/kicad/ and give it a
-                                           fresh state.json
+                                           pinned/BOARD/kicad/ (and the
+                                           pick-and-place file it shipped to
+                                           the assembler, into fab/CPL.csv)
+                                           and give it a fresh state.json
     hwde pin --digests                         re-stamp every pin's digest only
                                                (after classifying its scripts)
 
@@ -80,9 +82,14 @@ def kicad_source(rel: str) -> bool:
     return name.endswith(KICAD_SUFFIXES) or name in KICAD_NAMES
 
 
-def foreign(clone: Path, sha: str, path: str, board: str, dest: Path) -> None:
+def foreign(clone: Path, sha: str, path: str, board: str, dest: Path,
+            cpl: str | None = None) -> None:
     """DIR's KiCad sources under dest/kicad/ and a P9 state.json, as a board
-    built outside hwde arrives: no hwde history, every gate owed."""
+    built outside hwde arrives: no hwde history, every gate owed. `cpl` is the
+    pick-and-place file the project sent its assembler (a path in the clone):
+    it goes to dest/fab/CPL.csv as it shipped, where the dfm gate checks its
+    rotations against the parts' LCSC models (an assembly erratum is a fault
+    of that file, not of the layout)."""
     raw = subprocess.run(["git", "-C", str(clone), "archive", "--format=tar", sha, path],
                          check=True, capture_output=True).stdout
     pre = path.strip("/") + "/"
@@ -104,6 +111,11 @@ def foreign(clone: Path, sha: str, path: str, board: str, dest: Path) -> None:
             (dest / name).write_bytes(subprocess.run(
                 ["git", "-C", str(clone), "show", f"{sha}:{name}"],
                 check=True, capture_output=True).stdout)
+    if cpl:
+        (dest / "fab").mkdir(parents=True, exist_ok=True)
+        (dest / "fab" / "CPL.csv").write_bytes(subprocess.run(
+            ["git", "-C", str(clone), "show", f"{sha}:{cpl}"],
+            check=True, capture_output=True).stdout)
     pros = list((dest / "kicad").glob("*.kicad_pro"))
     if len(pros) != 1:
         raise SystemExit(f"pin: {path} needs exactly one .kicad_pro, has {len(pros)}")
@@ -143,6 +155,8 @@ def main() -> int:
     ap.add_argument("--url", help="the foreign project's public repo")
     ap.add_argument("--license", help="the foreign project's licence (SPDX)")
     ap.add_argument("--errata", help="the foreign project's errata file in the clone")
+    ap.add_argument("--cpl", help="the pick-and-place file the foreign project "
+                    "sent its assembler, in the clone (pinned as fab/CPL.csv)")
     args = ap.parse_args()
     if args.digests:
         stamp()
@@ -151,6 +165,8 @@ def main() -> int:
         ap.error("BOARD, --from and --commit are needed (or --digests)")
     if args.path and not (args.url and args.license):
         ap.error("a foreign board (--path) needs --url and --license")
+    if args.cpl and not args.path:
+        ap.error("--cpl is for a foreign board (--path)")
     clone = Path(args.clone).resolve()
     sha = subprocess.run(["git", "-C", str(clone), "rev-parse", f"{args.commit}^{{commit}}"],
                          check=True, capture_output=True, text=True).stdout.strip()
@@ -160,11 +176,16 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="hwde-pin-", dir=ROOT / "pinned"))
     try:
         if args.path:
-            foreign(clone, sha, args.path, args.board, tmp)
+            foreign(clone, sha, args.path, args.board, tmp, args.cpl)
         else:
             extract(clone, sha, f"boards/{args.board}", tmp)
         if not (tmp / "state.json").is_file():
             raise SystemExit(f"pin: {clone.name}@{sha[:7]} has no boards/{args.board}/state.json")
+        # the LCSC models fetched for a shipped CPL (rate-limited to
+        # refetch): kept across a re-pin while the board still ships one
+        models = dest / "fab" / "easyeda"
+        if models.is_dir() and (tmp / "fab" / "CPL.csv").is_file():
+            shutil.copytree(models, tmp / "fab" / "easyeda", dirs_exist_ok=True)
         shutil.rmtree(dest, ignore_errors=True)
         tmp.rename(dest)
     finally:
@@ -190,7 +211,10 @@ def main() -> int:
         "unclassified": sorted(have - set(design) - set(stand_in)),
     }
     src = {"url": args.url, "license": args.license, "path": args.path,
-           "errata": args.errata} if args.path else old.get("source")
+           "errata": args.errata, "cpl": args.cpl,
+           # judged by hand: a re-pin keeps it
+           "not_in_ledger": (old.get("source") or {}).get("not_in_ledger"),
+           } if args.path else old.get("source")
     if src:
         pin["source"] = {k: v for k, v in src.items() if v}
     pf.write_text(json.dumps(pin, indent=1) + "\n", encoding="utf-8")
