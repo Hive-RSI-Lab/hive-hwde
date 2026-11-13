@@ -361,3 +361,78 @@ def test_a_square_lead_is_measured_across_its_diagonal():
         pytest.approx(1.0 - 0.9051, abs=1e-4)
     assert ccf.clearance((1.0, 1.0), (0.64, 0.64), rect=False) == \
         pytest.approx(0.36)
+
+
+# --- solder-wire pads held to the wire their copper feed needs (#881: oasis
+# J1, 2.5 mm^2 holes fed by a pour's 0.5 mm thermal spokes) ---------------
+
+def _wire(size="2.5sqmm", drill=3.0, pad_extra="", fp_extra=""):
+    pad = drill + 1.4
+    pads = "".join(
+        f'    (pad "{n}" thru_hole circle (at {x} 0) (size {pad} {pad})'
+        f' (drill {drill}) (layers "*.Cu" "*.Mask") (net "{net}"){pad_extra})\n'
+        for n, x, net in (("1", 0, "GND"), ("2", 8.8, "+18V")))
+    return (f'  (footprint "Connector_Wire:SolderWire-{size}_1x02_P8.8mm"'
+            f' (layer "F.Cu")\n    (at 10 10)\n'
+            f'    (property "Reference" "J1" (at 0 0 0))\n'
+            f'    (attr through_hole){fp_extra}\n{pads})\n')
+
+
+def _seg(x0, x1, w, net):
+    return (f'  (segment (start {x0} 10) (end {x1} 10) (width {w})'
+            f' (layer "F.Cu") (net "{net}"))\n')
+
+
+def _pour(net, connect=""):
+    pts = "(pts (xy 15 5) (xy 25 5) (xy 25 15) (xy 15 15))"
+    return (f'  (zone (net "{net}") (layer "F.Cu") {connect}'
+            f'(fill yes (thermal_bridge_width 0.5)) (polygon {pts})'
+            f'\n    (filled_polygon (layer "F.Cu") {pts}))\n')
+
+
+def _loose(tmp_path, body):
+    viols, facts = ccf.check(_board(tmp_path, body), None)
+    return [v for v in viols if v["kind"] == "tht_hole_loose"], facts
+
+
+def test_solder_wire_holes_too_big_for_their_feed(tmp_path):
+    # 0.5 mm tracks carry ~2 A: a 0.5 mm^2 wire (0.9 mm), in 3.0 mm holes
+    loose, facts = _loose(tmp_path, _wire() + _seg(2, 10, 0.5, "GND")
+                          + _seg(18.8, 28, 0.5, "+18V"))
+    assert len(loose) == 1 and loose[0]["refs"] == ["J1"]
+    assert loose[0]["pads"] == ["1", "2"] and loose[0]["wire_mm2"] == 0.5
+    assert loose[0]["severity"] == "warning"
+    fact = next(p for p in facts["parts"] if p["ref"] == "J1")
+    assert fact["lead_source"] == "wire"
+
+
+def test_solder_wire_pour_spokes_count_as_feed(tmp_path):
+    # the oasis case: +18V's only feed is a thermal-relief pour (4 x 0.5 mm)
+    loose, facts = _loose(tmp_path, _wire() + _seg(2, 10, 0.5, "GND")
+                          + _pour("+18V"))
+    assert len(loose) == 1
+    fact = next(p for p in facts["parts"] if p["ref"] == "J1")
+    assert fact["wire"]["feed_mm"] == 2.0 and fact["wire"]["mm2"] == 0.75
+
+
+def test_solder_wire_sized_to_its_feed_passes(tmp_path):
+    # a 0.5 mm^2 footprint (1.15 mm drill) on 0.5 mm tracks: a fit
+    loose, facts = _loose(tmp_path, _wire("0.5sqmm", 1.15)
+                          + _seg(2, 10, 0.5, "GND")
+                          + _seg(18.8, 28, 0.5, "+18V"))
+    assert loose == []
+    assert any(p["ref"] == "J1" for p in facts["parts"])
+
+
+@pytest.mark.parametrize("why", ["solid zone", "solid pad", "no feed"])
+def test_solder_wire_unbounded_feed_not_judged(tmp_path, why):
+    # a pour tied solid (zone or pad) carries any current; no copper at all
+    # says nothing: neither is judged
+    body = {"solid zone": _wire() + _seg(2, 10, 0.5, "GND")
+            + _pour("+18V", "(connect_pads yes (clearance 0.5)) "),
+            "solid pad": _wire(pad_extra=" (zone_connect 2)")
+            + _seg(2, 10, 0.5, "GND") + _pour("+18V"),
+            "no feed": _wire()}[why]
+    loose, facts = _loose(tmp_path, body)
+    assert loose == []
+    assert not any(p["ref"] == "J1" for p in facts["parts"])
