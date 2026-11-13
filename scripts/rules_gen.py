@@ -153,6 +153,9 @@ def baseline_rules(cap: dict) -> list[Rule]:
     if fabfloors.OUTER_CLEARANCE_KEY in cap:
         r.append(Rule(fabfloors.OUTER_CLEARANCE_RULE, "clearance",
                       fabfloors.outer_clearance(cap), layer="outer"))
+    if fabfloors.INNER_HOLE_KEY in cap:
+        r.append(Rule(fabfloors.INNER_HOLE_RULE, "hole_clearance",
+                      float(cap[fabfloors.INNER_HOLE_KEY]), layer="inner"))
     return r
 
 

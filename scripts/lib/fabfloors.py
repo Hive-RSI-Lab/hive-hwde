@@ -111,6 +111,13 @@ DRU_FLOOR_KEYS = {
 OUTER_CLEARANCE_RULE = "aiee_outer_clearance_floor"
 OUTER_CLEARANCE_KEY = "min_outer_clearance_mm"
 
+# A plated hole's clearance to inner-layer copper it doesn't connect to, where
+# the fab publishes one above its copper clearance (OSH Park 4 and 6 layer,
+# 10 mil, #700). Emitted as a (layer inner) hole_clearance rule by rules_gen
+# and held by check_dru only on rows carrying it.
+INNER_HOLE_RULE = "aiee_inner_hole_clearance_floor"
+INNER_HOLE_KEY = "min_hole_to_inner_copper_mm"
+
 
 def outer_clearance(cap: dict) -> float:
     """The clearance F.Cu and B.Cu are held to on this capability row."""
@@ -315,4 +322,15 @@ def check_dru(dru_text: str, cap: dict) -> list[str]:
         elif float(m.group(1)) < want - 1e-9 or "(layer outer)" not in block:
             bad.append(f'rule "{OUTER_CLEARANCE_RULE}" is not (layer outer) at '
                        f">= the outer-layer fab floor {want:g} mm")
+    if INNER_HOLE_KEY in cap:
+        want = float(cap[INNER_HOLE_KEY])
+        block = _rule_block(dru_text, INNER_HOLE_RULE)
+        m = re.search(r"\(min\s+([0-9.]+)mm\)", block) if block else None
+        if m is None:
+            bad.append(f'rule "{INNER_HOLE_RULE}" missing or has no (min ...) '
+                       f"(plated hole to inner copper fab floor {want:g} mm)")
+        elif (float(m.group(1)) < want - 1e-9 or "(layer inner)" not in block
+              or "hole_clearance" not in block):
+            bad.append(f'rule "{INNER_HOLE_RULE}" is not a (layer inner) '
+                       f"hole_clearance at >= the fab floor {want:g} mm")
     return bad

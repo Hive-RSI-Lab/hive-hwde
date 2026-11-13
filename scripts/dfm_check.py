@@ -844,6 +844,8 @@ def check_holes(fab, rules, vios: list, cast=(), bg=None,
                           "castellated-to-plated hole pairs",
                           cast_abs if cast_abs is not None else cast_hh, cast_hh)
 
+    check_hole_to_inner(fab, rules, vios)
+
     lo_he = rules.get("min_hole_to_edge_mm")
     outline = fab.outline
     if lo_he is not None and not outline.is_empty:
@@ -859,6 +861,44 @@ def check_holes(fab, rules, vios: list, cast=(), bg=None,
                     f"hole {d:.4f} mm from board edge, JLC minimum {lo_he} mm",
                     SOURCE, kind="dfm_hole_to_edge",
                     distance_mm=checklib.rnd(d), min_mm=lo_he))
+
+
+def check_hole_to_inner(fab, rules, vios: list) -> None:
+    """A plated hole to inner-layer copper it isn't joined to (#700): OSH
+    Park's 4 and 6 layer 'Plated Drill to Internal Layer Copper Clearance
+    10mil', over their 5 mil copper clearance. The drill wanders and plates
+    through every layer, so a plane's antipad sized for the copper clearance
+    lets the barrel touch the plane. Copper the hole lands in (its own pad
+    or a plane it is tied to) is its own conductor and not measured."""
+    lo = rules.get("min_hole_to_inner_copper_mm")
+    if lo is None:
+        return
+    holes = [h for h in fab.holes if h.plated]
+    if not holes:
+        return
+    disks = [Point(h.x, h.y).buffer(h.diameter / 2.0, quad_segs=16)
+             for h in holes]
+    for name in fab.copper_layer_names():
+        if not re.match(r"In\d+\.Cu$", name):
+            continue
+        lg = fab.copper(name)
+        if lg is None:
+            continue
+        comps = lg.components()
+        if not comps:
+            continue
+        tree = STRtree(comps)
+        for h, disk in zip(holes, disks):
+            near = [comps[int(i)] for i in tree.query(disk.buffer(lo))]
+            gaps = [c.distance(disk) for c in near if not c.intersects(disk)]
+            if not gaps or not _below(min(gaps), lo):
+                continue
+            d = min(gaps)
+            vios.append(checklib.violation(
+                CHECK, "error", (h.x, h.y), name, None, [],
+                f"plated hole {d:.4f} mm from copper on {name}, fab minimum "
+                f"{lo} mm", SOURCE, kind="dfm_hole_to_inner_copper",
+                distance_mm=checklib.rnd(d), min_mm=lo))
 
 
 def _via_holes(bg) -> list[tuple[float, float, float]]:
@@ -1760,7 +1800,8 @@ DFM_FAMILIES = {
     "copper": ("dfm_trace_width", "dfm_clearance"),
     "copper_to_edge": ("dfm_copper_to_edge",),
     "zone_fill": ("dfm_stale_zone_fill",),
-    "drill": ("dfm_hole_size", "dfm_hole_to_hole", "dfm_annular_ring"),
+    "drill": ("dfm_hole_size", "dfm_hole_to_hole", "dfm_annular_ring",
+              "dfm_hole_to_inner_copper"),
     "hole_to_edge": ("dfm_hole_to_edge",),
     "silk": ("dfm_silk_width", "dfm_silk_over_pad", "dfm_mask_dam",
              "dfm_pad_tented"),

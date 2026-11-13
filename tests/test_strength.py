@@ -28,7 +28,8 @@ def test_every_planted_fault_is_caught():
     steps = {s for s, _, _ in fs}
     assert steps == set(strength.FAILS_ON), steps     # each gate the score counts
     assert sum(s == "verify" for s, _, _ in fs) >= 16
-    assert sum(s == "dfm" for s, _, _ in fs) >= 1 + len(strength.DRILL_FAULTS)
+    assert sum(s == "dfm" for s, _, _ in fs) >= (1 + len(strength.DRILL_FAULTS)
+                                                 + len(strength.INNER_FAULTS))
 
 
 @pytest.fixture(scope="module")

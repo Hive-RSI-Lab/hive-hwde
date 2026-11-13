@@ -76,6 +76,7 @@ design_rules:
     min_annular_ring_mm: 0.1016      # 4 mil
     min_via_diameter_mm: 0.4572
     min_copper_to_edge_mm: 0.381
+    min_hole_to_inner_copper_mm: 0.254  # "Plated Drill to Internal Layer Copper Clearance 10mil"
     min_silk_width_mm: 0.127
     min_solder_mask_dam_mm: 0.1016
     outer_copper_oz: 1.0
@@ -88,6 +89,7 @@ design_rules:
     min_annular_ring_mm: 0.1016
     min_via_diameter_mm: 0.4064
     min_copper_to_edge_mm: 0.381
+    min_hole_to_inner_copper_mm: 0.254  # "Plated Drill to Internal Layer Copper Clearance 10mil"
     min_silk_width_mm: 0.127
     min_solder_mask_dam_mm: 0.1016
     outer_copper_oz: 1.0
