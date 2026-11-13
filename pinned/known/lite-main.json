@@ -1128,6 +1128,23 @@
    "kind": "rating_over_voltage",
    "verdict": "real",
    "reason": "real: VBUS is 21 V (constraints: PD 20 V +5%) and the HRO TYPE-C-31-M-12 drawing (2020.12.08, REV A) p.1 Note 4 rates every contact 'VOLTAGE RATING: 20V'; a 20 V PD contract runs the receptacle above its rating"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": "+3V3A",
+   "refs": [
+    "C16",
+    "C32",
+    "C33",
+    "C34",
+    "U4",
+    "U7"
+   ],
+   "pos": null,
+   "kind": "power_no_consumers",
+   "verdict": "false",
+   "reason": "false (#877): +3V3A feeds U7 (ES8388) HPVDD/AVDD; the symbol types those supply pins passive, so the audit sees no power_in"
   }
  ]
 }

@@ -46,6 +46,21 @@ def load_golden(board: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def load_golden_sch(board: str) -> str:
+    """The golden's root schematic text (a schematic fault ships it as the
+    mutant's `<board>.kicad_sch` sidecar; the board itself is unchanged)."""
+    path = GOLDEN / board / f"{board}.kicad_sch"
+    if not path.exists():
+        raise SurgeryError(f"golden schematic missing: {path}")
+    return path.read_text(encoding="utf-8")
+
+
+def rename_label(sch: str, name: str, at: tuple, new: str, what: str) -> str:
+    """Rename the one local label NAME placed at AT=(x, y) to NEW."""
+    return replace_once(sch, f'(label "{name}"\n\t\t(at {at[0]} {at[1]} ',
+                        f'(label "{new}"\n\t\t(at {at[0]} {at[1]} ', what)
+
+
 def replace_once(text: str, old: str, new: str, what: str) -> str:
     n = text.count(old)
     if n != 1:

@@ -1,0 +1,10 @@
+# netlist_audit: the schematic's own faults (a label on one pin, a ground
+# label that never reaches GND, a SOT-23 drawn with the wrong pin order). Needs
+# only the board: it exports <stem>.kicad_sch beside it (else reads <stem>.net).
+# Without constraints.json, power_undeclared is not judged.
+name: netlist_audit
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]
+  decoupling: [--decoupling, "{decoupling}"]

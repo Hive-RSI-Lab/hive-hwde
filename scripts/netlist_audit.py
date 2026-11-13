@@ -1333,13 +1333,21 @@ def audit(parsed: dict, constraints: dict,
     return violations, facts
 
 
-def run_audit(netlist: Path, constraints_path: Path,
+def run_audit(netlist: Path, constraints_path: Path | None,
               decoupling_path: Path | None, out: str | None):
+    """Audit NETLIST. With no constraints file the netlist's own faults
+    still count (dangling_net, ground_island, sot23_pinout, ...); only
+    power_undeclared is dropped, since with nothing declared every rail
+    would fire."""
     parsed = parse_netlist(netlist)
-    constraints = checklib.load_json(constraints_path, "constraints")
+    constraints = (checklib.load_json(constraints_path, "constraints")
+                   if constraints_path else {})
     decoupling = (checklib.load_json(decoupling_path, "decoupling metadata")
                   if decoupling_path else None)
     violations, facts = audit(parsed, constraints, decoupling)
+    if constraints_path is None:
+        violations = [x for x in violations
+                      if x.get("kind") != "power_undeclared"]
     payload = checklib.report(SCRIPT, str(netlist), violations,
                               mode="audit", **facts)
     # warnings alone do not fail the audit (fp_verify precedent)
@@ -1363,12 +1371,24 @@ def _export_netlist(sch: Path) -> Path:
     return out
 
 
+def _have_kicad_cli() -> bool:
+    """A host with no KiCad install can't export a schematic; a bad
+    explicit pin still raises (env.EnvError) rather than passing."""
+    from lib import env  # noqa: PLC0415
+    return env.find_kicad_cli() is not None
+
+
 def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--netlist", help="kicadsexpr netlist to audit")
     ap.add_argument("--sch", help="schematic; netlist is exported first "
                                   "(needs kicad-cli)")
-    ap.add_argument("--constraints", help="constraints.json (audit mode)")
+    ap.add_argument("--pcb", help="board; audits <stem>.kicad_sch beside "
+                                  "it (else <stem>.net) - the verify gate's "
+                                  "call")
+    ap.add_argument("--constraints", help="constraints.json (audit mode); "
+                                          "without it power_undeclared is "
+                                          "not judged")
     ap.add_argument("--decoupling", help="decoupling.json metadata to "
                                          "cross-check (audit mode)")
     ap.add_argument("--compare", help="second netlist: strict electrical "
@@ -1376,18 +1396,36 @@ def run(argv=None):
     ap.add_argument("--out", help="write the JSON report here")
     args = ap.parse_args(argv)
 
-    if not args.netlist and not args.sch:
-        raise checklib.CheckError("give --netlist or --sch")
+    if not args.netlist and not args.sch and not args.pcb:
+        raise checklib.CheckError("give --netlist, --sch or --pcb")
     netlist = Path(args.netlist) if args.netlist else None
-    if args.sch and not netlist:
-        netlist = _export_netlist(Path(args.sch))
+    sch = Path(args.sch) if args.sch else None
+    if not netlist and not sch:
+        pcb = Path(args.pcb)
+        own_sch, own_net = (pcb.with_suffix(".kicad_sch"),
+                            pcb.with_suffix(".net"))
+        why = None
+        if own_sch.is_file() and _have_kicad_cli():
+            sch = own_sch
+        elif own_net.is_file():
+            netlist = own_net
+        elif own_sch.is_file():
+            why = (f"no kicad-cli on this host to export {own_sch.name}, "
+                   f"and no {own_net.name} beside the board")
+        else:
+            why = f"no {own_sch.name} or {own_net.name} beside the board"
+        if why:
+            payload = checklib.report(SCRIPT, str(pcb), [], mode="audit",
+                                      nothing_to_judge=why)
+            payload["status"] = "pass"
+            return payload, args.out
+    if sch and not netlist:
+        netlist = _export_netlist(sch)
 
     if args.compare:
         return run_compare(netlist, Path(args.compare), args.out)
-    if not args.constraints:
-        raise checklib.CheckError("audit mode needs --constraints "
-                                  "(or use --compare)")
-    return run_audit(netlist, Path(args.constraints),
+    return run_audit(netlist,
+                     Path(args.constraints) if args.constraints else None,
                      Path(args.decoupling) if args.decoupling else None,
                      args.out)
 

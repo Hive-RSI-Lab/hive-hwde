@@ -1,0 +1,39 @@
+# Seeded schematic faults for netlist_audit run by the verify gate (#877, #878).
+# Each mutant ships a changed usbbuck4.kicad_sch beside the board; the copper
+# is untouched, so only the schematic audit can see the defect.
+mutants:
+  label-typo-dangling:
+    board: usbbuck4
+    script: mutations/label_typo_dangling.py
+    check: netlist_audit
+    defect: >-
+      Schematic fault: the OSC_IN label on C7 is misspelt OSC_IM, so C7's
+      pin joins a net nothing else connects to (the digits v1 BELL_1/BELL_2
+      dangling-net misses).
+    expect:
+      kind: dangling_net
+      net: "/OSC_IM"
+      ref: C7
+  ground-label-island:
+    board: usbbuck4
+    script: mutations/ground_label_island.py
+    check: netlist_audit
+    defect: >-
+      Schematic fault: the GND labels on the crystal load caps C7 and C8 are
+      renamed OSC_GND, leaving a ground-like net with no tie to GND (the
+      digits v1 MIC_GND island miss).
+    expect:
+      kind: ground_island
+      net: "/OSC_GND"
+      ref: C7
+  sot23-gds-pinout:
+    board: usbbuck4
+    script: mutations/sot23_gds_pinout.py
+    check: netlist_audit
+    defect: >-
+      Schematic fault: Q9 (SI2328DS, SOT-23-3) is drawn with a G-D-S symbol,
+      so pin 2 is wired as drain where the part's pin 2 is source (the oasis
+      Q1/Q3 SOT-23 pinout misses).
+    expect:
+      kind: sot23_pinout
+      ref: Q9

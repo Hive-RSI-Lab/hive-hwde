@@ -417,7 +417,9 @@ def test_audit_bad_inputs_exit2(tmp_path, capsys):
     assert na.main(["--netlist", str(tmp_path / "no.net"),
                     "--constraints", str(tmp_path / "no.json")]) == 2
     assert na.main([]) == 2
-    assert na.main(["--netlist", str(GOLDEN_NET)]) == 2  # no constraints
+    # no constraints is not bad input since #877: the audit still judges
+    # the netlist's own faults and leaves power_undeclared out
+    assert na.main(["--netlist", str(GOLDEN_NET)]) == 0
     capsys.readouterr()
 
 
