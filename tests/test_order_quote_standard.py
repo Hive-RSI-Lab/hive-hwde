@@ -140,3 +140,31 @@ def test_a_panel_copys_refs_are_the_single_boards_parts(tmp_path):
 def test_standard_needs_a_parts_list(tmp_path):
     with pytest.raises(ValueError, match="--parts"):
         order_quote.run(board(tmp_path), [2], ["ENIG"], ["green"], assembly=True, thickness=0.8)
+
+
+def test_extended_count_skips_lines_with_nothing_to_place(tmp_path):
+    """refdes_class marks JP201 and J201 unplaced with no line assembly_class:
+    no feeder fee for them (hw-lab vna counted 57 Extended, 55 on the BOM)."""
+    pj = tmp_path / "parts.json"
+    pj.write_text(json.dumps({"parts": [
+        {"refdes": ["C1", "C2"], "lcsc": "C1", "basic": False},
+        {"refdes": ["JP1"], "lcsc": "", "basic": False,
+         "refdes_class": {"JP1": "board_feature"}},
+        {"refdes": ["J3"], "lcsc": "", "basic": False,
+         "refdes_class": {"J3": "dnp"}},
+    ]}), "utf-8")
+    assert order_quote._assembly_counts(board(tmp_path), pj)[2] == 1
+
+
+def test_components_skip_refs_that_are_not_placed(tmp_path):
+    pj = tmp_path / "parts.json"
+    pj.write_text(json.dumps({"parts": [
+        {"refdes": ["C1", "C2"], "lcsc": "C1", "basic": True,
+         "refdes_class": {"C2": "dnp"},
+         "price_breaks": [{"qty": 1, "price": 1.0}]},
+        {"refdes": ["JP1"], "lcsc": "", "basic": False,
+         "refdes_class": {"JP1": "board_feature"}},
+    ]}), "utf-8")
+    got = order_quote.components_cost(pj, 2)
+    assert "unpriced" not in got
+    assert got["total"] == pytest.approx(2.0)

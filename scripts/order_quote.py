@@ -237,6 +237,23 @@ def standard_assembly_cost(pricing: dict, panels: int, n_parts: int,
                            + packing + xray, 2)}
 
 
+def _assembled_refs(ent: dict) -> list:
+    """The refs of a parts.json line JLC places (bom_cpl's classes: per-ref
+    `refdes_class` over line `assembly_class`)."""
+    per_ref = ent.get("refdes_class") or {}
+    default = ent.get("assembly_class", PLACED)
+    return [r for r in ent.get("refdes") or []
+            if per_ref.get(r, default) in ASSEMBLED]
+
+
+def _line_assembled(ent: dict) -> bool:
+    """False for a line with nothing to place, such as a board_feature jumper
+    or a dnp footprint: it needs no feeder and no parts bought."""
+    if ent.get("refdes"):
+        return bool(_assembled_refs(ent))
+    return ent.get("assembly_class", PLACED) in ASSEMBLED
+
+
 def components_cost(parts_json: Path, boards: int) -> dict:
     """The placed parts for `boards` boards at parts.json's price breaks, each
     bought in at least its minimum order. None priced: `unpriced` lists them."""
@@ -244,10 +261,9 @@ def components_cost(parts_json: Path, boards: int) -> dict:
     items = data.get("parts", data) if isinstance(data, dict) else data
     total, unpriced = 0.0, []
     for ent in items if isinstance(items, list) else []:
-        if not isinstance(ent, dict) or \
-                ent.get("assembly_class", PLACED) not in ASSEMBLED:
+        if not isinstance(ent, dict) or not _line_assembled(ent):
             continue
-        need = len(ent.get("refdes") or []) * boards
+        need = len(_assembled_refs(ent)) * boards
         if not need:
             continue
         buy = max(need, int(ent.get("min_qty") or 1))
@@ -377,7 +393,7 @@ def _assembly_counts(pcb: Path,
                 if key in seen:
                     continue
                 seen.add(key)
-                if ent.get("assembly_class", PLACED) not in ASSEMBLED:
+                if not _line_assembled(ent):
                     continue    # dnp / board_feature / hand_install: no feeder
                 if not ent.get("basic", ent.get("type", "") == "Basic"):
                     n_extended += 1
