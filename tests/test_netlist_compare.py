@@ -333,6 +333,120 @@ def test_net_tie_short_is_the_design(tmp_path):
     assert ipcd356.compare(fab, d, ties)["shorts"] == []
 
 
+# #962: a flow-through ESD part (USBLC6-2SC6) joins pins 1-6 and 3-4 inside
+# the package. Pin 6 goes to the connector, pin 1 to the MCU: two islands of
+# USB_DP on the bare board.
+JUMPER_PCB = ('(kicad_pcb (footprint "SOT-23-6"\n'
+              '  (property "Reference" "U1")\n'
+              '  (jumper_pad_groups ("1" "6") ("3" "4"))\n'
+              '  (pad "1" smd) (pad "3" smd) (pad "4" smd) (pad "6" smd)))\n')
+
+
+def _jumper_case(tmp_path, ipc_net_6="USB_DP"):
+    # U1-1 (1, 1) is joined by a track to J1-1 (4, 1); U1-6 (1, 2) is alone
+    # with J2-1 at (4, 2): two islands, one net.
+    fab = stack(tmp_path, {"F.Cu": [flash(1, 1), flash(4, 1), flash(1, 2),
+                                    flash(4, 2), "D11*",
+                                    f"X{gx(1)}Y{gx(-1)}D02*",
+                                    f"X{gx(4)}Y{gx(-1)}D01*",
+                                    f"X{gx(1)}Y{gx(-2)}D02*",
+                                    f"X{gx(4)}Y{gx(-2)}D01*"],
+                            "B.Cu": []}, {})
+    text = d356(rec("327", "USB_DP", "U1", "1", 1, 1, 1),
+                rec("327", "USB_DP", "J1", "1", 4, 1, 1),
+                rec("327", ipc_net_6, "U1", "6", 1, 2, 1),
+                rec("327", ipc_net_6, "J2", "1", 4, 2, 1))
+    bg = _BG([_Pad("U1", "1", "USB_DP"), _Pad("U1", "6", "USB_DP"),
+              _Pad("J1", "1", "USB_DP"), _Pad("J2", "1", "USB_DP")])
+    return fab, text, bg
+
+
+def test_jumper_groups_read_both_forms():
+    assert ipcd356.jumper_groups(JUMPER_PCB) == [("U1", ("1", "6")),
+                                                ("U1", ("3", "4"))]
+    dup = ('(kicad_pcb (footprint "SW"\n  (property "Reference" "SW1")\n'
+           '  (duplicate_pad_numbers_are_jumpers yes)\n'
+           '  (pad "1" smd) (pad "1" smd) (pad "2" smd)))\n'
+           '(footprint "R" (property "Reference" "R1")\n'
+           '  (duplicate_pad_numbers_are_jumpers no) (pad "1" smd) (pad "1" smd))')
+    assert ipcd356.jumper_groups(dup) == [("SW1", ("1",))]
+
+
+def test_jumper_split_with_one_name_is_an_open_and_renaming_clears_it(tmp_path):
+    fab, text, bg = _jumper_case(tmp_path)
+    jumpers = ipcd356.jumper_groups(JUMPER_PCB)
+    d = ipcd356.parse(text)
+    ipcd356.resolve(d, bg)
+    assert [o["net"] for o in ipcd356.compare(fab, d)["opens"]] == ["USB_DP"]
+    res = ipcd356.compare(fab, d, jumpers=jumpers)
+    (op,) = res["opens"]
+    assert op["jumper"] and op["shared_names"] == ["USB_DP"]
+    (sp,) = res["jumper_splits"]
+    assert not sp["own_names"]
+
+    new, renames = ipcd356.split_jumper_islands(text, res["jumper_splits"])
+    assert [(r["from"], r["to"], r["points"]) for r in renames] == \
+        [("USB_DP", "USB_DP~J1", 2)]
+    d2 = ipcd356.parse(new)
+    assert sorted({p.net for p in d2.points}) == ["USB_DP", "USB_DP~J1"]
+    assert len(new.splitlines()) == len(text.splitlines())
+    ipcd356.resolve(d2, bg)
+    res2 = ipcd356.compare(fab, d2, jumpers=jumpers)
+    assert res2["opens"] == [] and res2["shorts"] == []
+    assert res2["jumper_splits"][0]["own_names"]
+    # renaming again changes nothing
+    assert ipcd356.split_jumper_islands(new, res2["jumper_splits"])[1] == []
+
+
+def test_a_real_open_on_a_jumper_net_stays_an_open(tmp_path):
+    # J2 loses its track: three islands, one of them not at a jumper pad
+    fab = stack(tmp_path, {"F.Cu": [flash(1, 1), flash(4, 1), flash(1, 2),
+                                    flash(4, 2), "D11*",
+                                    f"X{gx(1)}Y{gx(-1)}D02*",
+                                    f"X{gx(4)}Y{gx(-1)}D01*"],
+                           "B.Cu": []}, {})
+    d = ipcd356.parse(d356(rec("327", "USB_DP", "U1", "1", 1, 1, 1),
+                           rec("327", "USB_DP", "J1", "1", 4, 1, 1),
+                           rec("327", "USB_DP", "U1", "6", 1, 2, 1),
+                           rec("327", "USB_DP", "J2", "1", 4, 2, 1)))
+    res = ipcd356.compare(fab, d, jumpers=ipcd356.jumper_groups(JUMPER_PCB))
+    (op,) = res["opens"]
+    assert not op.get("jumper") and op["n_fragments"] == 3
+    assert res["jumper_splits"] == []
+
+
+def test_long_names_are_cut_to_the_field():
+    text = d356(rec("327", "_USB_D_P_LONG", "U1", "1", 1, 1, 1),
+                rec("327", "_USB_D_P_LONG", "U1", "6", 1, 2, 1))
+    sp = {"net": "x", "own_names": False, "points": [[2], [3]]}
+    new, (r,) = ipcd356.split_jumper_islands(text, [sp])
+    assert r["to"] == "SB_D_P_LONG~J1" and len(r["to"]) == 14
+    assert ipcd356.parse(new).points[1].net == r["to"]
+
+
+def test_dfm_check_passes_a_jumper_split_named_apart(tmp_path, monkeypatch):
+    pcb = tmp_path / "j.kicad_pcb"
+    pcb.write_text(JUMPER_PCB)
+    fab, text, bg = _jumper_case(tmp_path / "g")
+    gdir = tmp_path / "g"
+    (gdir / "j.ipc").write_text(text)
+    vios: list = []
+    facts, skip = dfm_check.check_netlist(fab, pcb, bg, gdir, tmp_path, vios)
+    assert skip is None and facts["netlist"]["opens"] == 1
+    (v,) = vios
+    assert v["kind"] == "dfm_net_open" and v["jumper"]
+
+    # fab_export's rename, on the same gerbers
+    import fab_export
+    monkeypatch.setattr(geom, "load_board", lambda p: bg)
+    renames = fab_export.name_jumper_islands(pcb, gdir / "j.ipc", gdir)
+    assert [r["to"] for r in renames] == ["USB_DP~J1"]
+    vios = []
+    facts, _ = dfm_check.check_netlist(fab, pcb, bg, gdir, tmp_path, vios)
+    assert vios == [] and facts["netlist"]["opens"] == 0
+    assert facts["netlist"]["jumper_splits"] == 1
+
+
 def test_truncated_names_are_told_apart_and_reported():
     """kicad-cli keeps the last 14 characters: two unconnected-(...-PAD5)
     nets can share one D-356 name."""

@@ -1734,7 +1734,8 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
             import fab_export
             import kc
             src = tmp / f"{pcb.stem}.ipc"
-            res = fab_export.export_ipc_absolute(kc.resolve_cli(), pcb, src)
+            res = fab_export.export_ipc_absolute(kc.resolve_cli(), pcb, src,
+                                                 gdir)
             if res.get("status") != "pass":
                 return {}, ("kicad-cli ipcd356 export failed: "
                             f"{res.get('stderr_tail')}")
@@ -1745,9 +1746,9 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
     except ipcd356.D356Error as exc:
         return {}, f"IPC-D-356 netlist unreadable: {exc}"
     clashes = ipcd356.resolve(d356, bg)
-    ties = ipcd356.net_tie_classes(
-        pcb.read_text(encoding="utf-8", errors="replace"), bg)
-    res = ipcd356.compare(fab, d356, ties)
+    pcb_text = pcb.read_text(encoding="utf-8", errors="replace")
+    ties = ipcd356.net_tie_classes(pcb_text, bg)
+    res = ipcd356.compare(fab, d356, ties, ipcd356.jumper_groups(pcb_text))
     for c in clashes:
         vios.append(checklib.violation(
             CHECK, "warning", None, None, None, [],
@@ -1778,16 +1779,27 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
             msg = (f"open in the shipped copper: net {op['net']} is "
                    f"{op['n_fragments']} pieces "
                    f"({'; '.join(', '.join(f[:4]) for f in op['fragments'][:4])})")
+            if op.get("jumper"):
+                msg = (f"net {op['net']} is {op['n_fragments']} copper islands "
+                       "joined only inside a part (jumper pads), but the "
+                       "IPC-D-356 netlist gives them one name "
+                       f"({', '.join(op['shared_names'])}): a bare-board "
+                       "tester reads that as an open and fails a good board. "
+                       "Re-export with fab_export, which names each island "
+                       "apart ("
+                       f"{'; '.join(', '.join(f[:4]) for f in op['fragments'][:4])})")
             refs = sorted({lbl.split("-")[0] for f in op["fragments"]
                            for lbl in f} - {"VIA"})
         vios.append(checklib.violation(
             CHECK, "error", (x, y), None, op["net"], refs, msg, SOURCE,
-            kind="dfm_net_open", fragments=op["fragments"]))
+            kind="dfm_net_open", fragments=op["fragments"],
+            jumper=bool(op.get("jumper"))))
     return {"netlist": {
         "source": origin, "file": src.name, "test_points": res["n_points"],
         "nets": res["n_nets"], "plated_holes": res["n_plated_holes"],
         "islands": res["n_islands"], "shorts": len(res["shorts"]),
-        "opens": len(res["opens"]), "name_clashes": len(clashes)}}, None
+        "opens": len(res["opens"]), "name_clashes": len(clashes),
+        "jumper_splits": len(res["jumper_splits"])}}, None
 
 
 # ------------------------------------------------------------------ driver

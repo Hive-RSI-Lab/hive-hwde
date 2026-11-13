@@ -29,7 +29,19 @@ Public API:
     parse(text) -> D356
     resolve(d356, bg) -> list[name clash dict]   (sets point.board_net)
     net_tie_classes(pcb_text, bg) -> {net: class id}
-    compare(fab, d356, ties=None) -> {"shorts": [...], "opens": [...], ...}
+    jumper_groups(pcb_text) -> [(ref, (pin, ...)), ...]
+    compare(fab, d356, ties=None, jumpers=None)
+        -> {"shorts": [...], "opens": [...], "jumper_splits": [...], ...}
+    split_jumper_islands(text, splits) -> (text, renames)
+
+A footprint's jumper pads (`jumper_pad_groups`, or
+`duplicate_pad_numbers_are_jumpers`) join copper inside the part: a
+flow-through ESD diode's pins 1 and 6 carry one net, but on the bare board
+they are two islands. kicad-cli names both islands alike, so a tester would
+read the net as open (#962). compare() reports such a net under
+`jumper_splits`, as an open only while its islands share a D-356 name;
+split_jumper_islands() gives each island its own name, which fab_export
+writes into the shipped netlist.
 """
 from __future__ import annotations
 
@@ -74,6 +86,7 @@ class TestPoint:
     plated: bool | None = None
     size: tuple[float, float] = (0.0, 0.0)
     board_net: str | None = None
+    line: int = -1              # index in the text's lines
 
     @property
     def key(self) -> str:
@@ -115,7 +128,7 @@ def parse(text: str) -> D356:
     scale = _UNIT_MM.get(d.units)
     if scale is None:
         raise D356Error(f"IPC-D-356 units {d.units!r} not understood")
-    for raw in text.splitlines():
+    for n_line, raw in enumerate(text.splitlines()):
         code = raw[:3]
         if code not in ("317", "327", "367"):
             continue
@@ -136,7 +149,8 @@ def parse(text: str) -> D356:
             hole_mm=int(hole) * scale if hole else None,
             plated=(m.group("plated") == "P") if hole else None,
             size=(int(m.group("sx") or 0) * scale,
-                  int(m.group("sy") or 0) * scale)))
+                  int(m.group("sy") or 0) * scale),
+            line=n_line))
     if not d.points:
         raise D356Error("IPC-D-356 file holds no test points")
     return d
@@ -237,6 +251,35 @@ def net_tie_classes(pcb_text: str, bg) -> dict[str, int]:
     return {n: roots.index(find(n)) for n in parent}
 
 
+_JUMPER = re.compile(r"\(jumper_pad_groups((?:\s*\((?:\s*\"[^\"]*\")+\s*\))+)\s*\)")
+_DUP_JUMPER = re.compile(r"\(duplicate_pad_numbers_are_jumpers\s+yes\s*\)")
+_PAD_NUM = re.compile(r'\(pad\s+"([^"]*)"')
+
+
+def jumper_groups(pcb_text: str) -> list[tuple[str, tuple[str, ...]]]:
+    """Pads a footprint joins inside the part -> [(ref, pad numbers)]:
+    each `jumper_pad_groups` group, and with
+    `duplicate_pad_numbers_are_jumpers yes` each number used by more than
+    one pad (a group of one: its pads share the number)."""
+    out = []
+    for m in re.finditer(r"\(footprint\s", pcb_text):
+        block = pcb_text[m.start():_sexp_end(pcb_text, m.start())]
+        ref = _REF.search(block)
+        if not ref:
+            continue
+        jg = _JUMPER.search(block)
+        if jg:
+            for group in re.findall(r"\(((?:\s*\"[^\"]*\")+)\s*\)", jg.group(1)):
+                pins = tuple(re.findall(r'"([^"]*)"', group))
+                if len(pins) > 1:
+                    out.append((ref.group(1), pins))
+        if _DUP_JUMPER.search(block):
+            nums = _PAD_NUM.findall(block)
+            for num in sorted({n for n in nums if n and nums.count(n) > 1}):
+                out.append((ref.group(1), (num,)))
+    return out
+
+
 # ------------------------------------------------------------ copper side
 
 class _DSU:
@@ -275,8 +318,13 @@ def drill_span(path, n_layers: int) -> tuple[int, int]:
     return 1, n_layers
 
 
-def compare(fab, d: D356, ties: dict[str, int] | None = None) -> dict:
-    """Connectivity of the shipped copper vs the D-356 netlist."""
+def compare(fab, d: D356, ties: dict[str, int] | None = None,
+            jumpers: list | None = None) -> dict:
+    """Connectivity of the shipped copper vs the D-356 netlist. `jumpers`
+    (jumper_groups()) are the pads parts join inside: a net whose islands
+    meet only through them is a jumper split, not an open, as long as each
+    island has a D-356 name of its own; the tester then never probes
+    through the part."""
     import gerblib
 
     ties = ties or {}
@@ -384,11 +432,49 @@ def compare(fab, d: D356, ties: dict[str, int] | None = None) -> dict:
             "at": [round((pa.x + pb.x) / 2, 3), round((pa.y + pb.y) / 2, 3)],
             "points": {nm: [p.label for p in by_net[nm]][:6] for nm in nets},
             "island": where(root)})
+    # pad label -> the jumper group ids it is in. D-356 keeps 4 characters
+    # of a pin number.
+    jump_of: dict = defaultdict(set)
+    for k, (ref, pins) in enumerate(jumpers or ()):
+        for pin in pins:
+            jump_of[(ref, pin[:4])].add(k)
+
+    def jumper_joined(by_root) -> bool:
+        if not jump_of:
+            return False
+        dj = _DSU()
+        for root, tps in by_root.items():
+            dj.find(("r", root))
+            for tp in tps:
+                for k in jump_of.get((tp.ref, tp.pin), ()):
+                    dj.union(("r", root), ("j", k))
+        return len({dj.find(("r", r)) for r in by_root}) == 1
+
     opens = []
+    jumper_splits = []
     for net, by_root in roots_of.items():
         if len(by_root) < 2:
             continue
         frags = sorted(by_root.values(), key=len, reverse=True)
+        if jumper_joined(by_root):
+            names = [sorted({p.net for p in f}) for f in frags]
+            shared = sorted(set.intersection(*(set(n) for n in names))) \
+                if len(frags) > 1 else []
+            own = all(len(set(a) & set(b)) == 0
+                      for i, a in enumerate(names) for b in names[i + 1:])
+            jumper_splits.append({
+                "net": net, "n_fragments": len(frags),
+                "fragments": [[p.label for p in f][:8] for f in frags],
+                "d356_names": names, "own_names": own,
+                "points": [[p.line for p in f] for f in frags]})
+            if own:
+                continue
+            opens.append({
+                "net": net, "jumper": True, "shared_names": shared,
+                "fragments": [[p.label for p in f][:8] for f in frags],
+                "n_fragments": len(frags),
+                "at": [round(frags[-1][0].x, 3), round(frags[-1][0].y, 3)]})
+            continue
         opens.append({
             "net": net,
             "fragments": [[p.label for p in f][:8] for f in frags],
@@ -400,7 +486,45 @@ def compare(fab, d: D356, ties: dict[str, int] | None = None) -> dict:
                       "at": [round(tp.x, 3), round(tp.y, 3)]})
     shorts.sort(key=lambda s: s["nets"])
     opens.sort(key=lambda o: (o["net"], "no_copper" in o))
-    return {"shorts": shorts, "opens": opens, "n_points": n_points,
+    jumper_splits.sort(key=lambda j: j["net"])
+    return {"shorts": shorts, "opens": opens, "jumper_splits": jumper_splits,
+            "n_points": n_points,
             "n_nets": len(roots_of), "n_plated_holes": n_holes,
             "n_islands": {k: len(v) for k, v in islands.items()},
             "fragments_per_net": {net: len(r) for net, r in roots_of.items()}}
+
+
+JUMPER_SUFFIX = "~J"
+
+
+def split_jumper_islands(text: str, splits: list[dict]) -> tuple[str, list[dict]]:
+    """Give each island of a jumper split its own D-356 net name: the
+    largest island keeps the name, each other one gets `<name>~J<k>`
+    (cut from the left to the 14-character field, unique in the file).
+    `splits` is compare()'s `jumper_splits`; a split whose islands already
+    have names of their own is left. -> (new text, renames)."""
+    lines = text.splitlines()
+    aliases = {m.group(1): m.group(2) for ln in lines if (m := _ALIAS.match(ln))}
+    used = set(aliases.values()) | {ln[3:17].strip() for ln in lines if ln[:3] in ("317", "327", "367")}
+    renames = []
+    for sp in splits:
+        if sp.get("own_names"):
+            continue
+        for frag in sp["points"][1:]:
+            base = lines[frag[0]][3:17].strip()
+            base = aliases.get(base, base)
+            k = 1
+            while True:
+                sfx = f"{JUMPER_SUFFIX}{k}"
+                name = (base[-(14 - len(sfx)):] if len(base) + len(sfx) > 14
+                        else base) + sfx
+                if name not in used:
+                    break
+                k += 1
+            used.add(name)
+            for i in frag:
+                ln = lines[i].ljust(17)
+                lines[i] = ln[:3] + f"{name:<14}" + ln[17:]
+            renames.append({"net": sp["net"], "from": base, "to": name,
+                            "points": len(frag)})
+    return "\n".join(lines) + ("\n" if text.endswith("\n") else ""), renames
