@@ -49,6 +49,13 @@ rules as routing constraints; cite the record id when you apply one.
    (`left_for_routers`) are ordinary route_critical / route_auto work; a
    0.5 mm field that fails the budget needs via-in-pad or HDI, which is
    a fab decision for the person, not a script to write.
+   Power first: before the fan-out, route_escape vias every power pad that
+   has an inner plane (`stitch_vias --nets power --pads-only`, BGA balls
+   left to the fan-out), so the escape routes around the plane vias rather
+   than taking their spots; `--no-power-first` skips it, and a via that
+   adds a DRC fault is dropped (`power_first` in the report). A board
+   with no BGA runs `scripts/stitch_vias.py --pcb <board> --nets power
+   --pads-only` itself before route_critical, for the same reason.
    Escape budget at 0.8 mm pitch: the limits that bind are the board's
    `.kicad_dru` (the `aiee_bga_escape_*` clearance, hole-to-hole edge to
    edge), not the fab floors. With hole-to-hole 0.5 mm the vias must sit on

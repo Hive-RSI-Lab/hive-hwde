@@ -38,10 +38,19 @@ standard 0.3-drill vias, stricter only where drills are bigger. When
 stitching several nets, power nets go first and GND always last (prior-
 attempt fact: GND candidates are numerous and box power pads out otherwise).
 
+--nets power (#923 point 1) expands to the constraints' power nets that
+have a plane fill on an inner layer (power_plane_nets): the nets whose SMD
+pads want a via straight down. A switch node (switch_node, or a net whose
+only pour is an outer-layer patch) is not one. --pads-only skips job 2, and
+--skip-refs leaves named parts alone (route_escape runs this before its
+ball-grid escape so the power pads get their plane vias before signal
+escapes take the room beside them; the ball fields stay the escape's).
+
 Contract (SPEC section 6):
   stitch_vias.py --pcb B.kicad_pcb [--constraints c.json] [--nets GND[,+3V3]]
       [--pitch MM|auto] [--max-vias N] [--via-size MM] [--via-drill MM]
       [--clearance MM] [--dry-run] [--strict] [--out-report r.json]
+      [--pads-only] [--skip-refs U1,U2]  (--nets power: see above)
       [--fence-net NET [--fence-offset MM] [--fence-pitch MM]]
   Payload: {mode, requested, placed, skipped: [{ref|at, reason}], pitch_mm,
       fence_net?, nets: {...per-net facts...}, ops: [...]}. A net with no
@@ -430,10 +439,30 @@ def _bump(counts: dict, key: str) -> None:
 
 # ============================================================ stitch jobs
 
+def power_plane_nets(constraints: dict | None,
+                     bg: geom.BoardGeom) -> list[str]:
+    """The constraints' power nets on this board that have a filled zone on
+    an inner copper layer, in constraints order. A switch_node entry is
+    left out (its patch is an outer-layer pour, and a via field on it is
+    EMI); so is a net with no inner plane (nothing to stitch down to)."""
+    inner = set(bg.copper_layers[1:-1])
+    out: list[str] = []
+    for entry in (constraints or {}).get("power") or []:
+        net = entry.get("net") if isinstance(entry, dict) else None
+        if (not net or net in out or net not in bg.nets
+                or entry.get("switch_node")):
+            continue
+        if inner & set(bg.layers_with_zone(net)):
+            out.append(net)
+    return out
+
+
 def stitch_one_net(bg: geom.BoardGeom, scene: Scene, net: str, pitch: float,
                    via_size: float, via_drill: float, max_vias: int,
-                   min_track: float):
-    """Pad stitching + area grid for one net. Returns
+                   min_track: float, area: bool = True,
+                   skip_refs: frozenset = frozenset()):
+    """Pad stitching + area grid for one net (area=False: pads only; pads
+    of skip_refs are left alone). Returns
     (ops, skipped, facts, violation_or_None)."""
     via_r = via_size / 2.0
     pad_edge_margin = via_r + scene.clearance
@@ -453,7 +482,8 @@ def stitch_one_net(bg: geom.BoardGeom, scene: Scene, net: str, pitch: float,
 
     # ---- job 1: SMD pads whose layer does not carry the plane
     pads = sorted((p for p in bg.pads_of(net=net)
-                   if len(p.layers) == 1 and p.layers[0] not in plane_layers),
+                   if len(p.layers) == 1 and p.layers[0] not in plane_layers
+                   and p.ref not in skip_refs),
                   key=lambda p: (p.ref, p.number))
     requested = placed = 0
     impossible_refs: list[str] = []
@@ -516,7 +546,8 @@ def stitch_one_net(bg: geom.BoardGeom, scene: Scene, net: str, pitch: float,
     # ---- job 2: pitch grid across the plane fill
     keepouts = [ra["outline"] for ra in bg.rule_areas
                 if ra["layers"] and not ra["outline"].is_empty]
-    cands = grid_candidates(fill, bg.outline, keepouts, pitch)
+    cands = (grid_candidates(fill, bg.outline, keepouts, pitch)
+             if area else [])
     rejected: dict[str, int] = {}
     area_placed = 0
     capped = False
@@ -624,7 +655,12 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--constraints", default=None,
                     help="constraints.json (high_speed t_rise for --pitch auto)")
     ap.add_argument("--nets", default="GND",
-                    help='comma list; power nets before GND (default "GND")')
+                    help='comma list; power nets before GND (default "GND"); '
+                         '"power" = the constraints\' inner-plane power nets')
+    ap.add_argument("--pads-only", action="store_true",
+                    help="pad stitching only, no area grid")
+    ap.add_argument("--skip-refs", default=None,
+                    help="comma list of parts whose pads are left alone")
     ap.add_argument("--pitch", default="auto",
                     help='area-stitch grid pitch mm, or "auto" (rise-time)')
     ap.add_argument("--max-vias", type=int, default=200,
@@ -660,15 +696,26 @@ def run(argv: list[str] | None = None):
     min_track = float(_pro_rules(pcb).get("min_track_width") or 0.15)
     scene = build_scene(bg, clearance, new_drill=args.via_drill,
                         hole_gap=board_hole_to_hole(pcb))
-    nets = [s.strip() for s in (args.nets or "").split(",") if s.strip()]
-    if not nets:
+    nets: list[str] = []
+    for s in (args.nets or "").split(","):
+        s = s.strip()
+        if s == "power" and "power" not in bg.nets:
+            nets += [n for n in power_plane_nets(constraints, bg)
+                     if n not in nets]
+        elif s and s not in nets:
+            nets.append(s)
+    if not nets and "power" not in (args.nets or ""):
         raise CheckError("--nets is empty")
+    skip_refs = frozenset(r.strip() for r in (args.skip_refs or "").split(",")
+                          if r.strip())
 
     violations: list[dict] = []
     skipped: list[dict] = []
     ops: list[dict] = []
 
     if args.fence_net:
+        if not nets:
+            raise CheckError("--fence-net needs a via net in --nets")
         if args.fence_pitch is not None:
             fpitch, t_used = float(args.fence_pitch), None
         else:
@@ -704,7 +751,8 @@ def run(argv: list[str] | None = None):
                 raise CheckError(f"net '{net}' not on board")
             nops, nskip, nfacts, viol = stitch_one_net(
                 bg, scene, net, pitch, args.via_size, args.via_drill,
-                args.max_vias, min_track)
+                args.max_vias, min_track, area=not args.pads_only,
+                skip_refs=skip_refs)
             ops += nops
             for s in nskip:
                 s["net"] = net
@@ -715,6 +763,7 @@ def run(argv: list[str] | None = None):
             if viol is not None:
                 violations.append(viol)
         extra = {"mode": "stitch", "pitch_mm": round(pitch, 3),
+                 "pads_only": bool(args.pads_only),
                  "t_rise_ns": t_used, "nets": net_facts}
 
     applied = refilled = False

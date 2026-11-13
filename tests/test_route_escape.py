@@ -343,6 +343,50 @@ def test_unknown_ref_is_an_error(tmp_path, capsys):
     assert re_.main(["--pcb", str(board(tmp_path)), "--refs", "U7"]) == 2
 
 
+def _power_board(tmp_path):
+    """The 6 x 6 field with ball A1 on +3V3, an In2 +3V3 plane, and U5 (a
+    regulator stand-in) with a +3V3 pin; a switch node SW on U5 too."""
+    pts = "(pts (xy 1 1) (xy 39 1) (xy 39 39) (xy 1 39))"
+    extra = (_fp("U5", 32.0, 8.0, _pad("1", 0, 0, "+3V3", 0.6, "rect")
+                 + _pad("2", 0, 2, "SW", 0.6, "rect"), (1, 2))
+             + f'  (zone (net "+3V3") (layer "In2.Cu") (uuid "z3")\n'
+               f'    (polygon {pts})\n'
+               f'    (filled_polygon (layer "In2.Cu") {pts}))\n'
+             + f'  (zone (net "SW") (layer "In1.Cu") (uuid "z4")\n'
+               f'    (polygon {pts})\n'
+               f'    (filled_polygon (layer "In1.Cu") {pts}))\n')
+    pcb = board(tmp_path, extra=extra, connector=False)
+    pcb.write_text(pcb.read_text().replace('(net "/S0_0")', '(net "+3V3")'))
+    cons = tmp_path / "constraints.json"
+    cons.write_text(json.dumps({"power": [
+        {"net": "+3V3", "current_a": 1.0},
+        {"net": "SW", "current_a": 1.0, "switch_node": True}]}))
+    return pcb, cons
+
+
+def test_power_first_vias_the_power_pins_not_the_field(tmp_path):
+    """#923 point 1: the power pin off the field gets its plane via before
+    the escape; the ball grid and the switch node are left alone."""
+    pcb, cons = _power_board(tmp_path)
+    bg = geom.BoardGeom.from_file(pcb)
+    refs = [b.ref for b in bgalib.find_bgas(bg)]
+    assert refs == ["U1"]
+    assert "+3V3" in {p.net for p in bg.pads_of(ref="U1")}
+    before = pcb.read_bytes()
+    ops, fact = re_.power_first_ops(pcb, cons, refs)
+    assert pcb.read_bytes() == before                 # dry: board untouched
+    vias = [o for o in ops if o["op"] == "add_via"]
+    assert fact["nets"] == ["+3V3"] and fact["placed"] == len(vias) == 1
+    (v,) = vias
+    assert v["net"] == "+3V3"
+    assert math.hypot(v["at"][0] - 32.0, v["at"][1] - 8.0) < 1.5   # at U5.1
+    # planted fault: without the skip the field's +3V3 ball is stitched too
+    ops2, _ = re_.power_first_ops(pcb, cons, [])
+    assert len([o for o in ops2 if o["op"] == "add_via"]) == 2
+    assert re_.power_first_ops(pcb, None, refs) == (
+        [], {"placed": 0, "note": "no constraints.json"})
+
+
 # ============================================================ live (slow)
 
 def test_live_escape_synthetic_bga(tmp_path):
@@ -367,6 +411,29 @@ def test_live_escape_synthetic_bga(tmp_path):
     # no via sits in a ball (dog-bone, not via-in-pad)
     (g,) = bgalib.find_bgas(bg)
     assert re_.via_in_pad_nets(bg, g, {v.uuid for v in bg.vias_of()}) == {}
+
+
+def test_live_power_first_lands_before_the_escape(tmp_path):
+    """#923 point 1 live: U5's +3V3 pin gets its plane via, DRC-clean, and
+    the field still escapes in full around it."""
+    if env.find_kicad_cli() is None or env.find_krt() is None:
+        pytest.skip("needs kicad-cli and KiCadRoutingTools")
+    pcb, cons = _power_board(tmp_path)
+    out = tmp_path / "r.json"
+    rc = re_.main(["--pcb", str(pcb), "--constraints", str(cons),
+                   "--out-report", str(out)])
+    rep = json.loads(out.read_text())
+    assert rc == 0, rep
+    f = rep["facts"]
+    assert f["power_first"]["placed"] == 1, f["power_first"]
+    assert "dropped_for_drc" not in f["power_first"]
+    assert f["drc_delta"]["new"] == {} and f["board_updated"]
+    bg = geom.BoardGeom.from_file(pcb)
+    near = [v for v in bg.vias_of(net="+3V3")
+            if math.hypot(v.at[0] - 32.0, v.at[1] - 8.0) < 1.5]
+    assert len(near) == 1
+    (b,) = f["bgas"]
+    assert b["kept_nets"] >= 1 and b["left_for_routers"] == []
 
 
 # ---- #552 via-in-pad clashes, wide nets; #547 escape toward the partner ----
