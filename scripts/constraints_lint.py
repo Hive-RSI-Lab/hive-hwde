@@ -60,7 +60,9 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
         "required": {"net": "str", "current_a": "num"},
         "optional": {"dt_c": "num", "via_amps": "num", "pdn": "bool",
                      "plane_fed": "bool", "tap_current_a": "num",
-                     "overrides": "overrides"},
+                     "overrides": "overrides",
+                     # switch-node rules (#924, #923 point 6)
+                     "min_width_mm": "num", "switch_node": "switch_node"},
     },
     "diff_pairs": {
         "required": {"p": "str", "n": "str"},
@@ -265,6 +267,13 @@ def _type_ok(spec: str, v) -> bool:
             and all(_is_num(x) for x in o.values()) for o in v)
     if spec == "overrides":
         return isinstance(v, list)
+    if spec == "switch_node":   # true, or {ref, layer, keep_away, keep_away_mm}
+        if isinstance(v, bool):
+            return True
+        shape = {"ref": "str", "layer": "str", "keep_away": "str_list",
+                 "keep_away_mm": "num"}
+        return isinstance(v, dict) and all(
+            k in shape and _type_ok(shape[k], x) for k, x in v.items())
     if spec == "map":       # flat scalar map (operating points): str keys,
         return isinstance(v, dict) and all(     # number/str/bool values
             isinstance(k, str) and (_is_num(x) or isinstance(x, (str, bool)))

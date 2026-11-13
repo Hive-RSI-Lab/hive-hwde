@@ -2148,6 +2148,21 @@ def pin_name(pad: geom.Pad) -> str:
     return re.sub(r"~\{([^}]*)\}", r"\1", name).upper()
 
 
+def switch_row(fp: dict, rows: list[dict]) -> dict | None:
+    """The switch_nodes.yaml row a footprint matches on Value / MPN."""
+    texts = [fp.get("value") or ""] + [fp["props"].get(k, "")
+                                       for k in MPN_PROPS]
+    return next((r for r in rows
+                 if any(t and r["rx"].search(t.strip()) for t in texts)), None)
+
+
+def is_switch_pin(pad: geom.Pad, bg: geom.BoardGeom, rows: list[dict]) -> bool:
+    """A rated part's switch pin (its row's pins), or any SW/LX/PH pin."""
+    name = pin_name(pad)
+    row = switch_row(bg.footprints.get(pad.ref) or {"props": {}}, rows)
+    return name in SWITCH_PIN_NAMES or bool(row and name in row["pins"])
+
+
 def inferred_switch_entries(entries: list[dict], bg: geom.BoardGeom,
                             rows: list[dict]) -> tuple[list[dict], list[dict]]:
     """(entries, unrated): one entry per switch net no power entry names, at
@@ -2156,11 +2171,7 @@ def inferred_switch_entries(entries: list[dict], bg: geom.BoardGeom,
     found: dict[str, dict] = {}
     unrated: list[dict] = []
     for ref, fp in sorted(bg.footprints.items()):
-        texts = [fp.get("value") or ""] + [fp["props"].get(k, "")
-                                           for k in MPN_PROPS]
-        row = next((r for r in rows
-                    if any(t and r["rx"].search(t.strip()) for t in texts)),
-                   None)
+        row = switch_row(fp, rows)
         for pad in bg.pads_of(ref=ref):
             name = pin_name(pad)
             net = pad.net

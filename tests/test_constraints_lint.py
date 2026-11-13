@@ -65,7 +65,8 @@ def test_entry_keys_cover_schema_md_documented_entry_keys():
     dp = constraints_lint.SECTIONS["diff_pairs"]
     assert "term_pair_mm" in dp["optional"]
     pw = constraints_lint.SECTIONS["power"]
-    assert {"plane_fed", "pdn", "overrides"} <= set(pw["optional"])
+    assert {"plane_fed", "pdn", "overrides", "min_width_mm",
+            "switch_node"} <= set(pw["optional"])
     th = constraints_lint.SECTIONS["thermal"]
     assert {"airflow_lfm", "airflow_m_s", "rating",
             "theta_ja_c_w", "theta_source"} <= set(th["optional"])
@@ -357,3 +358,17 @@ def test_package_ratings_accept_the_layer_rules_gen_reads(tmp_path):
         {"ref": "U2", "clearance_mm": 0.1, "why": "0.4 mm WLCSP",
          "layer": "F.Cu"}]})
     assert not [v for v in violations if "layer" in v["msg"]], violations
+
+
+def test_switch_node_entry_shape(tmp_path):
+    """#924: a switch_node object takes only ref/layer/keep_away/keep_away_mm;
+    a misspelled key inside it is a bad_type error."""
+    ok = {"net": "/LX", "current_a": 0.6, "min_width_mm": 0.5,
+          "switch_node": {"keep_away": ["MK1"], "keep_away_mm": 2.0}}
+    vs, _ = lint_doc(tmp_path, {"power": [ok, dict(ok, net="/SW",
+                                                   switch_node=True)]})
+    assert errors(vs) == []
+    vs, _ = lint_doc(tmp_path, {"power": [dict(ok, switch_node={
+        "keepaway": ["MK1"]})]})
+    assert any(v["kind"] == "bad_type" and "switch_node" in v["msg"]
+               for v in errors(vs))
