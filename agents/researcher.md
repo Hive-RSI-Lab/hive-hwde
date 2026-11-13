@@ -76,6 +76,12 @@ exit 0/1/2. Keep output ASCII.
 - Depth: prefer two independent high-tier sources over four weak ones; the
   cap is a budget, not a target.
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- Being on the allowlist says nothing about being reachable. From the tower `st.com`, `analog.com` and `mouser.com` time out (HTTP 000) while `research.py fetch` accepts them and burns a depth unit; `wmsc.lcsc.com` serves the genuine vendor PDF and `farnell.com` mirrors ADI datasheets. Curl a host with `--max-time 20` before planning a source around it.
+- The session scratchpad is shared by concurrent agents and file names are not collision-safe: a sibling overwrote a `crop.py` mid-run. Prefix scratch files with your task id.
+- Envelope authoring, not citation accuracy, is where records fail. Blind re-reads found transcription near word-perfect and page numbers right, but envelopes that excluded exactly the regime the rule was written for (a frequency max on an error that grows with frequency). State the envelope in the direction the mechanism runs, and name any gain or condition the figure was taken at.
+
 ## Output contract (end your final message with exactly this block)
 FILES: research/records/<ids>.yaml [research/checklists/<id>.yaml] + task ledger
 GATE: research.py validate: exit <0|1>

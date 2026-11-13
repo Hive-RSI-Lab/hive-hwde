@@ -302,6 +302,25 @@ rules as routing constraints; cite the record id when you apply one.
   `routing/` named `pre-<step>.kicad_pcb` / `post-<step>.kicad_pcb` (hyphen:
   report_gen renders them; `pre_`/`post_` is only read for old workspaces).
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- A zone's default pad connection is thermal relief. In a tight corridor the gaps from the pad and its neighbour overlap and no fill forms: `starved_thermal` plus a real `unconnected_items` (a pad on its own pour island while the layer reports a healthy "2 islands"). Re-pour with `"connect": "solid"` in a planes sidecar entry. A pad geometry-capped at one spoke also clears with a short same-net track from the pad into open fill, before any zone edit. A 3 A pour needs solid pads.
+- Read pad extents from `geom.pads_of().poly.bounds`, never from the raw `(size w h)`: the pad carries its own rotation, and `route_edit` accepts an op that misses its pad by 1.3 mm (the error shows up later as `unconnected_items` and `track_dangling` naming a track by length). Assert every `add_track` endpoint is covered by the target pad's `poly` before emitting ops.
+- `planes_gen` thermal-via grid: it reads no `constraints.thermal[ref].min_vias`, so `min_vias: 0` does not stop it drilling from a live-tab pour (an LDO's VOUT tab) into the GND plane. Check `--dry-run` first.
+- `planes_gen` has no re-pour path: on a board whose outline grew, the 80 % idempotency guard reads 73 % and it ADDS a second same-net zone on top. Delete the old zones first.
+- `route_auto`'s KRT finish connects plane-net SMD pads with traces, not vias. On a thermal-pour board it daisy-chains GND across the pour (-2.6 % of the effective area on a board whose margin is that number). Use `--no-krt-finish` when Freerouting cannot read the board.
+- Freerouting 2.2.4 can die with `StackOverflowError` in `PolylineTrace.combine` while reading the DSN (KRT guide-wire wedge). Zero pass lines on every rung means the ladder is dead, not slow.
+- Freerouting ignores a declared power pour band (it routes signals across the zone, splitting it, and under connectors), ignores copper-to-edge and hole-to-hole (tracks 0.28 mm from the edge, vias 0.43 mm apart), and leaves GND to pours it cannot see. On a small board hand-route the few signals with `route_edit`; add a 0.5 mm edge keepout rule area and a 0.2 mm Default clearance (via centres >= 0.8 mm); route GND as a net first and pour afterwards.
+- `route_auto` (and the SES import) can report done and still drop connections (`fr_completion 1.0`, completion 0.93). Trust the board's completion, not the router's.
+- A `placement_adjust_request` naming nets that are plane-carried by design is premature on the 2-layer chain: `stitch_vias` and `plane_repair` run later and own them. Finish the chain, then judge the request.
+- `plane_repair` unrestricted can join pours through a connector body (shorting items, NPTH hole clearance) and still exit 0 `pass`. Snapshot first; only kicad-cli DRC counts. Restore and restrict.
+- `stitch_vias` places its "just past the pad edge" via INSIDE any pad with a half-extent over 0.65 mm (ring radii are from the pad centre; its checker only tests foreign copper), and a via in its own pad wicks paste on JLC economy PCBA. Test `pad.poly.contains(Point(at))` on the `--dry-run` ops. Its hole-to-hole model is 0.3 mm too permissive (KiCad measures hole EDGE to EDGE: measured = centre spacing - drill), and it misses pads already connected through a multi-segment track to an existing via. Run DRC straight after it and remove the redundant vias.
+- `check_current` charges every transition via with the whole net's current and clusters barrels by distance (two vias 1.99 mm apart read as one, two 4.88 mm apart as two). On a plane-fed rail with through-hole terminals the load return never crosses those vias; the "per-cluster current unattributed" advisory is not a reason to double them or to give up deliberate redundancy.
+- `check_return_path --verify-fill` dies with `StaleFillError` when there is no `.kicad_dru`: it refills through KiCad, there is no independent fill model to disagree. Create the DRU. A layer-change crossing is only cleared when the centerline does not cross the excised disk (`item_radius` + 0.65 mm) around a single via; shortening it does not help.
+- A driven guard ring is a `planes_gen` zone with `connect: solid` on the guarding net (the buffer output). Its leakage is set by what is inside the ring: a pin that starts inside it cannot be intercepted, and the fix can be re-routing the guarded net.
+- `route_critical --out-report` into a missing directory crashes after the board is already written (no JSON, nonzero exit on a good run). `mkdir` the report directory first.
+- A pad-to-pad zone connection per pad has no scripted route (`planes_gen` is zone-wide; `route_edit` only tracks and vias): a hand-soldered through-hole pin in a solid pour needs a hand edit and a note.
+
 ## Output contract (end your final message with exactly this block)
 FILES: <board + route/ artifacts>
 GATE: drc_routed: <pass/fail, violations>; completion <fraction>

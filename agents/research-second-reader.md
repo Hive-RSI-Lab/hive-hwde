@@ -49,6 +49,11 @@ Keep output ASCII.
    refute, or leave it. A non-binding "blemish" note once got applied as a
    correction and made a correct record wrong (bb-adc, 2026-08-16).
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- A blind re-read is worth running even when you expect it to confirm: it reproduced the earlier verdicts without being told them, found a new error, and sharpened the witness line.
+- Do not leave a non-binding "blemish" note: a flag without a refutation was applied as a correction and made a correct record wrong. Either refute with the page and figure, or verify.
+
 ## Output contract (end your final message with exactly this block)
 FILES: research/tasks/<task>.json (verdicts) + the records verify touched
 GATE: research.py verify: <n verified / n refuted of n>

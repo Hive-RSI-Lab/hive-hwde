@@ -103,6 +103,19 @@ Write `kicad/sims/<name>.cir` + `kicad/sims/<name>.bounds.json`:
 - `scripts/gate.py --gate sim kicad/sims` - the P8-phase gate the
   orchestrator runs; error-severity findings fail it.
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- ngspice has no integrated-noise measure: inject the RTI noise density as a plain AC source and `.meas ac x rms vm(out) from=f1 to=f2`; total rms = x * sqrt(f2-f1) (checked against a closed-form RC integral to 0.3 %).
+- Pad every `.dc`/`.ac` sweep. The first point can fail gmin stepping and return a junk operating point (a clamped macromodel read 0.1025 V for 0.2123 V) while later points are exact; `at=` on the last point errors out.
+- Never mix clamped and unclamped output stages of the same boundary model in one `.dc` deck: the clamped instance sits on a zero-derivative corner, the operating point falls back through gmin/source stepping, and the OTHER instances come back corrupted. One deck per case.
+- Inside a measure's `param='...'`, `{braces}` are a syntax error, and the measure is silently absent while `run_circuit()` still says `status: ok`. Count the measures that came back against the ones the deck asks for.
+- A behavioural op-amp needs its anti-windup clamp on the integrator node, not just the output buffer (an unclamped node charged to ~160 V in 1 ms and faked a never-recovering overload), and the swing clamp after the output resistance.
+- A datasheet stability curve (overshoot vs load capacitance) is taken at a stated gain, usually unity. At a noise gain of 3.5 the crossover drops about 3.5x and costs ~25 degrees of phase margin, so the figure does not transfer. Model the stage at its own gain before adding an isolation resistor; a series resistor only isolates when it is comparable to the op-amp's open-loop ro.
+- Build an in-amp from its published 3-op-amp structure (preamps, difference amp from four resistors): the gain law, the internal node and the REF-impedance error then come out of the netlist instead of being asserted.
+- A switcher's DC setpoint needs no converter model: `Vref nref 0 DC {vref}` plus `Eu1 vout 0 nref fb 1e8` makes the network solve for the divider ratio. Corners come from N `.subckt` instances (ngspice has no `.step`).
+- The injected `.options rshunt=1e9` pulls 1 nA from every node. On a high-impedance feedback divider that is 2 % of a 50 nA IFB bound; set `rshunt` in the deck when the deck has no floating node.
+- Calibrate a bench by mutating a value to the defect it exists to catch; seeding the part the design REJECTED is a free independent audit of that earlier decision.
+
 ## Output contract (end your final message with exactly this block)
 FILES: kicad/sims/*.cir, kicad/sims/*.bounds.json, reports/sim.json
 GATE: <pass|fail: N error / M warning across K testbenches>

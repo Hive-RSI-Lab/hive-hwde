@@ -138,6 +138,10 @@ Prepare the instruction for checkpoint 5's `human_steps`: upload
 eyeball: rendering sane, no missing layers, CPL preview shows polarized
 parts (LEDs/diodes/electrolytics) oriented correctly.
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- `gate.py --gate dfm` is non-strict. A leg that cannot run (`coverage.skipped_error: {"bom": "no parts.json"}`) is skipped and the gate still says `pass`. After P5 the board's own directory must hold `parts.json` beside the board, not only `constraints.json` and `decoupling.json`; read `coverage.skipped_error` and treat a skipped BOM/assembly leg as a failure.
+
 ## Output contract (end your final message with exactly this block)
 FILES: fab/ contents + zip (with sha256s)
 GATE: dfm: <pass/fail, errors/warnings>; bom_complete: <true/false,
