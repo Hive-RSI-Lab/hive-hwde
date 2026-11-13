@@ -224,41 +224,6 @@
    "kind": "wick_via_in_pad",
    "verdict": "real",
    "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
-  },
-  {
-   "gate": "verify",
-   "check": "netlist_audit",
-   "net": "/FRONT_INT_N",
-   "refs": [],
-   "pos": null,
-   "kind": "diffpair_unpaired",
-   "verdict": "false",
-   "reason": "false (#877): FRONT_INT_N is an active-low interrupt line (_N = not), not half of a differential pair"
-  },
-  {
-   "gate": "verify",
-   "check": "netlist_audit",
-   "net": "/BL_K",
-   "refs": [
-    "J2",
-    "Q1"
-   ],
-   "pos": null,
-   "kind": "power_no_consumers",
-   "verdict": "false",
-   "reason": "false (#877): BL_K is the backlight cathode return switched low by Q1's drain, not a supply rail"
-  },
-  {
-   "gate": "verify",
-   "check": "netlist_audit",
-   "net": "/IR_VCC",
-   "refs": [
-    "U2"
-   ],
-   "pos": null,
-   "kind": "power_undeclared",
-   "verdict": "false",
-   "reason": "false (#877): IR_VCC is U2's RC-filtered (R10 100R, C5) ~1 mA supply tap; there is no current budget worth declaring"
   }
  ]
 }
