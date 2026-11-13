@@ -11,6 +11,13 @@ Other nets' vias crowd pin 2's outward side: C at (7.3,10.55) and B at
 (6.6,11.2). The straight spot is taken, so the fanout must find one off to
 the side that clears both, and pins 1 and 3 (#929). GND has a via at
 (10,7.7), 0.8 mm from pin 11: that pin already fans out ("has via").
+
+vip.kicad_pcb (#940): 20 x 20, four layers, the same nets. U2 at (10,10)
+has pad 1 VIN, 1.2 x 1.2 mm at (8,10), and pad 2 GND at (12,10). A
+0.2 mm net-A track walls pad 1 in on F.Cu on its outward (x = 7.1) and
+both sides (y = 9.1 and 10.9, out to x = 8.9), 0.2 mm off its copper:
+every via spot outside needs a stub across A, and there is no VIN copper
+to join. Only a via in the pad itself fans it out.
 """
 from pathlib import Path
 
@@ -72,5 +79,35 @@ def qfn(path):
     return path
 
 
+HDR4 = HDR.replace('(2 "B.Cu" signal)',
+                   '(4 "In1.Cu" signal) (6 "In2.Cu" signal) (2 "B.Cu" signal)')
+
+
+def track(a, b, net, n, w=0.2, layer="F.Cu"):
+    return (f'  (segment (start {a[0]} {a[1]}) (end {b[0]} {b[1]})'
+            f' (width {w}) (layer "{layer}") (net "{net}")'
+            f' (uuid "00000000-0000-0000-0000-0000000005{n:02d}"))\n')
+
+
+def vip(path):
+    body = '  (footprint "t:PWR2" (layer "F.Cu") (at 10 10)\n'
+    body += '    (property "Reference" "U2" (at 0 0 0))\n'
+    body += ('    (pad "1" smd rect (at -2 0) (size 1.2 1.2)'
+             ' (layers "F.Cu") (net "VIN"))\n')
+    body += ('    (pad "2" smd rect (at 2 0) (size 1.2 1.2)'
+             ' (layers "F.Cu") (net "GND"))\n')
+    body += "  )\n"
+    wall = [(8.9, 9.1), (7.1, 9.1), (7.1, 10.9), (8.9, 10.9)]
+    body += "".join(track(a, b, "A", i + 1)
+                    for i, (a, b) in enumerate(zip(wall, wall[1:])))
+    path = Path(path)
+    path.write_text(HDR4 + '  (gr_rect (start 0 0) (end 20 20)'
+                    ' (stroke (width 0.1)) (fill no) (layer "Edge.Cuts"))\n'
+                    + body + ")\n")
+    path.with_suffix(".kicad_dru").write_text(DRU)
+    return path
+
+
 if __name__ == "__main__":
     print(qfn(HERE / "qfn.kicad_pcb"))
+    print(vip(HERE / "vip.kicad_pcb"))

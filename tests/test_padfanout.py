@@ -213,3 +213,82 @@ def test_live_fanout_drc_clean(kicad, tmp_path):
     assert payload["facts"]["board_updated"] is True
     assert pcb.read_text(encoding="utf-8").count("(via") == 3 + 4
     assert _drc(kicad, pcb) == []
+
+
+# ------------------------------------------------- via in pad (#940)
+
+VIP = FIX / "vip.kicad_pcb"
+
+
+def _vip_board(tmp_path):
+    for src in FIX.glob("vip.*"):
+        shutil.copy2(src, tmp_path / src.name)
+    return tmp_path / "vip.kicad_pcb"
+
+
+def test_walled_pad_has_no_spot_without_via_in_pad():
+    """The planted fault: U2.1 is walled in by net A on every side but the
+    inward one, and VIN has no copper to join, so without the option the
+    pad stays unfanned."""
+    ops, rows = padfanout.Fanout(geom.BoardGeom.from_file(VIP)).fan(["U2.1"])
+    assert ops == [] and rows[0]["result"] == "no spot"
+
+
+def test_via_in_pad_at_the_pad_centre():
+    bg = geom.BoardGeom.from_file(VIP)
+    fo = padfanout.Fanout(bg, via_in_pad=True)
+    ops, rows = fo.fan(["U2.1"])
+    pad = _pad(bg, "U2.1")
+    assert rows[0]["result"] == "via in pad"
+    assert ops == [{"op": "add_via", "at": [8.0, 10.0], "size": fo.via[0],
+                    "drill": fo.via[1], "net": "VIN"}]
+    ring = Point(8.0, 10.0).buffer(fo.via[0] / 2)
+    assert pad.poly.contains(ring)
+    for t in bg.tracks_of(net="A"):                # clear of the wall
+        assert ring.distance(t.poly) >= fo.rules.clearance - 1e-6
+
+
+def test_via_in_pad_needs_a_pad_that_holds_the_via(monkeypatch):
+    """U1's 0.7 x 0.25 mm pads can't hold a via: still `no spot`."""
+    monkeypatch.setattr(padfanout.Fanout, "spot", lambda *a: None)
+    monkeypatch.setattr(padfanout.Fanout, "join", lambda *a: None)
+    ops, rows = padfanout.Fanout(_bg(), via_in_pad=True).fan(["U1.2"])
+    assert ops == [] and rows[0]["result"] == "no spot"
+
+
+def test_via_in_pad_refused_where_the_fab_cannot_fill(tmp_path):
+    """qfn.kicad_pcb has two copper layers: the fab fills vias on 4+."""
+    assert 2 not in route_escape.filled_via_layers()
+    pcb = _board(tmp_path)
+    before = pcb.read_bytes()
+    with pytest.raises(CheckError, match="fills and caps vias only"):
+        route_escape.run(["--pcb", str(pcb), "--pads", "U1.2",
+                          "--via-in-pad"])
+    assert pcb.read_bytes() == before
+
+
+def test_via_in_pad_plan_writes_the_fill_after(tmp_path):
+    pcb = _vip_board(tmp_path)
+    out = tmp_path / "ops.json"
+    payload, _ = route_escape.run(["--pcb", str(pcb), "--pads", "U2.1",
+                                   "--via-in-pad", "--plan",
+                                   "--out-ops", str(out)])
+    got = json.loads(out.read_text())
+    assert [o["op"] for o in got["ops"]] == ["add_via"]
+    assert got["then"] == [{"op": "fill_vias", "kind": "via", "net": "VIN",
+                            "at": [8.0, 10.0], "filled": True}]
+    assert payload["facts"]["via_in_pad"] == 1
+    assert payload["violations"] == []
+
+
+def test_live_via_in_pad_filled_and_drc_clean(kicad, tmp_path):
+    import fab_export
+    pcb = _vip_board(tmp_path)
+    assert _drc(kicad, pcb) == []
+    payload, _ = route_escape.run(["--pcb", str(pcb), "--pads", "U2.1",
+                                   "--via-in-pad"])
+    assert payload["facts"]["board_updated"] is True
+    f = fab_export.via_fill_facts(pcb)
+    assert f["in_pad"] == [{"ref": "U2", "pad": "1", "at": [8.0, 10.0],
+                            "filled": True}]
+    assert _drc(kicad, pcb) == []

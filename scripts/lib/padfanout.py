@@ -20,6 +20,11 @@ For each pad, in the order given:
     pad's layer. Zones are ignored: they refill around new copper;
   - with no spot, join the pad to its own net's copper on its layer within
     `join` mm by a straight, 45-degree or L-shaped track;
+  - with neither, and via_in_pad set (route_escape --via-in-pad, #940),
+    put the via at the pad's centre when the pad's copper holds the whole
+    via and the via clears everything above but the pad itself: a via in
+    pad, which must be filled and capped (the caller sets that on the via,
+    and fab_export's VIA-FILL.md then tells the fab);
   - otherwise report the pad as `no spot`.
 Each via and stub is an obstacle to the pads after it.
 
@@ -59,12 +64,14 @@ def _p(q) -> list[float]:
 
 class Fanout:
     def __init__(self, bg, rules=None, *, width: float | None = None,
-                 via: tuple[float, float] | None = None):
+                 via: tuple[float, float] | None = None,
+                 via_in_pad: bool = False):
         self.bg = bg
         self.rules = rules or rf.board_rules(Path(bg.path), bg)
         self.obs = rf.Obstacles(bg)
         self.width = width
         self.via = via or (self.rules.via_size, self.rules.via_drill)
+        self.via_in_pad = via_in_pad
         if self.via[1] >= self.via[0]:
             raise CheckError(f"via drill {self.via[1]} must be under its "
                              f"size {self.via[0]}")
@@ -87,7 +94,9 @@ class Fanout:
     def _foreign(self, it, net: str) -> bool:
         return it.net != net and net not in it.tied
 
-    def via_ok(self, at, net: str) -> bool:
+    def via_ok(self, at, net: str, own=None) -> bool:
+        """A via of `net` at `at` clears everything; `own` (a pad) is the
+        pad it sits in, which is not an obstacle to it."""
         size, drill = self.via
         P = Point(at)
         r = self.rules
@@ -97,6 +106,9 @@ class Fanout:
         if any(k.buffer(size / 2).intersects(P) for k in self.keepouts):
             return False
         for it in self._near(P):
+            if own is not None and it.ref == own.ref and (
+                    it.shape is own.poly or it.shape.equals(own.poly)):
+                continue
             d = it.shape.distance(P)
             if it.hole is not None and \
                     it.hole.distance(P) - drill / 2 < r.hole_to_hole + r.margin:
@@ -169,6 +181,16 @@ class Fanout:
                             self.track_ok(pad.center, v, layer, net, w):
                         return v, dist
         return None
+
+    def in_pad(self, pad, net):
+        """The pad's centre, if a via of the net fits there: an SMD pad
+        whose copper holds the whole via, clear of everything else."""
+        if pad.drill is not None:
+            return None
+        c = (float(pad.center[0]), float(pad.center[1]))
+        if not pad.poly.contains(Point(c).buffer(self.via[0] / 2)):
+            return None
+        return c if self.via_ok(c, net, own=pad) else None
 
     def join(self, pad, net, layer, w, reach):
         """A straight, 45-degree or L path to own copper on the layer."""
@@ -247,13 +269,21 @@ class Fanout:
                 row.update(result="via", at=_p(v), dist_mm=_r(dist))
             else:
                 path = self.join(pad, net, layer, w, reach)
-                if path is None:
+                vip = None if path is not None or not self.via_in_pad \
+                    else self.in_pad(pad, net)
+                if path is not None:
+                    new += [{"op": "add_track", "start": _p(a), "end": _p(b),
+                             "width": w, "layer": layer, "net": net}
+                            for a, b in zip(path, path[1:])]
+                    row.update(result="join", to=_p(path[-1]))
+                elif vip is not None:
+                    new.append({"op": "add_via", "at": _p(vip),
+                                "size": self.via[0], "drill": self.via[1],
+                                "net": net})
+                    row.update(result="via in pad", at=_p(vip))
+                else:
                     row["result"] = "no spot"
                     continue
-                new += [{"op": "add_track", "start": _p(a), "end": _p(b),
-                         "width": w, "layer": layer, "net": net}
-                        for a, b in zip(path, path[1:])]
-                row.update(result="join", to=_p(path[-1]))
             self._commit(new)
             ops += new
         return ops, report
