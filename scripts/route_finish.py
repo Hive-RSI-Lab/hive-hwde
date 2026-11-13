@@ -34,8 +34,10 @@ time, on a fine grid (default 0.1 mm) with 8-way moves and through vias:
   A connection whose copper DRC names in an error is taken out again. A pass
   is kept when the unconnected count drops and no error type grows; a pass
   that ripped board copper may hold provisionally, and the run must then
-  beat the board as it was before it. Stubs the rips leave hanging are swept
-  (route_cleanup's dangling pass). Everything runs on a staged copy.
+  beat the board as it was before it. A ripped net must also end in no more
+  pieces (DRC unconnected items) than before its rip, or the run goes back
+  to the board before its first rip (#939). Stubs the rips leave hanging are
+  swept (route_cleanup's dangling pass). Everything runs on a staged copy.
 - --rip-errors (route_auto passes it) first takes out the tracks and vias DRC
   names in a short, clearance, crossing, hole or width error, and routes
   them again; kept only if errors + unconnected end lower with no error type
@@ -1580,6 +1582,11 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
     touched: set = set()   # nets whose board copper a pass ripped
     rip_nets: set = set()
     ckpt_file = staged.with_name("ckpt_maze_" + staged.name)
+    # the island guard (#939): the board before the first pass that ripped
+    # board copper, and each ripped net's unconnected count before its rip
+    rip_file = staged.with_name("preripnets_maze_" + staged.name)
+    rip_start = None    # (drc, kept_any) at rip_file
+    rip_base: dict[str, int] = {}
     ripped = []
     if rip_errors:
         # an autorouter's shorts and clearance misses: take out the tracks
@@ -1637,6 +1644,14 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
             entry.update(unconnected_before=b_un, unconnected_after=a_un,
                          grew=grew)
             board_rip = any(j.get("rip_uuids") for j in jobs)
+            if board_rip:
+                if rip_start is None:
+                    shutil.copy2(backup, rip_file)
+                    rip_start = (cur, kept_any)
+                was = unconnected_by_net(cur)
+                for j in jobs:
+                    for net in j.get("ripped_nets", []):
+                        rip_base.setdefault(net, was.get(net, 0))
             for j in jobs:
                 touched.update(j.get("ripped_nets", []))
                 if board_rip and j["status"] == "routed":
@@ -1671,9 +1686,14 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 facts["provisional_undone"] = True
             else:
                 kept_any = True
+        if rip_start is not None:
+            cur, kept_any, touched = _island_guard(
+                staged, rip_file, rip_start, rip_base, cur, kept_any,
+                touched, facts)
     finally:
         backup.unlink(missing_ok=True)
         ckpt_file.unlink(missing_ok=True)
+        rip_file.unlink(missing_ok=True)
     if kept_any and (ripped or touched):
         cur = _sweep_dangling(cli, staged, touched | rip_nets, cur,
                               parity=parity, refill=refill, facts=facts)
@@ -1698,6 +1718,33 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
     if kept_any:
         facts["drc"] = cur
     return facts
+
+
+def _island_guard(staged, rip_file, rip_start, rip_base, cur, kept_any,
+                  touched, facts):
+    """A ripped net must end in no more pieces than it had before its rip
+    (#939). The board-wide count can drop while one ripped net is left
+    split: A joined, B cut in two and no path back for B. Its pieces show as
+    DRC unconnected items on B, so B's count is compared with its count
+    before the pass that ripped it; when any ripped net's count went up, the
+    run goes back to the board before its first rip. At DRC's unconnected
+    cap the per-net counts are cut short and say nothing: the split is
+    reported, not undone. Returns (cur, kept_any, touched)."""
+    import shutil
+
+    now = unconnected_by_net(cur)
+    split = {n: [b, now.get(n, 0)] for n, b in sorted(rip_base.items())
+             if now.get(n, 0) > b}
+    if not split:
+        return cur, kept_any, touched
+    start_drc, start_kept = rip_start
+    if max(sum(now.values()), sum(unconnected_by_net(start_drc).values())) \
+            >= DRC_UNCONNECTED_CAP:
+        facts["rip_split_capped"] = split
+        return cur, kept_any, touched
+    shutil.copy2(rip_file, staged)
+    facts["rip_split_undone"] = split
+    return start_drc, start_kept, set()
 
 
 def _sweep_dangling(cli, staged, nets, cur, *, parity, refill, facts):
