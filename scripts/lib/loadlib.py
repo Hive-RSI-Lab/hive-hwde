@@ -214,3 +214,41 @@ def alarm(seconds: float, on_expire, window: float | None = None, **lim_kw):
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, old)
+
+
+def _cg_limit(d: Path, name: str) -> int | None:
+    try:
+        v = (d / name).read_text().strip()
+    except OSError:
+        return None
+    return int(v) if v.isdigit() else None    # "max" = no limit here
+
+
+def memory_budget_mb(cgroup_root: Path = Path("/sys/fs/cgroup"),
+                     proc: Path = Path("/proc")) -> int | None:
+    """Memory this process tree may hold before something kills or throttles
+    it, MB: the tightest memory.max or memory.high on our cgroup and every
+    cgroup above it, and never more than the machine's RAM (#897). None when
+    neither can be read (not Linux)."""
+    limits = []
+    try:
+        rel = (proc / "self" / "cgroup").read_text().strip().split(":", 2)[2]
+        d = cgroup_root / rel.lstrip("/")
+        while True:
+            for name in ("memory.max", "memory.high"):
+                b = _cg_limit(d, name)
+                if b is not None:
+                    limits.append(b)
+            if d == cgroup_root or cgroup_root not in d.parents:
+                break
+            d = d.parent
+    except (OSError, IndexError):
+        pass
+    try:
+        for ln in (proc / "meminfo").read_text().splitlines():
+            if ln.startswith("MemTotal:"):
+                limits.append(int(ln.split()[1]) * 1024)
+                break
+    except (OSError, ValueError, IndexError):
+        pass
+    return min(limits) // 2**20 if limits else None

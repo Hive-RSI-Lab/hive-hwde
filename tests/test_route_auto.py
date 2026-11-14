@@ -421,6 +421,84 @@ def test_dsn_apply_net_rules_moves_a_floored_net_to_its_own_class():
     assert routelib.dsn_apply_net_rules(_DSN_CLASS, {}, {}) == (_DSN_CLASS, [])
 
 
+# --- Freerouting heap cap (#897) ----------------------------------------------
+
+def test_fr_heap_is_a_clamped_share_of_the_budget(monkeypatch):
+    monkeypatch.delenv("HWDE_FR_HEAP_MB", raising=False)
+    assert routelib.fr_heap_mb(3000) == int(3000 * routelib.FR_HEAP_SHARE)
+    assert routelib.fr_heap_mb(200) == routelib.FR_HEAP_MIN_MB
+    assert routelib.fr_heap_mb(64 * 1024) == routelib.FR_HEAP_MAX_MB
+    monkeypatch.setattr(routelib.loadlib, "memory_budget_mb", lambda: None)
+    assert routelib.fr_heap_mb() == routelib.FR_HEAP_MAX_MB
+
+
+def test_fr_heap_env_override(monkeypatch):
+    monkeypatch.setenv("HWDE_FR_HEAP_MB", "1500")
+    assert routelib.fr_heap_mb(64 * 1024) == 1500
+    monkeypatch.setenv("HWDE_FR_HEAP_MB", "0")
+    assert routelib.fr_heap_mb(3000) is None
+    monkeypatch.setenv("HWDE_FR_HEAP_MB", "2g")
+    with pytest.raises(CheckError, match="HWDE_FR_HEAP_MB"):
+        routelib.fr_heap_mb(3000)
+
+
+def test_fr_cmd_caps_the_heap_before_the_jar(monkeypatch):
+    monkeypatch.setenv("HWDE_FR_HEAP_MB", "777")
+    cmd = routelib.build_fr_cmd(Path("java"), Path("t/freerouting-2.5.0.jar"),
+                                Path("i.dsn"), Path("o.ses"))
+    j = cmd.index("-jar")    # JVM options only count before the jar
+    assert cmd.index("-Xmx777m") < j and cmd.index(routelib.FR_OOM_EXIT) < j
+    monkeypatch.setenv("HWDE_FR_HEAP_MB", "0")
+    cmd = routelib.build_fr_cmd(Path("java"), Path("t/freerouting-2.5.0.jar"),
+                                Path("i.dsn"), Path("o.ses"))
+    assert not any(a.startswith("-Xmx") for a in cmd)
+    assert routelib.FR_OOM_EXIT in cmd
+
+
+_OOM_BODY = ("import sys\n"
+             "print('Terminating due to java.lang.OutOfMemoryError: Java heap space')\n"
+             "sys.exit({rc})\n")
+
+
+def test_run_freerouting_reports_out_of_heap(tmp_path):
+    cmd, dsn, ses = _fake_fr(tmp_path, _OOM_BODY.format(rc=3))
+    facts = routelib.run_freerouting(None, None, dsn, ses,
+                                     cmd=cmd + ["-Xmx64m"], timeout=30, stall_s=10)
+    assert facts["oom"] is True and facts["heap_mb"] == 64
+
+
+def test_oom_text_in_a_clean_or_killed_run_is_not_oom(tmp_path):
+    # planted near-misses: the words in a run that exited 0, and in one the
+    # stall timer killed, are not a heap failure
+    cmd, dsn, ses = _fake_fr(tmp_path, _OOM_BODY.format(rc=0))
+    assert routelib.run_freerouting(None, None, dsn, ses, cmd=cmd,
+                                    timeout=30, stall_s=10)["oom"] is False
+    cmd, dsn, ses = _fake_fr(tmp_path, (
+        "import time\nprint('java.lang.OutOfMemoryError')\ntime.sleep(60)\n"))
+    facts = routelib.run_freerouting(None, None, dsn, ses, cmd=cmd,
+                                     timeout=30, stall_s=1)
+    assert facts["timed_out"] and facts["oom"] is False
+
+
+def test_route_probe_out_of_heap_is_a_clean_error(tmp_path, monkeypatch):
+    pcb = tmp_path / "b.kicad_pcb"
+    pcb.write_text("(kicad_pcb)")
+    before = pcb.read_bytes()
+    monkeypatch.setattr(route_auto, "_tools", lambda: (None, None, None, None))
+    monkeypatch.setattr(routelib, "run_worker", lambda *a, **k: None)
+    monkeypatch.setattr(route_auto.geom.BoardGeom, "from_file",
+                        classmethod(lambda cls, f: type(
+                            "BG", (), {"zones_of": lambda self: []})()))
+    for name in ("_auto_power_layers", "_dsn_net_rules", "_dsn_layer_widths",
+                 "_dsn_hole_rules", "_dsn_merge_wires", "_dsn_barriers"):
+        monkeypatch.setattr(route_auto, name, lambda *a, **k: [])
+    monkeypatch.setattr(routelib, "run_freerouting", lambda *a, **k: {
+        "oom": True, "heap_mb": 512, "rc": 3, "timed_out": False})
+    with pytest.raises(CheckError, match="ran out of its 512 MB heap"):
+        route_auto.route_probe(pcb, work_dir=tmp_path / "w")
+    assert pcb.read_bytes() == before
+
+
 # --- run_freerouting: stall-based timeout (2026-10-06) -----------------------
 
 def _fake_fr(tmp_path, body):
