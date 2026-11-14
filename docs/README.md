@@ -599,6 +599,38 @@ HTSSOP-32 stays `smd`. Parts marked `board_only`, `exclude_from_bom` or
   type (`fp_attr_unspecified`, which the position export drops). Planted
   fault `attr-tht-on-smd`: blinky2's SOT-223 U2 marked through_hole.
 
+## Net ties and their bridges
+
+A net-tie footprint (KiCad's `net_tie_pad_groups`: a Bridged solder jumper,
+a NetTie, a part whose own copper ties two of its pads) joins each group's
+pads with copper it draws itself. KiCad's connectivity doesn't read footprint
+graphics and each pad keeps its own net, so DRC passes the board the same
+with that copper or without it.
+
+- KiCadRoutingTools 0.19.0's writer moves every copper graphic with no net
+  to silkscreen when it saves a board, so a stray logo can't short nets. A
+  footprint's graphics never carry a net in the file, so it moved net-tie
+  bridges too (#1008). `scripts/lib/krt_launch.py` keeps the graphics of a
+  footprint with `net_tie_pad_groups` where they are, and every KRT run that
+  writes a board goes through it (`route_critical`, `route_escape`, and
+  `route_auto`'s finish pass). Other copper with no net still moves, a
+  footprint's logo included. KRT's own KiCad plugin isn't covered.
+- `check_net_tie` (verify suite) fails each group whose pads the footprint's
+  own copper (its pads and its copper graphics, layer by layer) leaves in
+  more than one piece (`net_tie_open`). The finding names the footprint, the
+  pads and the layer the bridge belongs on. `moved_to` names the silkscreen
+  layer of a drawing of the footprint's that spans the pieces: the bridge,
+  moved off copper. A group with fewer than two of its pads on the board
+  isn't judged.
+
+The hit: two SolderJumper-3 Bridged12 boot straps on a 6-layer board lost
+their bridges to F.SilkS at the escape step, and a later silk clean-up
+deleted them. Both boot pins were left floating with every gate green.
+Update the footprint from its library to put the bridge back. A jumper
+meant to be open takes an Open variant, which has no `net_tie_pad_groups`.
+Planted fault `net-tie-open`: blinky2 gains a jumper strapping /BOOT0 to GND
+with its bridge on F.SilkS.
+
 ## A USB device's PHY
 
 `check_usb_phy` (verify suite) reads the board's netlist from each connector

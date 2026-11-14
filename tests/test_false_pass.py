@@ -531,6 +531,7 @@ def test_real_gerbers_inner_ring_is_read(tmp_path):
     ("check_rf_match", [], "rf_match"),
     ("check_ddr_timing", [], "ddr"),
     ("check_length_groups", [], "length_groups"),
+    ("check_net_tie", [], "net tie"),
 ])
 def test_an_empty_board_is_nothing_to_judge(tmp_path, name, extra, reason):
     """Each of these read as passed on a board with nothing for it to see."""

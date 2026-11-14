@@ -1,0 +1,7 @@
+# check_net_tie: every net-tie footprint (net_tie_pad_groups) joins each
+# group's pads with its own copper. KiCad's DRC can't see a missing bridge
+# (footprint graphics aren't connectivity and each pad keeps its net), and
+# KRT's writer used to move such bridges to silkscreen (#1008). Board only.
+name: check_net_tie
+needs: []
+args: []

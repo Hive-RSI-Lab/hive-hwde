@@ -1,0 +1,17 @@
+# Seeded fault for check_net_tie (#1008): a net-tie footprint whose bridge
+# KRT's writer moved to silkscreen, which KiCad's DRC can't see.
+mutants:
+  net-tie-open:
+    board: blinky2
+    script: mutations/net_tie_open.py
+    check: check_net_tie
+    defect: >-
+      ROUTER fault: JP1, a SolderJumper-3 Bridged12 net tie strapping /BOOT0
+      to GND, has its pad 1-2 copper bridge on F.SilkS (KRT's writer moved
+      every net-less copper graphic there), so BOOT0 floats on the built
+      board; KiCad's DRC passes it (each pad keeps its own net and footprint
+      graphics aren't connectivity)
+    expect:
+      kind: net_tie_open
+      ref: JP1
+      layer: F.Cu

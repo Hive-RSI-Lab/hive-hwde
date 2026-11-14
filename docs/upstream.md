@@ -171,6 +171,13 @@ What moved where:
   gains `--fetch` to download a workspace's part datasheets through it.
   `agents/datasheet-extractor.md` and `reference/recipes/research.md` say so.
   Offer these upstream.
+- KRT's writer (KiCadRoutingTools 0.19.0) moved a net tie's copper bridge to
+  silkscreen with every other net-less copper graphic (#1008).
+  `scripts/lib/krt_launch.py` keeps net-tie footprints out of that move, and
+  `scripts/route_critical.py` `run_krt` now starts every KRT run through it
+  (`tests/test_check_net_tie.py`). `scripts/check_net_tie.py` (+ its
+  `checks.d` fragment and the `net-tie-open` mutant) fails a net tie whose
+  pads its copper doesn't join. Offer the writer fix to KRT too.
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
