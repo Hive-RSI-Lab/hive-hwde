@@ -634,6 +634,34 @@ def promote_to_root(ws: Path, entry_id: str, triage: dict,
     return {"file": f"{lessons.name}/{path.name}", "row": row}
 
 
+def _register_problems(rows: list[dict], archive: list[tuple[int, str]],
+                       root: Path, tri: Path) -> list[str]:
+    """The register and the archive are checked against each other: row `#`
+    is the entry's order in the archive and `LN` its heading line, one row
+    per entry. Without this a stale or truncated register still prints a
+    clean pass and its counts silently stop meaning the archive."""
+    out: list[str] = []
+    if not archive:
+        out.append(f"{root} carries no `## YYYY-MM-DD [tag] title` entries")
+    seen: dict[int, int] = {}
+    for r in rows:
+        n = r["n"]
+        seen[n] = seen.get(n, 0) + 1
+        where = f"{tri.name} row {n}"
+        out += [f"{where}: {p}" for p in triage_problems(r)]
+        if not 1 <= n <= len(archive):
+            out.append(f"{where}: no entry {n} in {root.name} "
+                       f"({len(archive)} entries)")
+        elif r["line"] != archive[n - 1][0]:
+            out.append(f"{where}: LN {r['line']} but entry {n} is at "
+                       f"line {archive[n - 1][0]} of {root.name}")
+    out += [f"{tri.name} row {n}: {k} rows for one entry"
+            for n, k in sorted(seen.items()) if k > 1]
+    out += [f"{tri.name}: no row for entry {i} (line {ln}) of {root.name}"
+            for i, (ln, _) in enumerate(archive, 1) if i not in seen]
+    return out
+
+
 def triage_summary(triage_file: Path | None = None,
                    root: Path | None = None,
                    lessons_dir: Path | None = None) -> dict:
@@ -660,6 +688,8 @@ def triage_summary(triage_file: Path | None = None,
     rows = archive_rows(tri) if has_archive else []
     archive = (_root_entries(root.read_text(encoding="utf-8"))
                if has_archive else [])
+    if has_archive:
+        problems += _register_problems(rows, archive, root, tri)
     files = lesson_files(lessons)
     for p in files:
         lesson, bad = parse_lesson(p)

@@ -113,3 +113,71 @@ def test_triage_names_half_an_archive(tmp_path):
     s = learnlib.triage_summary(triage_file=tri, root=root,
                                 lessons_dir=lessons)
     assert len(s["problems"]) == 1 and str(tri) in s["problems"][0]
+
+
+ARCHIVE = """# LEARNINGS
+
+## 2026-07-06 [windows] first lesson
+Body one.
+
+## 2026-07-07 [kicad] second lesson
+Body two.
+"""
+HEAD = "| # | LN | Entry | Tags | Now | Target | Owner | Status | Note |\n"
+
+
+def _pair(tmp_path: Path, rows: str):
+    lessons = tmp_path / "learnings.d"
+    lessons.mkdir(exist_ok=True)
+    root = tmp_path / "LEARNINGS.md"
+    root.write_text(ARCHIVE)
+    tri = tmp_path / "ladder-triage.md"
+    tri.write_text("## Register\n\n" + HEAD + rows)
+    return learnlib.triage_summary(triage_file=tri, root=root,
+                                   lessons_dir=lessons)
+
+
+ROW1 = "| 1 | 3 | first lesson | [windows] | L0 | L2 | scripts/gate.py | open | |\n"
+ROW2 = "| 2 | 6 | second lesson | [kicad] | L1 | L1 | scripts/gate.py | done | |\n"
+
+
+def test_register_matching_archive_passes(tmp_path):
+    s = _pair(tmp_path, ROW1 + ROW2)
+    assert s["problems"] == []
+    assert s["rows"] == 2 and s["archive_entries"] == 2
+
+
+def test_register_missing_a_row_fails(tmp_path):
+    s = _pair(tmp_path, ROW1)
+    assert any("no row for entry 2" in p for p in s["problems"])
+
+
+def test_register_stale_line_fails(tmp_path):
+    s = _pair(tmp_path, ROW1 + ROW2.replace("| 6 |", "| 7 |"))
+    assert any("row 2: LN 7" in p for p in s["problems"])
+
+
+def test_register_duplicate_and_bad_rows_fail(tmp_path):
+    bad = ROW2.replace("| done |", "| shipped |")
+    s = _pair(tmp_path, ROW1 + ROW1 + bad)
+    assert any("row 1: 2 rows" in p for p in s["problems"])
+    assert any("row 2:" in p and "status" in p for p in s["problems"])
+
+
+def test_promote_refuses_an_entry_the_archive_carries(tmp_path):
+    ws = tmp_path / "demo-board"
+    ws.mkdir()
+    (ws / "LEARNINGS.md").write_text(
+        "# Learnings\n\n## 2026-07-07 [kicad] second lesson\nBody two.\n")
+    _pair(tmp_path, ROW1 + ROW2)
+    lessons = tmp_path / "learnings.d"
+    try:
+        learnlib.promote_to_root(ws, _eid(ws), TRIAGE,
+                                 root=tmp_path / "LEARNINGS.md",
+                                 triage_file=tmp_path / "ladder-triage.md",
+                                 lessons_dir=lessons)
+    except ValueError as exc:
+        assert "already carry" in str(exc)
+    else:
+        raise AssertionError("promotion duplicated an archive entry")
+    assert learnlib.lesson_files(lessons) == []
