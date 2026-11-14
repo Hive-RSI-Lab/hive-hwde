@@ -4,8 +4,8 @@
 # A footprint is a MATING connector when its footprint name (the part after
 # "lib:") matches one family's `match` regex (case-insensitive, first family
 # wins, so the specific horizontal families come before the generic vertical
-# ones). Anything unmatched is not checked: screw terminals, wire pads, pogo
-# pads and test points are out of scope; a J/P part left out is named in
+# ones). Anything unmatched is not checked: wire pads, pogo pads and test
+# points are out of scope; a J/P part left out is named in
 # check_mating's not_judged, so read that list when a new connector appears.
 #
 # A J/P/CN/CON part whose footprint name matches no family is then tried, in
@@ -73,8 +73,20 @@ families:
      match: 'MICRO-?USB|MINI-?USB|USB_MICRO|USB_MINI|USB-SMD_USB-111|USB-?B\b|USB_B'}
   - {family: barrel_jack, entry: horizontal, plug_mm: 25.0,
      match: 'DC-?JACK|BARREL|DC-0\d\d|PJ-0\d\d'}
+  # 8P8C plug body 22.5 mm (AIM-Cambridge 32-5998UL, Emitex EM06.015) plus a
+  # 26.5-28 mm boot (Emitex EM06.107, Klein VDV824-650) over the cable: 30 is
+  # the plug and the start of the boot. Adam Tech MTJ-889X1 is a side-entry
+  # 8P8C jack (MTJ catalog, Type 9).
   - {family: rj45, entry: horizontal, plug_mm: 30.0,
-     match: 'RJ-?45|8P8C'}
+     match: 'RJ-?45|8P8C|(^|[^0-9])MTJ-88\d'}
+  # 6P (RJ11/RJ12) plug: 13.35 mm long (Multicomp 7001-6P4C, 8588-0188A).
+  # Adam Tech MTJ-669X1 is a side-entry 6P6C jack.
+  - {family: modular_6p, entry: horizontal, plug_mm: 13.4,
+     match: 'RJ-?1[12]\b|6P[46]C|(^|[^0-9])MTJ-66\d'}
+  # right-angle RCA jack (Lian Xin XDJK-0271, stacked pair): the RCA plug is
+  # 36.5 mm tip to the end of its cover (CUI RCP-01 drawing).
+  - {family: rca_jack, entry: horizontal, plug_mm: 36.5,
+     match: 'XDJK-|RCA'}
   - {family: card_slot, entry: horizontal, plug_mm: 15.0,
      match: 'MICRO-?SD|TF-?CARD|TF-(SMD|PUSH)|SD-?CARD|SIM-?CARD|NANO-?SIM|(^|[^0-9])104031-?\d'}
   # a wire-to-board plug or an FPC tail is held by its wires, so a short
@@ -106,6 +118,20 @@ families:
   # from the side away from the pins
   - {family: pluggable_terminal, entry: horizontal, plug_mm: 15.0,
      match: '(KF2?|15)EDGR'}
+  # screw terminal block with side wire entry: the wire goes in parallel to
+  # the board through the openings on one face, the screws are on top. The
+  # "plug" is the stripped end (KF301 4-5 mm, Phoenix PT 1,5/..-H 5 mm,
+  # Dorabo DB128 6-7 mm stripping lengths); the insulated lead runs on. A
+  # block a few mm in from the edge still takes its wire, so the mouth may
+  # sit 3 mm inside. The wires go in through openings inside the block's own
+  # width and are held by their insulation well past the edge, so the zone
+  # is the block's width with no grip beside it (core J11's wire runs 1 mm
+  # from the RCA jack J4 beside it, and is still wired by hand). The pads
+  # are all one size, so the pad rule reads little: each name has a `mouth`
+  # entry below, read from its 3D model and drawing.
+  - {family: screw_terminal_side, entry: horizontal, plug_mm: 7.0,
+     grip_mm: 0.0, mouth_tol_mm: 3.0,
+     match: 'KF301-|DB128[VL]-|WJ500V-|TERMINALBLOCK_PHOENIX_PT-.*-H_.*HORIZONTAL'}
   # Staeubli 24.243 4 mm safety jack lying on the board: the bore is 7.5 mm up, so
   # low parts don't block a plug, but a 4 mm plug and its lead still need a clear
   # run (emc-lab LISN J2/J4 pointed 40 mm across the board at J1/J3).
@@ -118,6 +144,21 @@ families:
      match: 'IDC|BOX|PZ127VS'}
   - {family: pin_header, entry: vertical,
      match: 'HDR-|PIN(HEADER|SOCKET)_|DS1021'}
+  # N female 4-hole flange jack, straight (17.5 mm flange): the N plug's
+  # coupling nut is 21.0 mm across (Amphenol Type N catalog, N cable plugs,
+  # dimension b), 1.75 mm past the flange each side, and a hand turns it.
+  - {family: n_flange, entry: vertical, finger_mm: 4.25,
+     match: '(^|[^A-Z])N-KFD'}
+  # DreamLNK DL-MMCX-KE-180: straight through-hole jack, the plug comes down
+  # on the barrel. The plug body is 3.48 mm across (Cinch 135-3436-001), about
+  # the 3.6 mm flange, so the default finger room stands.
+  - {family: mmcx_vertical, entry: vertical,
+     match: 'MMCX'}
+  # Amphenol SMPM 925-143J-51P: straight surface-mount jack (925-126J is the
+  # edge-mount one). Plug body diameter not found in a datasheet: default
+  # finger room until it is (#1016).
+  - {family: smpm_vertical, entry: vertical,
+     match: 'SMPM'}
   # SMA alone is also the DO-214AC diode package (SMA_L4.3-W2.6...), so the
   # connector has to be named as one. Any BAT Wireless BWSMA the edge rule
   # did not take is vertical.
@@ -142,3 +183,16 @@ mouth:
   # rule reads. EasyEDA's SIM-SMD_8P-1040310811 has those tails at local +y.
   # The laptop hub shipped J6 backwards because no row knew it (#911).
   '(^|[^0-9])104031-?0811': '+y'
+  # screw terminals (#951): every pad the same size, so the wire entry is
+  # read from each part's 3D model and drawing. KF301-5.0 (EasyEDA model,
+  # rotated 0): openings at model -y, which KiCad's y flip makes local +y.
+  'KF301-': '+y'
+  # Dorabo DB128V-5.08: model turned 180, openings at local +y; the
+  # silkscreen arrows on that side point the same way.
+  'DB128[VL]-': '+y'
+  # WJ500V-5.08 (EasyEDA model, rotated 0): openings at model +y = local -y.
+  'WJ500V-': '-y'
+  # Phoenix PT 1,5/..-H (KiCad library): wire entry at local +y, the side
+  # the courtyard reaches 5.5 mm (4.5 on the screw side) - checked on a
+  # render of digits-v1 J7.
+  'TERMINALBLOCK_PHOENIX_PT-.*-H_': '+y'

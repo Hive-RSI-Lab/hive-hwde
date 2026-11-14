@@ -132,7 +132,11 @@ def test_small_post_holes_are_named_and_loose_holes_warn(tmp_path):
 def test_no_drawing_is_listed_not_failed(tmp_path):
     pcb = _board(tmp_path, rca())
     vs, facts = ccf.check(pcb, None)
-    assert vs == [] and facts["edges"] == []
+    # RCA is a mating family (rca_jack, #891), so its edge is measured, but
+    # with no drawing there is no overhang to hold it to
+    assert vs == []
+    assert [e["ref"] for e in facts["edges"]] == ["J1"]
+    assert "drawing_overhang_mm" not in facts["edges"][0]
     assert facts["unverified"] == [{"ref": "J1", "lcsc": "C9999",
                                     "why": "no extraction"}]
 
