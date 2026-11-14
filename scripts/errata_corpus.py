@@ -133,9 +133,16 @@ def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
     if not cli:
         raise SystemExit("check_straps catches need kicad-cli (bin/hwde env)")
     net = empty.parent / f"{rev}.net"
-    subprocess.run([str(cli), "sch", "export", "netlist", "-o", str(net),
-                    str(repo / b[rev]["sch"])], capture_output=True, text=True,
-                   timeout=900, check=True)
+    import legacy_net
+    sch = repo / b[rev]["sch"]
+    if legacy_net.is_legacy(sch):  # KiCad 4/5: kicad-cli exports it empty
+        r = legacy_net.netlist(sch, net, pcb=repo / b[rev]["pcb"])
+        if r["status"] != "pass":
+            raise SystemExit(f"{b['id']} {rev}: {r['error']}")
+    else:
+        subprocess.run([str(cli), "sch", "export", "netlist", "-o", str(net),
+                        str(sch)], capture_output=True, text=True,
+                       timeout=900, check=True)
     return ["check_straps.py", "--pcb", str(repo / b[rev]["pcb"]),
             "--netlist", str(net)]
 

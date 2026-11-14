@@ -466,7 +466,20 @@ def export_netlist(cli: Path, sch: Path, out_file: Path,
     args = ["sch", "export", "netlist", "-o", str(out_file),
             "--format", fmt, str(sch)]
     cp = run_cli(cli, args)
-    return _export_result("netlist", sch, cp, [out_file])
+    res = _export_result("netlist", sch, cp, [out_file])
+    if res["status"] == "pass":
+        # kicad-cli opens a KiCad 4/5 .sch, exits 0 and writes an empty
+        # netlist: say so, or every check downstream passes on nothing (#1023)
+        from lib import legacy_net  # noqa: PLC0415
+        n = legacy_net.empty_export(sch, out_file)
+        if n:
+            res["status"] = "error"
+            res["error"] = (f"kicad-cli wrote a netlist with 0 components from "
+                            f"{Path(sch).name}, which has {n}"
+                            + (" (a KiCad 4/5 legacy schematic: read it with "
+                               "lib/legacy_net)" if legacy_net.is_legacy(sch)
+                               else ""))
+    return res
 
 
 # ---------------------------------------------------------------- render
