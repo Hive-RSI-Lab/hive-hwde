@@ -404,3 +404,29 @@ def test_codec_master_clock_pin_still_flags_a_strap(tmp_path):
     input row, so a strap on it stays flagged."""
     k = _codec_on_strap(tmp_path, "ES8388", "1", "SCLK_1")
     assert "strap_unknown" in k
+
+
+# ------------------------------------- switches named by their job (#885)
+
+def _c3_boot(tmp_path, ref, value):
+    comps = {"U1": "ESP32-C3-WROOM-02-N4", ref: value}
+    nets = {"+3V3": [("U1", "1", "3V3_1")], "GND": [("U1", "19", "GND_19"),
+                                                     (ref, "2", "2")],
+            "/EN": [("U1", "2", "EN_2")],
+            "Net-(U1-IO9)": [("U1", "8", "IO9_8"), (ref, "1", "1")]}
+    pcb = _netlist(tmp_path, comps, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    return _by_kind(payload)
+
+
+def test_a_boot_button_named_boot1_is_a_switch(tmp_path):
+    """oasis v0.2's BOOT button is ref boot1, value SW_Push: open at reset,
+    not a part of unknown drive on GPIO9."""
+    assert "strap_unknown" not in _c3_boot(tmp_path, "boot1", "SW_Push")
+
+
+def test_planted_unknown_part_on_io9_still_flags(tmp_path):
+    """Planted fault: the same net with a part of unknown reset state on it
+    is still strap_unknown; only switch values are let through."""
+    assert "strap_unknown" in _c3_boot(tmp_path, "boot1", "74LVC1G125")

@@ -5166,18 +5166,6 @@
    "reason": "measured against the footprint's exposed pad, paste and vias (IPC-7093 coverage)"
   },
   {
-   "gate": "verify",
-   "check": "check_straps",
-   "net": null,
-   "refs": [
-    "U4"
-   ],
-   "pos": null,
-   "kind": "no_netlist",
-   "verdict": "false",
-   "reason": "the score doesn't export the schematic netlist check_straps needs, so it can't judge the straps (hwde's gap)"
-  },
-  {
    "gate": "dfm",
    "check": "dfm",
    "net": null,

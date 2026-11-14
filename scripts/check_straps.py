@@ -89,6 +89,9 @@ SHORT_PREFIXES = ("L", "FB", "F", "NT")
 PASSIVE_PREFIXES = ("C", "D", "LED", "Q", "SW", "S", "TP", "H", "MH", "BT",
                     "K")
 CONNECTOR_PREFIXES = ("J", "P", "CN", "CON", "X")
+# a switch named by its job rather than SW ("boot1", "reset1" on oasis v0.2)
+# is still a switch: open at reset, no drive and no pull of its own
+PASSIVE_VALUE = re.compile(r"^(SW_|SW$|Button|Switch|TestPoint)", re.I)
 
 
 def load_kb(path: Path = RESET_YAML) -> dict:
@@ -288,7 +291,8 @@ class Resolver:
                     out["drivers"].append(self.osc_drive(ref, event, series,
                                                          where, seen))
                 continue
-            if p in PASSIVE_PREFIXES or ref in self.b.shorts:
+            if p in PASSIVE_PREFIXES or ref in self.b.shorts \
+                    or PASSIVE_VALUE.match(self.b.value(ref) or ""):
                 continue
             if p in CONNECTOR_PREFIXES:
                 out["unknown"].append(f"{where}, a connector")
@@ -667,7 +671,8 @@ def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
                     vth_min=vth))
                 continue
             if prefix(ref) in PASSIVE_PREFIXES + CONNECTOR_PREFIXES \
-                    or ref in board.shorts or prefix(ref) == "R":
+                    or ref in board.shorts or prefix(ref) == "R" \
+                    or PASSIVE_VALUE.match(board.value(ref) or ""):
                 continue
             if gst["state"] not in ("high", "low"):
                 continue
