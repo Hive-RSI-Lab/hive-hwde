@@ -52,7 +52,11 @@ Per association:
    because a straight line across a pour hit a slot can't be proven long, so it
    warns at most (copperpath's floor, slots=False).
    An association with no rail copper yet (place gate, unrouted) is skipped and
-   listed in the report as copper_mm null.
+   listed in the report as copper_mm null. When the cap's pad and the pin do
+   share same-layer copper but the walk can't join them (it joins a track only
+   at its ends, so a T-junction with no vertex at the tee breaks it), the
+   copper is not judged and the association's entry in the report carries
+   copper_unwalked saying so: split the track at the tee to have it judged.
  - Ground copper (kind=decoupler_ground_copper): the same walk from the cap's
    ground pad to the IC's nearest ground pad, judged only when it is a detour,
    longer than the class's error limit and DETOUR_RATIO times the plan distance between
@@ -236,7 +240,8 @@ def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = Non
     copper = rail_copper(bg, rail, cap_pad, pin_pad, paths)
     copper_mm = copper["mm"] if copper else None
 
-    rail_vias = 0 if same_layer_connected(bg, rail, cap_pad, pin_pad) else 2
+    joined = same_layer_connected(bg, rail, cap_pad, pin_pad)
+    rail_vias = 0 if joined else 2
     gnd_pads = bg.pads_of(net=gnd, ref=cap)
     gnd_leg = None
     if gnd_pads:
@@ -353,6 +358,15 @@ def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = Non
              "gnd_leg_mm": checklib.rnd(gnd_leg),
              "vias_in_loop": rail_vias + 1,
              "loop_nh": checklib.rnd(loop_nh)}
+    if copper is None and paths is not None and joined:
+        # the pads share copper, but the walk joins a track only at its ends
+        # (lib/netconn.py): a T-junction with no vertex at the tee reads as
+        # unrouted. KiCad's DRC can pass a tee, so it is named here, not flagged
+        facts["copper_unwalked"] = (
+            "the pads share copper but the copper walk can't join them (a "
+            "track probably ends on another track's body: a T-junction with "
+            "no vertex at the tee), so the rail copper is not judged; split "
+            "the track at the tee to have it judged")
     if a.get("role"):
         facts["role"] = a["role"]
     return violations, facts
