@@ -879,7 +879,8 @@ def test_switch_pads_fit_by_geometry_not_numbers():
     assert a["verdict"] == "ok" and "geometry" in a["basis"] and set(a["corrections"]) == {0.0, 180.0}
     # the turn with pin 1 on pad 1 first: model 1 is (2.05, -0.8), board 1 (-2.05, 0.8)
     assert a["corrections"][0] == 180.0
-    assert cv.analyse(_kfp("U1", board), model)["verdict"] == "no_fit"
+    # not a switch: the pads land, but its pin map is for a person (#1024)
+    assert cv.analyse(_kfp("U1", board), model)["verdict"] == cv.PIN_MAP
     wider = [("1", -3.0, 0.8), ("2", 3.0, 0.8), ("3", 3.0, -0.8), ("4", -3.0, -0.8)]
     assert cv.analyse(_kfp("S1", wider), model)["verdict"] == "no_fit"
 
@@ -1988,3 +1989,42 @@ def test_bottom_polar_two_pad_part_still_asks_for_the_preview(ws):
     v, rep = _verdicts(pcb, cache, _cpl(D2=0))
     assert v["D2"]["verdict"] == "ok"
     assert rep["bottom_preview"]["refs"] == ["D2"]
+
+
+# ------------------------------------- pad numbers in another order (#1024)
+SOT23 = [("1", -0.95, 1.1), ("2", 0.95, 1.1), ("3", 0.0, -1.1)]
+# oasis v0.3 Q1/Q3, lib:SOT-23-3-pinswapped-mosfet: numbered to its symbol,
+# pad 2 sits alone where the part's pin 3 (drain) is
+SOT23_SWAPPED = [("1", -0.95, 1.1), ("3", 0.95, 1.1), ("2", 0.0, -1.1)]
+
+
+def test_pads_that_land_only_by_geometry_are_a_pin_map_warning_not_no_fit():
+    """Matched by number nothing fits, but the model lands on the pads by
+    geometry. JLC places by geometry, so this is no placement fault: it is
+    named as a pin map to check, with the geometric rotation."""
+    fp = _kfp("Q1", SOT23_SWAPPED, rot=270.0,
+              name="lib:SOT-23-3-pinswapped-mosfet")
+    model = _model(SOT23, package="SOT-23")
+    a = cv.analyse(fp, model)
+    assert a["verdict"] == cv.PIN_MAP and "geometry" in a["basis"]
+    assert a["corrections"] == [0.0]
+    assert cv.PIN_MAP not in cv.FAIL_VERDICTS
+    row = cv.check_part(fp, model, {"x": 10.0, "y": 10.0, "rot": 270.0})
+    assert row["verdict"] == cv.PIN_MAP and "pin map" in row["why"]
+    assert row["expected_rot"] == [270.0]
+    # a CPL off every geometric fit lands no pad, and still fails
+    bad = cv.check_part(fp, model, {"x": 10.0, "y": 10.0, "rot": 0.0})
+    assert bad["verdict"] == "wrong_rotation" and "pin map" in bad["why"]
+    # derive_rotation stays a number-fit answer only
+    assert cv.derive_rotation(fp, model) is None
+
+
+def test_pin_map_warning_needs_the_same_pin_numbers():
+    """A footprint whose numbers are not the model's (pads missing or
+    renamed) is no permutation of it: no fit by number stays no_fit."""
+    model = _model(SOT23, package="SOT-23")
+    renamed = [("1", -2.0, 1.1), ("4", 2.0, 1.1), ("5", 0.0, -1.1)]
+    assert cv.analyse(_kfp("Q1", renamed), model)["verdict"] == "no_fit"
+    # the same numbers, but a row of three, which no turn lands it on
+    wide = [("1", -2.5, 0.0), ("3", 0.0, 0.0), ("2", 2.5, 0.0)]
+    assert cv.analyse(_kfp("Q1", wide), model)["verdict"] == "no_fit"
