@@ -109,6 +109,15 @@ def run(argv=None) -> tuple[dict, str | None, int]:
                               rev=existing.get("rev"),
                               attestation_sha256=existing
                               .get("attestation_sha256"))
+                # the kept attestation names the commit it was first built
+                # on; say so when that is not the commit being released
+                attested = (releaselib.load_attestation(ws) or {}).get(
+                    "git_head")
+                result.update(git_head=attested, head=att.get("git_head"))
+                if attested and att.get("git_head") \
+                        and attested != att.get("git_head"):
+                    result["note"] = ("attestation names an older commit "
+                                      "than HEAD; --force to reissue")
                 return result, args.out, 0
         path = releaselib.write_attestation(ws, att)
         result.update(**_ledger_notes(ws))

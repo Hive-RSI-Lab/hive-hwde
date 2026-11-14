@@ -41,7 +41,12 @@ attestation confers order-ready, and ordering consumes ONLY that attestation.
    never route around it. The attestation is immutable and self-sealed; ANY
    bound-input change invalidates it (`attest.py verify` re-checks, and
    reads the ledger fresh: stock gone stale takes order-ready away until
-   `stock_check.py` asks again).
+   `stock_check.py` asks again). A build whose attestation still verifies
+   answers `action: unchanged` and keeps the old file, so its `git_head` is
+   the commit it was first built on; the result gives that and `head` (the
+   commit now) and a `note` when they differ. When the release must name its
+   own commit, rebuild with `--force`; note that a squash merge leaves the
+   attested commit off main.
 4. `order_submit.py` - assembles the manifest, the fab package paths, and the
    `human_steps` list. A governed workspace (state.json present) whose
    attestation is missing/invalid gets `not_order_ready` and the API legs
