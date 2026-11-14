@@ -105,9 +105,9 @@ def test_notched_outline_is_not_a_plain_rectangle():
 
 
 def test_interior_window_is_visible_in_the_item_counts(tmp_path):
-    """geom's parser returns on the FIRST gr_rect on Edge.Cuts, so a second
-    one (an interior window) never reaches .outline. board_edit deletes every
-    Edge.Cuts item, so it has to see it - through the item inventory."""
+    """A second gr_rect on Edge.Cuts (an interior window) is not .outline.
+    board_edit deletes every Edge.Cuts item, so it has to see it - through
+    the item inventory."""
     pcb = tmp_path / "window.kicad_pcb"
     text = PD_PCB.read_text(encoding="utf-8")
     window = ('\t(gr_rect\n\t\t(start 30 40)\n\t\t(end 36 46)\n'

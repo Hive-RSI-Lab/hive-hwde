@@ -571,3 +571,29 @@ def test_assert_fresh_refill_path():
     # blinky2 fills were saved by kicad-cli refill -> a fresh refill must match.
     bg = geom.BoardGeom.from_file(board_path("blinky2"))
     bg.assert_fresh(refill=True, area_tol=0.02)
+
+
+def test_mounting_hole_circle_is_not_the_outline(tmp_path):
+    """#1015, the planted fault: minuet-v3 draws its outline in lines and a
+    mounting hole as an Edge.Cuts circle. The circle used to win, so every
+    edge distance on the board was measured to the hole."""
+    lines = "".join(
+        f'  (gr_line (start {a} {b}) (end {c} {d}) (layer "Edge.Cuts"))\n'
+        for a, b, c, d in ((0, 0, 40, 0), (40, 0, 40, 30), (40, 30, 0, 30),
+                           (0, 30, 0, 0)))
+    hole = '  (gr_circle (center 5 5) (end 7 5) (layer "Edge.Cuts"))\n'
+    window = '  (gr_rect (start 20 10) (end 24 14) (layer "Edge.Cuts"))\n'
+    src = ('(kicad_pcb (version 20260206) (generator "test")\n'
+           '  (layers (0 "F.Cu" signal) (25 "Edge.Cuts" user))\n'
+           + hole + window + lines + ')\n')
+    p = tmp_path / "hole.kicad_pcb"
+    p.write_text(src, encoding="utf-8")
+    bg = geom.BoardGeom.from_file(p)
+    assert bg.outline.bounds == pytest.approx((0, 0, 40, 30))
+    assert len(bg.outline_faces) == 3
+    assert bg.outline_faces[1].area == pytest.approx(16.0)
+    assert bg.outline_faces[2].area == pytest.approx(math.pi * 4, rel=0.01)
+    # a board that is only a circle is still that circle
+    p.write_text(src.replace(lines, "").replace(window, ""), encoding="utf-8")
+    assert geom.BoardGeom.from_file(p).outline.area == pytest.approx(
+        math.pi * 4, rel=0.01)
