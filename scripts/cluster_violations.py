@@ -54,7 +54,7 @@ FIXER_HINTS = {
     "gnd_stub_long": "placement", "metadata_mismatch": "schematic",
     "diffpair_skew": "router", "diffpair_uncoupled": "router",
     "diffpair_via_asymmetry": "router", "diffpair_missing_net": "schematic",
-    "diffpair_open_trunk": "router",
+    "diffpair_open_trunk": "router", "diffpair_width_imbalance": "router",
     "creepage": "placement", "plane_missing": "plane",
     # a voltage_pairs entry below its own nets' declared voltage: the fix is
     # the constraints entry (raise it or give a why), not the copper
@@ -102,6 +102,7 @@ FIXER_HINTS = {
     "cleanup_regression": "router",
     # S12 DFM (gerber-level)
     "dfm_trace_width": "router", "dfm_clearance": "router",
+    "dfm_pour_width": "plane",
     "dfm_copper_to_edge": "router", "dfm_hole_size": "router",
     "dfm_hole_to_hole": "router", "dfm_hole_to_edge": "router",
     "dfm_annular_ring": "router",
