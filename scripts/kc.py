@@ -677,7 +677,10 @@ def model_relink(pcb: Path, env_vars: dict | None = None
 
 def render_png(cli: Path, pcb: Path, out_file: Path, *, side: str = "top",
                width: int = 1600, height: int = 900, quality: str = "high",
-               rotate: str | None = None) -> dict:
+               rotate: str | None = None, pivot: str | None = None,
+               zoom: float | None = None) -> dict:
+    """pivot: 'X,Y,Z' cm from the board centre (y up) the camera turns
+    about and centres on; zoom: kicad-cli's camera zoom (1 = whole board)."""
     out_file.parent.mkdir(parents=True, exist_ok=True)
     renv, err = render_env(cli)
     if err:
@@ -690,6 +693,10 @@ def render_png(cli: Path, pcb: Path, out_file: Path, *, side: str = "top",
             "--quality", quality]
     if rotate:
         args += ["--rotate", rotate]
+    if pivot:
+        args += ["--pivot", pivot]
+    if zoom:
+        args += ["--zoom", f"{zoom:g}"]
     # models moved since the board was saved: render a relinked copy (in a
     # temp dir beside the output), never the board file itself
     text, relinked = model_relink(pcb, renv)

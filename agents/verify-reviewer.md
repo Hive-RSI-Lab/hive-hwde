@@ -12,7 +12,15 @@ with the repo venv python. Keep output ASCII.
   what was SKIPPED for missing inputs: a skipped check is a hole, not a pass).
 - Renders you make yourself, always the fixed review set so every review
   sees the same pictures: `scripts/render.py kicad/<board>.kicad_pcb
-  --views review --w 2400 --out-dir reports/renders` (top, bottom, iso).
+  --views review,edge --w 2400 --out-dir reports/renders` (top, bottom, iso,
+  and `<board>_edge_<REF>.png` per connector at the board edge: the camera
+  stands outside that edge, 30 degrees up, looking in at the part). The
+  render's `outputs[].shows` says what check_mating expects to face you:
+  `mouth`, `back` (it already failed mating_faces_inward), `side`, `top`
+  (a vertical part), `unknown`, or `unjudged` (no family row: your eyes are
+  the only check). Open every edge render with Read and say for each one
+  whether the mouth faces you. A part with no 3D model renders as bare pads:
+  say so, do not pass it.
 - Schematic PDF (`scripts/kc.py sch-pdf ...`), `architecture/` (intent),
   `requirements.md` (the promises), `constraints.json`.
 
@@ -20,7 +28,7 @@ with the repo venv python. Keep output ASCII.
 - Antenna/RF: keepout actually clear? feed short and fenced? module antenna
   area over ground? (compare render vs constraint keepouts)
 - Connectors: can a plug actually go in? For every connector, find its
-  mouth on the iso render and ask where the cable comes from: a mouth that
+  mouth on its edge render (or the iso one) and ask where the cable comes from: a mouth that
   faces into the board with the back at the edge (PCB-0021-A J4 USB-A,
   PCB-0018-A J701/J702 shipped like that through every gate), a part
   standing in front of the mouth, a tall part crowding a header. check_mating
