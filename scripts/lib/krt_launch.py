@@ -43,12 +43,29 @@
   OPEN side. Nets not named escape as before. Each edit must match KRT's
   source exactly once, else the launch fails (a KRT bump needs a look).
 
+Always on, net-tie copper stays copper (#1008): KRT's writer
+  (kicad_writer.move_copper_graphics_to_silkscreen) moves every copper
+  graphic without a (net ...) to silkscreen, so that routed copper and pours
+  can't short to a net-less copper logo. A footprint's graphics never carry
+  a net in the file, so the move also took the bridge of a net-tie footprint
+  (net_tie_pad_groups) off copper and left its pads open, which DRC can't
+  see (KiCad's connectivity ignores footprint graphics; check_net_tie
+  catches it). The mover now gets the board with every net-tie footprint
+  held out, and those footprints come back byte for byte. Logos and other
+  net-less copper still move, footprint logos included (a copper logo is
+  often a footprint, and keeping all footprint copper would bring back the
+  shorts the move is there for). KiCad itself defines a net-tie
+  footprint's copper as the tie. hwde starts every KRT script through here
+  (route_critical.run_krt, route_escape._run); KRT's KiCad plugin runs its
+  own copy of the move (gui_utils) and is not covered.
+
 The KRT script itself runs unchanged (runpy).
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import runpy
 import sys
 
@@ -213,6 +230,95 @@ def _patch_escape_open(plan: dict) -> None:
     exec(compile(src, up.__file__, "exec"), up.__dict__)
 
 
+_NET_TIE = re.compile(r'\(net_tie_pad_groups\s+"[^"]')
+_HELD = "[hwde-net-tie-held-{}]"
+
+
+def _sexpr_end(text: str, start: int) -> int:
+    """Index just past the s-expression opening at text[start] (quoted
+    strings, with their escapes, are skipped)."""
+    depth, i, n = 0, start, len(text)
+    while i < n:
+        ch = text[i]
+        if ch == '"':
+            i += 1
+            while i < n and text[i] != '"':
+                i += 2 if text[i] == "\\" else 1
+        elif ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    return n
+
+
+def net_tie_footprints(content: str) -> list[tuple[int, int]]:
+    """(start, end) of each footprint block that declares
+    net_tie_pad_groups, in file order."""
+    spans: list[tuple[int, int]] = []
+    for m in _NET_TIE.finditer(content):
+        if spans and m.start() < spans[-1][1]:
+            continue
+        start = content.rfind("(footprint ", 0, m.start())
+        if start < 0:
+            continue
+        end = _sexpr_end(content, start)
+        if m.start() < end and (not spans or start >= spans[-1][1]):
+            spans.append((start, end))
+    return spans
+
+
+def keep_net_tie_copper(orig):
+    """Wrap KRT's move_copper_graphics_to_silkscreen(content) so that the
+    footprints declaring net_tie_pad_groups keep their copper: the mover
+    sees a placeholder for each and they are put back unchanged."""
+    def move_copper_graphics_to_silkscreen(content, *a, **kw):
+        spans = net_tie_footprints(content)
+        if not spans:
+            return orig(content, *a, **kw)
+        held, parts, last = [], [], 0
+        for k, (s, e) in enumerate(spans):
+            held.append(content[s:e])
+            parts += [content[last:s], _HELD.format(k)]
+            last = e
+        parts.append(content[last:])
+        out = orig("".join(parts), *a, **kw)
+        for k, block in enumerate(held):
+            mark = _HELD.format(k)
+            if out.count(mark) != 1:
+                raise RuntimeError(
+                    f"krt_launch: net-tie footprint placeholder {mark} came "
+                    f"back {out.count(mark)}x from KRT's mover (expected 1)")
+            out = out.replace(mark, block, 1)
+        return out
+    move_copper_graphics_to_silkscreen.__wrapped__ = orig
+    return move_copper_graphics_to_silkscreen
+
+
+def _patch_net_tie_copper() -> None:
+    try:
+        import kicad_writer
+    except ModuleNotFoundError as exc:
+        if exc.name != "kicad_writer":
+            raise
+        return          # no KRT writer, so no mover to wrap (a test's stand-in)
+    orig = getattr(kicad_writer, "move_copper_graphics_to_silkscreen", None)
+    if orig is None:
+        raise SystemExit("krt_launch: KRT's kicad_writer has no "
+                         "move_copper_graphics_to_silkscreen (a KRT bump "
+                         "needs a look, #1008)")
+    patched = keep_net_tie_copper(orig)
+    # kicad_writer's own calls read its module global; output_writer and
+    # plane_io import the function by name, so any module already holding
+    # it is rebound (the ones the script imports later get the patched one)
+    for mod in list(sys.modules.values()):
+        if getattr(mod, "__dict__", {}).get(
+                "move_copper_graphics_to_silkscreen") is orig:
+            mod.move_copper_graphics_to_silkscreen = patched
+
+
 def main(argv: list[str] | None = None) -> None:
     argv = list(sys.argv[1:] if argv is None else argv)
     widths, joints, h2h, opened = None, False, None, None
@@ -244,6 +350,7 @@ def main(argv: list[str] | None = None) -> None:
         raise_hole_to_hole(h2h)
     if opened:
         _patch_escape_open(opened)
+    _patch_net_tie_copper()
     sys.argv = [script, *argv]
     runpy.run_path(script, run_name="__main__")
 

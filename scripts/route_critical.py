@@ -948,12 +948,15 @@ def run_krt(krt_dir: Path, script: str, staged: Path, out: Path,
     the only path a DRU-only HV clearance reaches the router).
     stdout_sink: when given, KRT's full stdout is appended to it (the
     Coverage / no-route diagnostics live there, not in the summary).
+    Every run goes through lib/krt_launch.py, which always keeps net-tie
+    footprints' copper on copper (#1008: KRT's writer moved their bridges
+    to silkscreen).
     layer_widths: {layer: mm} drawn per layer (#489: rules_gen's stripline
-    widths), through lib/krt_launch.py, since KRT only fills its
-    per-layer widths from its own impedance solver.
-    route_diff.py always goes through the launcher with --via-joint-ends
-    (#529): a pair escaped by route_escape starts at its stub tips, not at
-    the dog-bone via inside the ball field."""
+    widths), through the launcher, since KRT only fills its per-layer
+    widths from its own impedance solver.
+    route_diff.py always runs with --via-joint-ends (#529): a pair escaped
+    by route_escape starts at its stub tips, not at the dog-bone via inside
+    the ball field."""
     flags: list[str] = []
     if layer_widths:
         wpath = out.with_suffix(".layer_widths.json")
@@ -961,8 +964,8 @@ def run_krt(krt_dir: Path, script: str, staged: Path, out: Path,
         flags += ["--layer-widths", str(wpath)]
     if script == "route_diff.py":
         flags.append("--via-joint-ends")
-    launch = ([sys.executable, str(SCRIPTS / "lib" / "krt_launch.py"), *flags,
-               script] if flags else [sys.executable, script])
+    launch = [sys.executable, str(SCRIPTS / "lib" / "krt_launch.py"), *flags,
+              script]
     args = [*launch, str(staged), "--output", str(out),
             "--no-fix-drc-settings",
             "--grid-step", str(grid_step),

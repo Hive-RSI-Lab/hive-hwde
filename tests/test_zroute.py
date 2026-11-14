@@ -257,9 +257,11 @@ def test_run_krt_layer_widths_go_through_the_launcher(tmp_path, monkeypatch):
                rc.KICAD_DEFAULTS, tmp_path / "fab.txt", 0.05, 60)
     assert seen["args"][1].endswith("krt_launch.py")
     assert seen["args"][2:4] == ["--via-joint-ends", "route_diff.py"]
+    # no flag: still the launcher, which always keeps net-tie copper (#1008)
     rc.run_krt(tmp_path, "route.py", tmp_path / "b.kicad_pcb", out, [],
                rc.KICAD_DEFAULTS, tmp_path / "fab.txt", 0.05, 60)
-    assert seen["args"][1] == "route.py"
+    assert seen["args"][1].endswith("krt_launch.py")
+    assert seen["args"][2] == "route.py"
 
 
 def test_launcher_fills_layer_widths(tmp_path):

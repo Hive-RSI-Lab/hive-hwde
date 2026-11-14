@@ -135,13 +135,24 @@ def _uuid_of(node) -> "Optional[str]":
     return None
 
 
-def _pts(node) -> list[tuple[float, float]]:
-    """Coordinates from a (pts (xy x y) ...) node."""
+def _pts(node, arcs: bool = False) -> list[tuple[float, float]]:
+    """Coordinates from a (pts (xy x y) ...) node. A KiCad 7+ outline may
+    hold (arc (start x y) (mid x y) (end x y)) segments among its points (a
+    custom pad with rounded corners); with `arcs` each is sampled in its
+    place, without it they are skipped, as zone and rule-area outlines are
+    still read."""
     out = []
-    for xy in _kids(node, "xy"):
-        v = _nums(xy)
-        if len(v) >= 2:
-            out.append((v[0], v[1]))
+    for c in node[1:]:
+        h = _head(c)
+        if h == "xy":
+            v = _nums(c)
+            if len(v) >= 2:
+                out.append((v[0], v[1]))
+        elif h == "arc" and arcs:
+            ends = [_kid(c, k) for k in ("start", "mid", "end")]
+            ends = [_nums(e)[:2] if e else [] for e in ends]
+            if all(len(e) == 2 for e in ends):
+                out += _arc_points(*(tuple(e) for e in ends))
     return out
 
 
@@ -434,7 +445,7 @@ def _copper_prim(n):
     filled = fill is not None and any(_tok(x) in ("yes", "solid", "true") for x in fill[1:])
     try:
         if kind == "poly":
-            pts = _pts(_kid(n, "pts"))
+            pts = _pts(_kid(n, "pts"), arcs=True)
             if len(pts) >= 3:
                 g = Polygon(pts)
                 if not g.is_valid:
@@ -690,6 +701,12 @@ class BoardGeom:
         # copper a footprint draws outside its pads, e.g. a net tie's bridge:
         # {"ref", "layer", "shape", "nets"}, nets being those of its pads
         self.fp_copper: list[dict] = []
+        # each footprint that declares net_tie_pad_groups (KiCad's net tie: a
+        # Bridged solder jumper, a NetTie), whose own copper joins each
+        # group's pads (check_net_tie): {"ref", "lib", "layer" (its side),
+        # "at", "groups" (lists of pad numbers), "pads" (its Pads),
+        # "graphics" (its drawings on every layer: {"layer", "shape"})}
+        self.net_ties: list[dict] = []
         self.footprints: dict[str, dict] = {}  # ref -> {"lib", "value", "props"}
         self._parse_tracks(root)
         self._parse_vias(root)
@@ -845,20 +862,40 @@ class BoardGeom:
                 self._add_pad(pad, fx, fy, fangle, ref)
             nets = frozenset(p.net for p in self._pads[first_pad:] if p.net)
             self._add_fp_copper(fp, fx, fy, fangle, ref, nets)
+            tie = _kid(fp, "net_tie_pad_groups")
+            if tie is not None:
+                side = _kid(fp, "layer")
+                self.net_ties.append({
+                    "ref": ref, "lib": lib,
+                    "layer": _strs(side)[0] if side and _strs(side) else "F.Cu",
+                    "at": (fx, fy),
+                    # KiCad splits each group string on commas
+                    "groups": [nums for nums in (
+                        [t.strip() for t in g.split(",") if t.strip()]
+                        for g in _strs(tie)) if nums],
+                    "pads": self._pads[first_pad:],
+                    "graphics": [{"layer": ln, "shape": shape} for ln, shape in
+                                 self._fp_graphics(fp, fx, fy, fangle)]})
 
-    def _add_fp_copper(self, fp, fx, fy, fangle, ref, nets):
+    def _fp_graphics(self, fp, fx, fy, fangle, layers=None):
+        """(layer, board-frame shape) of each fp_poly, fp_rect, fp_circle,
+        fp_line and fp_arc the footprint draws, on `layers` (a set) or on
+        any layer."""
         c, s = _rot(1.0, 0.0, -fangle)
         for kind in ("fp_poly", "fp_rect", "fp_circle", "fp_line", "fp_arc"):
             for n in _kids(fp, kind):
                 layer = _kid(n, "layer")
                 ln = _strs(layer)[0] if layer is not None and _strs(layer) else None
-                if ln not in self._copper_set:
+                if ln is None or (layers is not None and ln not in layers):
                     continue
                 g = _copper_prim(n)
                 if g is not None and not g.is_empty:
-                    self.fp_copper.append({
-                        "ref": ref, "layer": ln, "nets": nets,
-                        "shape": affinity.affine_transform(g, [c, -s, s, c, fx, fy])})
+                    yield ln, affinity.affine_transform(g, [c, -s, s, c, fx, fy])
+
+    def _add_fp_copper(self, fp, fx, fy, fangle, ref, nets):
+        for ln, shape in self._fp_graphics(fp, fx, fy, fangle, self._copper_set):
+            self.fp_copper.append({"ref": ref, "layer": ln, "nets": nets,
+                                   "shape": shape})
 
     def _add_pad(self, pad, fx, fy, fangle, ref):
         """Back-side (flipped) footprints need NO special handling: pcbnew
