@@ -293,6 +293,28 @@ def test_a_rail_budget_does_not_carry_on(tmp_path):
     assert plan and not [p for p in plan if p["origin"].startswith("series")]
 
 
+def test_power_path_via_on_a_tracks_body_joins_it(tmp_path):
+    # J1 -> F.Cu A -> two vias on A's and B's bodies -> B.Cu B -> one via
+    # on B's and C's bodies, off their centrelines -> F.Cu C -> Q1;
+    # no via sits at a track's end
+    body = """  (segment (start 2 5) (end 14 5) (width 2) (layer "F.Cu") (net "VBUS"))
+  (segment (start 10 5) (end 20 5) (width 2) (layer "B.Cu") (net "VBUS"))
+  (segment (start 17 5) (end 28 5) (width 2) (layer "F.Cu") (net "VBUS"))
+  (via (at 12 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "VBUS"))
+  (via (at 13 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "VBUS"))
+  (via (at 18 5.6) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "VBUS"))
+"""
+    bg = geom.BoardGeom.from_file(_board(tmp_path, body))
+    r = check_power_path.path_flow(bg, "VBUS", "J1", "Q1", 10, 0.5, 0.02)
+    assert r["amps"] == pytest.approx(0.5)  # the lone via is the cut; the pair adds up
+    assert [v["at"] for v in r["neck_vias"]] == [[18, 5.6]]
+    # a via whose pad only grazes a track's edge is not joined to it
+    grazing = body.replace("(at 18 5.6)", "(at 18 6.2)")
+    bg = geom.BoardGeom.from_file(_board(tmp_path, grazing))
+    r = check_power_path.path_flow(bg, "VBUS", "J1", "Q1", 10, 0.5, 0.02)
+    assert r["amps"] == 0.0
+
+
 def test_power_path_vias_and_overlapping_pours(tmp_path):
     # J1 -> F.Cu pour -> 1 via -> two overlapping B.Cu pours -> via -> Q1
     body = """  (zone (net "VBUS") (layer "F.Cu")
