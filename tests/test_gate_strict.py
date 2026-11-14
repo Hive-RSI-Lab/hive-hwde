@@ -890,10 +890,11 @@ BLINKY = GOLDEN / "blinky2" / "blinky2.kicad_pcb"
 ALL_CHECKS = [c["name"] for c in verify_all.CHECKS]
 # check_ratings needs the workspace parts dir, which the golden boards lack
 # check_current is not here: it judges a board without a constraints
-# file too, from the copper alone (#876)
+# file too, from the copper alone (#876); nor is check_thermal, which screens
+# the power ICs reference/thermal_parts.yaml knows (#884) and has none on blinky2
 CONSTRAINT_NEEDING = ["check_return_path",
                       "check_decoupling", "check_creepage",
-                      "check_thermal", "check_pdn", "check_ratings",
+                      "check_pdn", "check_ratings",
                       "check_power_path"]
 
 
@@ -909,6 +910,7 @@ def test_verify_all_nonstrict_skips_are_visible(tmp_path):
         assert summary["checks"][n]["status"] == "skipped"
     assert summary["checks"]["check_current"]["status"] not in (
         "skipped", "skipped_error")
+    assert summary["checks"]["check_thermal"]["status"] == "nothing_to_judge"
     # the summary is a stamped, gate-consumable report
     assert summary["report_schema"] == checklib.REPORT_SCHEMA
     assert summary["input_digest"].startswith("sexpr_no_uuid:")
@@ -920,6 +922,7 @@ def test_verify_all_strict_missing_inputs_fail(tmp_path):
     assert summary["status"] == "error"
     for n in CONSTRAINT_NEEDING:
         assert summary["checks"][n]["status"] == "skipped_error"
+    assert summary["checks"]["check_thermal"]["status"] == "nothing_to_judge"
     assert summary["coverage"]["strict"] is True
     assert sorted(summary["coverage"]["skipped_error"]) \
         == sorted(CONSTRAINT_NEEDING)
@@ -979,6 +982,7 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path, monkeypatch,
                   "check_via_stubs", "check_isolation",
                   "check_kelvin", "check_transformer",
                   "check_stackup", "check_body_clash", "check_current",
+                  "check_thermal",
                   "netlist_audit"]
     assert sorted(cov["required"]) == sorted(board_only)
     assert sorted(cov["ran"]) == sorted(board_only)
