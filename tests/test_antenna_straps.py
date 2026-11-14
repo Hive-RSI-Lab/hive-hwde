@@ -12,6 +12,7 @@ SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import check_antenna  # noqa: E402
+import check_reset_drive  # noqa: E402
 import check_straps  # noqa: E402
 import verify_all  # noqa: E402
 
@@ -464,3 +465,153 @@ def test_planted_f103_boot0_pulled_up_fails(tmp_path):
     """Planted fault: BOOT0 to 3V3 boots the ROM loader, not the flash."""
     (v,) = _by_kind(_f103(tmp_path, "+3V3"))["strap_level"]
     assert v["strap"] == "BOOT0" and v["severity"] == "error"
+
+
+# ------------------------------- AM62x (a SoC whose straps have no pull)
+
+AM62_UP = {0, 3, 5, 8, 11}      # the BOOTMODE bits pulled up; the rest down
+
+
+def _am62(tmp_path, bank="+1V8", up_rail=None, floating=(),
+          value="AM6254ATCGHAALW", ball=lambda n: f"GPMC0_AD{n}",
+          tie=False):
+    """An AM62x's BOOTMODE00..15 balls, each through its own 10k
+    (R<n + 1>) up to `up_rail` (default: the bank) or down to GND, with
+    VDDSHV3, the balls' IO bank, on `bank`. floating: bits with no pull.
+    tie: bit 5's resistor goes to /BOOT5_SEL, which only JP1 (a 3-pad
+    solder jumper, a net tie: pad 1 the bank, 2 /BOOT5_SEL, 3 GND) sets."""
+    up_rail = up_rail or bank
+    comps = {"U1": value}
+    nets = {bank: [("U1", "W1", "VDDSHV3")], "GND": [("U1", "W2", "VSS")]}
+    nets.setdefault(up_rail, [])
+    for n in range(16):
+        net = f"/BOOTMODE{n:02d}"
+        nets[net] = [("U1", f"B{n + 1}", ball(n))]
+        if n in floating:
+            continue
+        comps[f"R{n + 1}"] = "10k"
+        nets[net].append((f"R{n + 1}", "1", ""))
+        to = "/BOOT5_SEL" if tie and n == 5 else (
+            up_rail if n in AM62_UP else "GND")
+        nets.setdefault(to, []).append((f"R{n + 1}", "2", ""))
+    if tie:
+        comps["JP1"] = "SolderJumper_3_Bridged12"
+        nets[bank].append(("JP1", "1", "A"))
+        nets["/BOOT5_SEL"].append(("JP1", "2", "C"))
+        nets["GND"].append(("JP1", "3", "B"))
+    return _netlist(tmp_path, comps, nets)
+
+
+def _jumper(pcb, bridge_layer, bank="+1V8"):
+    """Rewrite `pcb` with JP1 on it: pads 1 to 3 at x -1.3, 0, 1.3 and
+    its 1-2 bridge drawn on `bridge_layer`."""
+    pads = (("1", -1.3, bank), ("2", 0, "/BOOT5_SEL"), ("3", 1.3, "GND"))
+    pad_text = "".join(
+        f'    (pad "{n}" smd rect (at {x} 0) (size 1 1.5) '
+        f'(layers "F.Cu" "F.Mask") (net "{net}"))\n' for n, x, net in pads)
+    pcb.write_text(f"""(kicad_pcb (version 20260206) (generator "test")
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (2 "B.Cu" signal) (1 "F.Mask" user)
+    (5 "F.SilkS" user) (25 "Edge.Cuts" user))
+  (setup)
+  (gr_rect (start 0 0) (end 60 40) (stroke (width 0.1)) (fill no)
+    (layer "Edge.Cuts"))
+  (footprint "Jumper:SolderJumper-3_Bridged12" (layer "F.Cu") (at 30 20)
+    (property "Reference" "JP1" (at 0 -2 0) (layer "F.SilkS"))
+    (net_tie_pad_groups "1, 2")
+    (fp_poly (pts (xy -0.9 -0.3) (xy -0.4 -0.3) (xy -0.4 0.3) (xy -0.9 0.3))
+      (stroke (width 0) (type solid)) (fill yes) (layer "{bridge_layer}"))
+{pad_text}  ))
+""", encoding="utf-8")
+    return pcb
+
+
+def _run(mod, pcb):
+    return mod.run(["--pcb", str(pcb),
+                    "--netlist", str(pcb.with_name("s.net"))])[0]
+
+
+def _straps_by_name(payload):
+    return {f["strap"]: f for f in payload["checked"][0]["straps"]}
+
+
+def test_am62_every_bootmode_pulled_passes(tmp_path):
+    p = _run(check_straps, _am62(tmp_path))
+    assert p["status"] == "pass", p["violations"]
+    seen = p["checked"][0]
+    assert seen["mcus"] == ["U1"] and seen["mcus_unknown"] == []
+    straps = _straps_by_name(p)
+    assert sorted(straps) == [f"BOOTMODE{n:02d}" for n in range(16)]
+    assert {f["want"] for f in straps.values()} == {"defined"}
+    assert {f["vdd"] for f in straps.values()} == {1.8}
+    assert "high" in straps["BOOTMODE05"]["por"]
+    assert "low" in straps["BOOTMODE09"]["por"]
+
+
+def test_planted_am62_floating_bootmode_fails(tmp_path):
+    """Planted fault: the ball has no pull during reset, so one with no
+    resistor latches whatever it drifts to."""
+    (v,) = _by_kind(_run(check_straps, _am62(tmp_path, floating={9})))[
+        "strap_level"]
+    assert v["strap"] == "BOOTMODE09" and v["severity"] == "error"
+    assert "must read a defined level (high or low)" in v["msg"]
+    assert v["events"] == ["mcu_reset", "por"]
+    assert "floating" in v["states"]["por"]
+
+
+def test_am62_thresholds_follow_the_bank_voltage(tmp_path):
+    """A pull-up to 1.8 V is high on a 1.8 V bank (VIH 0.65 x 1.8 = 1.17 V)
+    and undefined on a 3.3 V one (VIH 2.0 V)."""
+    p = _run(check_straps, _am62(tmp_path, bank="+1V8"))
+    assert p["status"] == "pass", p["violations"]
+    bad = _by_kind(_run(check_straps, _am62(tmp_path, bank="+3V3",
+                                            up_rail="+1V8")))["strap_level"]
+    assert sorted(v["strap"] for v in bad) == [
+        f"BOOTMODE{n:02d}" for n in sorted(AM62_UP)]
+    assert all("undefined" in v["states"]["por"] for v in bad)
+    assert all("VIH 2.00 V" in v["states"]["por"] for v in bad)
+
+
+def test_am62_bank_with_no_voltage_in_its_name_takes_the_row_vdd(tmp_path):
+    p = _run(check_straps, _am62(tmp_path, bank="/VIO"))
+    assert {f["vdd"] for f in _straps_by_name(p).values()} == {3.3}
+
+
+def test_am62_sip_and_bootmode_ball_names(tmp_path):
+    """Octavo's OSD62x SiPs carry the AM62x, and a symbol may name the
+    balls BOOTMODE0..15 rather than GPMC0_AD0..15."""
+    p = _run(check_straps, _am62(tmp_path, value="OSD6254-1G-IPM",
+                                 ball=lambda n: f"BOOTMODE{n}"))
+    assert p["status"] == "pass", p["violations"]
+    assert len(_straps_by_name(p)) == 16
+
+
+def test_am62_strap_set_by_a_net_tie_bridged_on_copper(tmp_path):
+    """The netlist keeps each of a net tie's pads on its own net; the
+    jumper's copper bridge joins /BOOT5_SEL to the bank, so BOOTMODE05
+    reads high and the tie is no unknown part."""
+    pcb = _jumper(_am62(tmp_path, tie=True), "F.Cu")
+    p = _run(check_straps, pcb)
+    assert p["status"] == "pass", p["violations"]
+    assert "high" in _straps_by_name(p)["BOOTMODE05"]["por"]
+    (tie,) = p["checked"][0]["net_ties"]
+    assert tie["ref"] == "JP1" and tie["joins"] == [["+1V8", "/BOOT5_SEL"]]
+
+
+def test_planted_am62_net_tie_bridge_on_silk_floats(tmp_path):
+    """Planted fault: the bridge drawn on silk joins nothing, so the
+    strap behind it floats."""
+    pcb = _jumper(_am62(tmp_path, tie=True), "F.SilkS")
+    (v,) = _by_kind(_run(check_straps, pcb))["strap_level"]
+    assert v["strap"] == "BOOTMODE05" and v["severity"] == "error"
+    assert "floating" in v["states"]["por"]
+    assert _run(check_straps, pcb)["checked"][0]["net_ties"][0]["joins"] == []
+
+
+def test_reset_drive_says_it_read_no_am62_pin(tmp_path):
+    """check_reset_drive reads pins named IOn: an AM62x's balls aren't,
+    so it says so rather than passing as if it had read them."""
+    p = _run(check_reset_drive, _am62(tmp_path))
+    assert p["status"] == "pass" and "nothing_to_judge" not in p
+    (line,) = p["not_judged"]
+    assert line.startswith("U1 (AM6254ATCGHAALW): no pin named IOn")
