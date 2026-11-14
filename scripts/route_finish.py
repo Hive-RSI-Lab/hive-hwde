@@ -95,6 +95,7 @@ import env  # noqa: E402
 import geom  # noqa: E402
 import hdilib  # noqa: E402
 import kc  # noqa: E402
+from necklib import NECK_REACH_MM, board_necks  # noqa: E402,F401  (#937)
 import routelib  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
@@ -104,8 +105,6 @@ SAME_NET_HOLE_MM = 0.13       # JLC HDI, one net, edge to edge (jlc_capabilities
 EXIT_MM = 1.0                 # #784, how far an open stub tip's corridor runs
 VIA_PAD_KEEP_MM = 0.1         # drill edge to an own-net SMD pad: past its
 #                               mask opening and registration (check_wicking)
-NECK_REACH_MM = 0.75          # #924, how far past its pads a neck may run:
-#                               inside check_current's 1 mm pad exit
 FINE_MARGIN_MM = 0.005        # #923 point 3, the fine rung's clearance margin:
 #                               0.5 mm-pitch balls leave ~0.25 mm, which a floor
 #                               track fits under 0.005 but not the default 0.02
@@ -226,37 +225,6 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         net_clearance=rc.dru_net_floors(dru, "clearance"),
         necks=board_necks(pcb, bg, rc.dru_neck_rules(dru, "track_width")),
         margin=margin, **hdi)
-
-
-def board_necks(pcb: Path, bg: geom.BoardGeom, neck_rules: list) -> dict:
-    """Where a net's tracks may run at its courtyard-held neck width (#924,
-    rules_gen's aiee_pwr_neck): {net: {layer: [(zone, width)]}}. A zone is
-    the footprint's courtyard (what the rule's intersectsCourtyard reads) cut
-    to NECK_REACH_MM round the net's own pads of that part on the layer, so
-    a neck stays the pad's escape check_current accepts (its 1 mm pad-exit
-    bound), not a narrow trace across the part."""
-    if not neck_rules:
-        return {}
-    import check_courtyard
-    import placelib
-    fps = placelib.PlaceModel(pcb).footprints
-    out: dict = {}
-    for r in neck_rules:
-        f = fps.get(r["ref"])
-        cy = check_courtyard.courtyard_abs(f) if f is not None else None
-        if cy is None or cy.is_empty:
-            continue
-        for layer in bg.copper_layers:
-            pads = [p.poly for p in bg.pads_of(r["net"], layer)
-                    if p.ref == r["ref"]]
-            if not pads:
-                continue
-            zone = cy.intersection(
-                shapely.union_all(pads).buffer(NECK_REACH_MM))
-            if not zone.is_empty:
-                out.setdefault(r["net"], {}).setdefault(layer, []).append(
-                    (zone, r["min_mm"]))
-    return out
 
 
 # ---------------------------------------------------------------- islands

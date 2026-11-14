@@ -20,7 +20,8 @@ Zones export as "(plane NET ...)"; Freerouting connects pads to planes itself
 (including dropping stitch vias to reach an inner/back plane).
 
 After the ladder, KRT's mop-up (its under-width tracks on power nets are
-stripped, not kept), then route_finish's maze pass: it rips the tracks and
+stripped, not kept; a power net with a courtyard neck rule goes to KRT at
+the neck width and keeps it only inside its neck zone, #937), then route_finish's maze pass: it rips the tracks and
 vias DRC names in a short/clearance/crossing error and routes them again,
 then whatever DRC still reports unconnected - grid A* at the board's own
 rules, pour pieces joined by a via, walled-in pads freed by ripping the
@@ -67,6 +68,7 @@ import env  # noqa: E402
 import geom  # noqa: E402
 import hdilib  # noqa: E402
 import kc  # noqa: E402
+import necklib  # noqa: E402  (#937 neck zones)
 import route_edit  # noqa: E402  (finish pass: rip sliver vias by uuid)
 import routelib  # noqa: E402
 import zrules  # noqa: E402  (#489 per-layer impedance widths)
@@ -312,6 +314,7 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
     shutil.copy2(staged, backup)
     dru_widths = rc.dru_net_floors(staged.with_suffix(".kicad_dru"),
                                    "track_width")
+    necks = necklib.read_necks(staged)
     before_uuids = {t.uuid for t in
                     geom.BoardGeom.from_file(staged).tracks_of()}
     narrow: list = []
@@ -330,6 +333,11 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         # 0.37 mm rule, three track_width errors the gate failed on
         wide = {n: w for n, w in dru_widths.items()
                 if n in nets and w > floors["track_width"] + 1e-6}
+        # a necked power net (#937) goes to KRT at its neck width, so it can
+        # leave a fine-pitch pad; _narrow_new_tracks then keeps the neck
+        # only inside its zone and strips the rest, which the maze finish
+        # lays at the full width
+        wide = krt_widths(wide, necks)
         extra = ["--nets", *nets]
         if power_layers:
             # KRT defaults to every copper layer: without this it runs signals
@@ -348,7 +356,8 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         # under its .kicad_dru width rule (50-199 track_width errors on a
         # dense board, and the whole pass discarded). Strip what it laid
         # below the floor; the maze finish routes those at the rule width.
-        narrow = _narrow_new_tracks(staged, dru_widths, before_uuids)
+        narrow = _narrow_new_tracks(staged, dru_widths, before_uuids,
+                                    necks)
         if narrow:
             route_edit.apply_ops(staged, [{"op": "remove", "uuid": u}
                                           for u in narrow])
@@ -386,15 +395,31 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         return {"kept": False, "nets": nets, "error": str(exc)[:300]}
 
 
+def krt_widths(wide: dict[str, float], necks: dict) -> dict[str, float]:
+    """The width KRT routes each wide net at: its neck width where it has a
+    neck zone (rules_gen's aiee_pwr_neck, #937; the narrowest, so it leaves
+    every necked pad), else its .kicad_dru floor."""
+    out = dict(wide)
+    for n in wide:
+        ws = [w for zs in (necks.get(n) or {}).values() for _, w in zs]
+        if ws:
+            out[n] = min(out[n], min(ws))
+    return out
+
+
 def _narrow_new_tracks(staged: Path, widths: dict[str, float],
-                       before: set) -> list[str]:
+                       before: set, necks: dict | None = None) -> list[str]:
     """uuids of tracks not on the board before that sit under their net's
-    width rule."""
+    width rule. A track wholly in its net's neck zone at no less than the
+    neck width keeps (#937): DRC's courtyard-held rule passes it."""
     out = []
     for t in geom.BoardGeom.from_file(staged).tracks_of():
         if t.uuid in before or not t.uuid:
             continue
-        if t.width < widths.get(t.net, 0.0) - 1e-4:
+        if t.width >= widths.get(t.net, 0.0) - 1e-4:
+            continue
+        nw = necklib.neck_width(necks or {}, t.net, t.layer, t.shape)
+        if nw is None or t.width < nw - 1e-4:
             out.append(t.uuid)
     return out
 

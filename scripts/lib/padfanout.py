@@ -26,6 +26,9 @@ For each pad, in the order given:
     pad, which must be filled and capped (the caller sets that on the via,
     and fab_export's VIA-FILL.md then tells the fab);
   - otherwise report the pad as `no spot`.
+A stub or join that lies wholly in its net's neck zone (necklib, rules_gen's
+aiee_pwr_neck) is laid at the neck width, not the net's full width (#937):
+a fine-pitch power pin gets out between its neighbours.
 Each via and stub is an obstacle to the pads after it.
 
 Plane balls (fan(..., in_pad_only=True), route_escape --plane-balls, #956):
@@ -54,6 +57,7 @@ SCRIPTS = Path(__file__).resolve().parents[1]
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
+import necklib  # noqa: E402
 import route_finish as rf  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
@@ -195,10 +199,22 @@ class Fanout:
                 for lat in LATERAL_MM:
                     v = (tip[0] + d[0] * dist + d[1] * lat,
                          tip[1] + d[1] * dist + d[0] * lat)
-                    if self.via_ok(v, net) and \
-                            self.track_ok(pad.center, v, layer, net, w):
+                    if self.via_ok(v, net) and self.track_ok(
+                            pad.center, v, layer, net,
+                            self.seg_width(pad.center, v, net, layer, w)):
                         return v, dist
         return None
+
+    def seg_width(self, a, b, net, layer, w):
+        """The width a stub from a to b is laid at: the net's neck width
+        where the whole stub lies in its neck zone (necklib, rules_gen's
+        aiee_pwr_neck, #937), else w. A width given by the caller
+        (--fan-width) is kept as given."""
+        if self.width or net not in self.rules.necks:
+            return w
+        nw = necklib.neck_width(self.rules.necks, net, layer,
+                                LineString([a, b]))
+        return min(w, nw) if nw is not None else w
 
     def in_pad(self, pad, net, ball: bool = False):
         """The pad's centre, if a via of the net fits there: an SMD pad
@@ -249,7 +265,9 @@ class Fanout:
                          [pc, (pc[0] + sx * m, pc[1] + sy * m), q],
                          [pc, (q[0] - sx * m, q[1] - sy * m), q],
                          [pc, (q[0], pc[1]), q], [pc, (pc[0], q[1]), q]):
-                if all(self.track_ok(path[i], path[i + 1], layer, net, w)
+                if all(self.track_ok(path[i], path[i + 1], layer, net,
+                                     self.seg_width(path[i], path[i + 1],
+                                                    net, layer, w))
                        for i in range(len(path) - 1)):
                     return [p for i, p in enumerate(path)
                             if i == 0 or p != path[i - 1]]
@@ -306,8 +324,9 @@ class Fanout:
             if hit:
                 v, dist = hit
                 new.append({"op": "add_track", "start": _p(pad.center),
-                            "end": _p(v), "width": w, "layer": layer,
-                            "net": net})
+                            "end": _p(v), "width": self.seg_width(
+                                pad.center, v, net, layer, w),
+                            "layer": layer, "net": net})
                 new.append({"op": "add_via", "at": _p(v),
                             "size": self.via[0], "drill": self.via[1],
                             "net": net})
@@ -318,7 +337,8 @@ class Fanout:
                     else self.in_pad(pad, net)
                 if path is not None:
                     new += [{"op": "add_track", "start": _p(a), "end": _p(b),
-                             "width": w, "layer": layer, "net": net}
+                             "width": self.seg_width(a, b, net, layer, w),
+                             "layer": layer, "net": net}
                             for a, b in zip(path, path[1:])]
                     row.update(result="join", to=_p(path[-1]))
                 elif vip is not None:
