@@ -247,6 +247,23 @@ What moved where:
   `state.json`, else the fab of the `reference/stackups.yaml` build the
   board's (stackup) block matches, else JLC. The payload's `vendor` and
   `vendor_from` say which (`tests/test_vendors.py`).
+- `scripts/check_bom_sync.py` reads the fab files a board ships under other
+  names. Its fab leg read only `BOM.csv`, `CPL.csv` and `BOM-full.csv` in
+  the fab dir, so a board whose package is a KiCad pos export and a
+  distributor BOM in a folder of `fab/` had the leg skipped as if it had no
+  fab files. Each role now takes its own name first, else the one
+  `*bom*.csv`, `*cpl*.csv` or `*-pos.csv` (order_submit's patterns, in any
+  case) in the fab dir or a folder directly in it; a `-top-`/`-bottom-pos`
+  pair is read as one CPL. Two files that fit a role leave it unread and the
+  report names them; `--bom` and `--cpl` name the files outright. The
+  designators come from a Designator, Designators, Ref, Reference or RefDes
+  column, split on commas, spaces or semicolons, and a kicad-cli range
+  (`C1-C4`) is each ref in it. Another maker's file is judged on unknown and
+  missing refs only: a KiCad export lists DNP parts unless told not to, so
+  the DNP refs it lists go to `not_judged`, while bom_cpl's own `BOM.csv`
+  and `CPL.csv` are still held to `bom_dnp_populated`. The report's
+  `fab_files` says which file each role read
+  (`tests/test_check_bom_sync.py`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
