@@ -27,6 +27,19 @@ Per net in constraints.json["high_speed"]:
     r = c / (f_knee * 20) from t_rise, default 2.0 mm.
  5. Output: normalized violations with polygons + coordinates + layer;
     severity by centerline crossing length.
+ 6. Hatched reference copper counts as copper (#870): a zone filled as a
+    hatch is one polygon with a field of small, similar holes; the holes no
+    bigger than HATCH_HOLE_FACTOR x the median one, and no wider than
+    HATCH_MAX_GAP_MM, are filled back in, so the hatch reads as the plane it
+    is. A real cut-out in the hatch is bigger than its cells and stays a
+    void. The resolution record marks such a layer "hatched".
+ 7. Rigid-flex (#870): a FLEX_* rule area that keeps copper pours out of a
+    layer says that layer is not in the flex stackup there, so the corridor
+    is not judged against that layer inside the area (a trace on In1 in a
+    tail with no F.Cu is referenced to In2 alone), nor in the
+    FLEX_PULLBACK_MM band the rigid copper leaves at the rigid-flex line.
+    Other keepouts (an antenna's) are still voids: only the flex areas
+    remove a layer.
 
 Unavoidable single-item plane punctures are EXCISED from the deficit before
 judging it: the annular clearance void around any single via (the signal's
@@ -52,12 +65,14 @@ constraints.json["high_speed"] entries:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import math
+import statistics
 import sys
 from itertools import product
 from pathlib import Path
 
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon
 from shapely.ops import linemerge, unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
@@ -75,6 +90,13 @@ MIN_DEFICIT_MM2 = 0.05         # deficit remainder below this is an artifact
 CROSSING_ERROR_MM = 0.01       # centerline crossing >= this -> error
 WAIVER_CLASS = "cross_net_reference"
 COVER_EPS_MM2 = 1e-6           # fill/corridor overlap below this is numeric noise
+HATCH_MIN_HOLES = 20           # a fill polygon with this many holes is a hatch
+HATCH_HOLE_FACTOR = 3.0        # holes up to this x the median are hatch cells
+HATCH_MAX_GAP_MM = 1.5         # wider cells are too open to carry the return
+FLEX_AREA_GLOB = "FLEX_*"      # teardroplib's flex areas (FLEX_TAIL, ...)
+FLEX_PULLBACK_MM = 1.5         # outer copper may stop this far short of
+                               # the rigid-flex line (the usual 1.5 mm
+                               # feature keep-back from the transition)
 
 
 # ------------------------------------------------------------ constraints
@@ -117,6 +139,59 @@ def corridor_on(bg: geom.BoardGeom, net: str, layer: str, k: float):
     return unary_union(parts), tracks
 
 
+def _solid_hatch(poly):
+    """(polygon with its hatch cells filled, True) for a hatched fill
+    polygon, else (poly, False)."""
+    holes = list(poly.interiors)
+    if len(holes) < HATCH_MIN_HOLES:
+        return poly, False
+    areas = [Polygon(h).area for h in holes]
+    med = statistics.median(areas)
+    if med <= 0 or math.sqrt(med) > HATCH_MAX_GAP_MM:
+        return poly, False
+    keep = [h for h, a in zip(holes, areas) if a > HATCH_HOLE_FACTOR * med]
+    return Polygon(poly.exterior, keep), True
+
+
+def solid_fill(fill):
+    """A zone fill with hatch cells filled in; (geometry, hatched)."""
+    out, hatched = [], False
+    for p in getattr(fill, "geoms", [fill]):
+        if p.is_empty:
+            continue
+        q, h = _solid_hatch(p)
+        out.append(q)
+        hatched |= h
+    return (unary_union(out) if out else fill), hatched
+
+
+def reference_copper(bg: geom.BoardGeom, net: str, layer: str):
+    """All of the net's copper on the layer, hatched fills read as solid;
+    (geometry, hatched)."""
+    copper = bg.net_copper(net, layer)
+    solids, hatched = [], False
+    for z in bg.zones_of(net, layer):
+        f, h = solid_fill(z.fill_on(layer))
+        if h:
+            solids.append(f)
+            hatched = True
+    if hatched:
+        copper = unary_union([copper] + solids)
+    return copper, hatched
+
+
+def flex_cut(bg: geom.BoardGeom, layer: str):
+    """Where `layer` is not in the stackup: FLEX_* rule areas keeping
+    copper pours out of it, grown by the pull-back. None when none."""
+    cut = [ra["outline"] for ra in bg.rule_areas
+           if fnmatch.fnmatch(ra.get("name") or "", FLEX_AREA_GLOB)
+           and layer in ra.get("layers", ())
+           and ra.get("flags", {}).get("copperpour") == "not_allowed"
+           and not ra["outline"].is_empty]
+    return unary_union(cut).buffer(FLEX_PULLBACK_MM, join_style="mitre") \
+        if cut else None
+
+
 def resolve_reference(bg: geom.BoardGeom, corridor, declared: str,
                       ref_layer: str) -> tuple[str, bool, float]:
     """Resolve the net actually providing the reference plane under a corridor
@@ -132,7 +207,7 @@ def resolve_reference(bg: geom.BoardGeom, corridor, declared: str,
     for z in bg.zones_of(layer=ref_layer):
         if not z.net:
             continue
-        f = z.fill_on(ref_layer)
+        f, _ = solid_fill(z.fill_on(ref_layer))
         if not f.is_empty:
             fills.setdefault(z.net, []).append(f)
     coverage: dict[str, float] = {}
@@ -324,28 +399,41 @@ def check_net(bg: geom.BoardGeom, entry: dict, k_cli: float):
         for ref_layer in bg.adjacent_copper(layer):
             if ref_layer is None:
                 continue
+            # the part of the corridor where ref_layer exists at all
+            judged, judged_line = corridor, centerline
+            cut = flex_cut(bg, ref_layer)
+            if cut is not None:
+                judged = corridor.difference(cut)
+                judged_line = centerline.difference(cut)
+                if judged.area < MIN_DEFICIT_MM2:
+                    continue
             declared = reference_net_for(entry, layer)
             ref_net, waiver, coverage = resolve_reference(
-                bg, corridor, declared, ref_layer)
+                bg, judged, declared, ref_layer)
+            ref_copper, hatched = reference_copper(bg, ref_net, ref_layer)
             resolution[(layer, ref_layer)] = {
                 "signal_layer": layer, "ref_layer": ref_layer,
                 "declared": declared, "resolved": ref_net,
                 "waiver_class": WAIVER_CLASS if waiver else None,
                 "corridor_coverage": checklib.rnd(coverage)}
-            ref_copper = bg.net_copper(ref_net, ref_layer)
+            if hatched:
+                resolution[(layer, ref_layer)]["hatched"] = True
+            if corridor.area - judged.area > MIN_DEFICIT_MM2:
+                resolution[(layer, ref_layer)]["flex_excluded_mm2"] = \
+                    checklib.rnd(corridor.area - judged.area)
             if ref_copper.is_empty:
                 violations.append(violation(
-                    SCRIPT, "error", corridor.representative_point().coords[0],
+                    SCRIPT, "error", judged.representative_point().coords[0],
                     ref_layer, net, [],
                     f"{net} on {layer} has no {ref_net} reference copper at "
                     f"all on adjacent layer {ref_layer}", SCRIPT,
                     kind="no_reference_plane", signal_layer=layer,
-                    corridor_area_mm2=checklib.rnd(corridor.area)))
+                    corridor_area_mm2=checklib.rnd(judged.area)))
                 continue
-            component = continuous_reference(ref_copper, corridor)
+            component = continuous_reference(ref_copper, judged)
             disks = excision_disks(bg, net, ref_net, ref_layer)
-            for poly in deficit_polys(corridor, component, disks):
-                crossing = centerline.intersection(poly).length
+            for poly in deficit_polys(judged, component, disks):
+                crossing = judged_line.intersection(poly).length
                 sev = "error" if crossing >= CROSSING_ERROR_MM else "warning"
                 extras = {}
                 if waiver:
