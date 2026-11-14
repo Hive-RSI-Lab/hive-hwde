@@ -883,3 +883,12 @@ def test_performance_rf4_under_30s():
         run_check(script, board_path("rf4"), "rf4")
     elapsed = time.perf_counter() - t0
     assert_under(elapsed, 30.0, "S4 checks on rf4")
+
+
+def test_emit_creates_a_missing_report_dir(tmp_path):
+    """`--out-report route/x.json` before route/ exists must write the report,
+    not crash after the script has already changed the board."""
+    out = tmp_path / "route" / "deep" / "r.json"
+    rc = checklib.emit({"script": "t", "status": "pass"}, str(out))
+    assert rc == 0
+    assert json.loads(out.read_text("utf-8"))["status"] == "pass"

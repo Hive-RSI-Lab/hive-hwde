@@ -182,6 +182,9 @@ def emit(payload: dict, out: str | None) -> int:
     """Write/print the report; return the SPEC exit code for its status."""
     text = json.dumps(payload, indent=1)
     if out:
+        # a report path into a directory that does not exist yet must not
+        # crash AFTER the script has already changed the board
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
         Path(out).write_text(text, encoding="utf-8")
     else:
         print(text)

@@ -385,3 +385,21 @@ def test_blinky2_golden_apply_stays_drc_silk_clean(cli, tmp_path):
     assert payload["residual"] == []
     assert payload["median_beyond_extent_mm"] is None \
         or payload["median_beyond_extent_mm"] <= 1.5
+
+
+def test_board_only_named_in_refs_is_a_warning_not_a_silent_skip(
+        tmp_path_factory):
+    """A mounting hole's refdes asked for by --refs is never solved: the run
+    must say so (exit 1, a warning with a ready hide op), not exit 0 having
+    moved nothing. Without --refs it stays a plain skip."""
+    pcb = _crowded(tmp_path_factory, "bonamed")
+    payload, _ = silk_place.run(["--pcb", str(pcb), "--refs", "H1"])
+    assert payload["status"] == "violations" and payload["moved"] == 0
+    (v,) = payload["violations"]
+    assert v["kind"] == "silk_board_only_skipped" and v["refs"] == ["H1"]
+    hide = v["fix_ops"]["hide"]
+    place_edit.validate_ops({"version": 1, "ops": [hide]})
+    assert hide["hide"] is True
+    payload, _ = silk_place.run(["--pcb", str(pcb)])
+    assert not any(v["kind"] == "silk_board_only_skipped"
+                   for v in payload["violations"])
