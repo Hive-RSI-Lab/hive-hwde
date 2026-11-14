@@ -40,7 +40,7 @@ OFFLINE_FIXTURES = [
     ("P8", "mutant_planesplit_verify"), ("P8", "mutant_returnvia_verify"),
     ("P8", "mutant_gndchoke_verify"),
     ("P9", "pd_trigger_dfm"), ("P9", "mutant_cpl_dfm"),
-    ("P9", "oasis_cpl_dfm"),
+    ("P9", "oasis_cpl_dfm"), ("P9", "pd_trigger_cpl_dfm"),
     ("P10", "pd_trigger_order"),
 ]
 SMOKE_FIXTURES = [
@@ -251,6 +251,9 @@ def test_known_answers_fire_where_expected():
     assert ka["status"] == "ok" and ka["matched"] == 1
     ka = run_bench("P9", "mutant_cpl_dfm")["known_answer"]
     assert ka["status"] == "ok" and ka["matched"] == 1
+    # #971: pd-trigger's shipped CPL put D2 and Q1 on 180 degrees off
+    ka = run_bench("P9", "pd_trigger_cpl_dfm")["known_answer"]
+    assert ka["status"] == "ok" and ka["matched"] == 2
     ka = run_bench("P8", "pd_trigger_verify")["known_answer"]
     assert ka["status"] == "ok" and ka["forbidden_errors"] == 0
     # T6: the pre-fix GND-choke board fires the derived return-net coverage
