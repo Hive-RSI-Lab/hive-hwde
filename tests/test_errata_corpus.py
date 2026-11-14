@@ -1,6 +1,7 @@
 """The real-errata corpus: its manifest, its matcher, and the three
 netlist_audit rules its rev-A boards needed (ground_island, pin_net_swap,
 sot23_pinout), each on a netlist shaped like the board it came from."""
+import re
 import sys
 from pathlib import Path
 
@@ -30,13 +31,22 @@ def kinds(parsed):
     return [(v["kind"], v.get("net"), v.get("refs")) for v in na.audit(parsed, {}, None)[0]]
 
 
-def test_manifest_has_three_boards_and_every_miss_a_follow_up():
+def test_manifest_has_ten_boards_and_every_miss_a_follow_up():
     boards = ec.load()
-    assert len(boards) >= 3
+    assert len(boards) >= 10
+    assert len({b["id"] for b in boards}) == len(boards)
     for b in boards:
         assert b["licence"] and b["source"] and len(b["commit"]) == 40
         for d in b["defects"]:
             assert d["source_quote"]
+
+
+def test_every_miss_cites_a_filed_issue():
+    """A miss is only honest with the issue that would close it."""
+    for b in ec.load():
+        for d in b["defects"]:
+            if d["verdict"] == "missed":
+                assert re.search(r"#\d+", d["follow_up"]), d["id"]
 
 
 def test_matcher_needs_kind_and_net_or_ref():
