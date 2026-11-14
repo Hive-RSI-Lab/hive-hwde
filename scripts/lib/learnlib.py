@@ -199,12 +199,20 @@ def _exists(rel: str) -> bool:
     return (SKILL / rel).is_file() or (REPO / rel).is_file()
 
 
+_FROZEN_ROOT = ("LEARNINGS.md", "design/ladder-triage.md")
+
+
 def _artifact_exists(rel: str, ws: Path | None = None) -> bool:
     """A promotion artifact lives in the module, or (a workspace that keeps
     its own copy of what it was promoted into, e.g. an archive the module no
     longer carries) in the workspace - but never the workspace's own
-    LEARNINGS.md: an entry is not promoted into the file it came from."""
-    if _exists(rel):
+    LEARNINGS.md: an entry is not promoted into the file it came from - and
+    never the module's own closed archive pair at its root (LEARNINGS.md,
+    design/ladder-triage.md): nothing is promoted into them any more (a root
+    lesson is a file in learnings.d/), so a ruling that cites them points at
+    nothing it wrote. Rows promoted into the archive while it was open cite a
+    workspace copy of it instead (e.g. archive/ai-ee/LEARNINGS.md#N)."""
+    if rel not in _FROZEN_ROOT and _exists(rel):
         return True
     if ws is None:
         return False
