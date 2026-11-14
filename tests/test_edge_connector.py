@@ -183,6 +183,7 @@ def test_the_note_is_not_counted_as_illegal_placement(tmp_path):
     assert not [v for v in place_metrics.illegal(r["violations"])
                 if v["kind"] == "mating_edge_unjudged"]
 
+
 # #951/#891: rows for the pinned boards' edge connectors and the power and RF
 # jacks the corpus left unjudged
 def test_rows_know_the_pinned_boards_edge_connectors():
