@@ -229,3 +229,69 @@ def test_check_current_catch_runs_on_the_board():
     caught = [d for b in ec.load() for d in b["defects"]
               if (d.get("catch") or {}).get("script") == "check_current"]
     assert any(d["id"] == "digits-1" for d in caught)
+
+
+# ------------------------------------------- dfm on a revision's shipped CPL
+
+OASIS = ROOT / "tests" / "fixtures" / "stages" / "oasis_cpl"
+
+
+def _cpl_board(tmp_path, rot_b: str):
+    """A corpus board whose two revisions are the pinned oasis v0.2 copper
+    with the CPL it shipped (MISTER1 at 119, 180 off) and the same CPL with
+    MISTER1 at `rot_b`; each run dir is seeded with the pin's LCSC models
+    and fetching is off, so the verdict is the fixture's alone."""
+    import shutil
+    b = {"id": "cplplant", "commit": "0" * 40,
+         "rev_a": {"name": "a", "pcb": "a/oasis.kicad_pcb", "cpl": "a/positions.csv"},
+         "rev_b": {"name": "b", "pcb": "b/oasis.kicad_pcb", "cpl": "b/positions.csv"},
+         "defects": [{"id": "cplplant-1", "verdict": "caught",
+                      "catch": {"script": "dfm", "kind": "cpl_rotation",
+                                "refs": ["mister1"]}}]}
+    cache = tmp_path / "cache"
+    repo = ec.repo_dir(cache, b)
+    shipped = (OASIS / "gerbers" / "CPL.csv").read_text(encoding="utf-8-sig")
+    assert "MISTER1,56.277091,-124.18828,119.0,top" in shipped
+    for rev, cpl in (("a", shipped), ("b", shipped.replace(
+            "MISTER1,56.277091,-124.18828,119.0,top",
+            f"MISTER1,56.277091,-124.18828,{rot_b},top"))):
+        (repo / rev).mkdir(parents=True)
+        shutil.copyfile(OASIS / "oasis.kicad_pcb", repo / rev / "oasis.kicad_pcb")
+        (repo / rev / "positions.csv").write_text(cpl, encoding="utf-8")
+        shutil.copytree(OASIS / "gerbers" / "easyeda",
+                        cache / "runs" / b["id"] / f"rev_{rev}-cpl" / "easyeda")
+    return cache, b
+
+
+def test_dfm_catch_finds_a_planted_cpl_rotation_and_sees_the_fix(tmp_path, monkeypatch):
+    monkeypatch.setenv("HWDE_EASYEDA_OFFLINE", "1")
+    cache, b = _cpl_board(tmp_path, "299.0")
+    assert ec.run(cache, b)["cplplant-1"] == {"ran": True, "rev_a": True, "rev_b": False}
+
+
+def test_dfm_catch_reads_the_cpl_not_the_board(tmp_path, monkeypatch):
+    """Same copper on both revisions: only the CPL row differs, so a rev B
+    left 180 off is still found there (the outcome reads it as regressed)."""
+    monkeypatch.setenv("HWDE_EASYEDA_OFFLINE", "1")
+    cache, b = _cpl_board(tmp_path, "119.0")
+    r = ec.run(cache, b)["cplplant-1"]
+    assert r == {"ran": True, "rev_a": True, "rev_b": True}
+    assert ec.outcome(b["defects"][0], r).startswith("REGRESSED")
+
+
+def test_dfm_catch_needs_the_revisions_cpl(tmp_path):
+    import pytest
+    b = {"id": "x", "rev_a": {"pcb": "p.kicad_pcb"}}
+    with pytest.raises(SystemExit, match="cpl"):
+        ec._dfm(b, "rev_a", tmp_path, tmp_path / "constraints.json")
+
+
+def test_fetch_checks_out_the_cpl_dirs(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(ec.subprocess, "run", lambda cmd, **k: calls.append(cmd))
+    b = {"id": "o", "url": "u", "commit": "c" * 40,
+         "rev_a": {"sch": "v2/kicad/p.kicad_sch", "cpl": "v2/positions.csv"},
+         "rev_b": {"sch": "v3/kicad/p.kicad_sch"}}
+    ec.fetch(tmp_path, b)
+    sparse = next(c for c in calls if "sparse-checkout" in c)
+    assert sparse[-3:] == ["v2", "v2/kicad", "v3/kicad"]
