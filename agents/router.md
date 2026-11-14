@@ -328,6 +328,12 @@ rules as routing constraints; cite the record id when you apply one.
 - `route_critical --only power` can time out at 600, 1500 and 1800 s on a loaded box for a 16-net, 10 A pass. Split it with `--only` and raise `--timeout-s`, or put the high-current nets in as `planes_gen` region pours (`region` plus `"connect": "solid"`) tied F.Cu to B.Cu with `stitch_vias` area vias: for 10 A that is the better copper anyway. `stitch_vias --nets GND` then rolls back on its own post-apply verify when its grid lands vias in foreign pads (power-FET drain tabs): `--dry-run`, drop every via within 0.42 mm of a foreign pad's bbox, apply the rest with `route_edit`, one net per call.
 - `route_critical --out-report` into a missing directory crashes after the board is already written (no JSON, nonzero exit on a good run). `mkdir` the report directory first.
 - A pad-to-pad zone connection per pad has no scripted route (`planes_gen` is zone-wide; `route_edit` only tracks and vias): a hand-soldered through-hole pin in a solid pour needs a hand edit and a note.
+- A style fix-up pass run after a clean DRC (a board's own `style_fix` script) brought back clearance errors in copper it hadn't touched. Run DRC again after any such pass.
+- After a pad resize the zone fill is stale, and DRC reports errors that aren't there until the zones are refilled. Refill before you read DRC.
+- KiCad's "dangling" flag includes a track end that only overlaps same-net copper, so deleting every flagged item can cut real connections. Read `route_auto`'s `track_dangling` warnings one by one before any cleanup.
+- `route_cleanup`'s general pass broke connectivity on one board, where `--snap-only --dejog` was safe. Snapshot first and check the unconnected count after it.
+- A DRC exception with `--severity ignore` hides a courtyard overlap from DRC only: the place gate has its own courtyard check and still fails. Fix the overlap.
+- On `JLC04162H-7628A` (see `reference/stackups.yaml`) In2's nearest plane is B.Cu (0.428 mm of prepreg), not In1 (0.55 mm of core). An impedance read that takes In1 as In2's reference is wrong; read the reference from the stack, not from the layer order.
 
 ## Output contract (end your final message with exactly this block)
 FILES: <board + route/ artifacts>

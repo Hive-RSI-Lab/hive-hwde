@@ -98,6 +98,13 @@ entry against its line here before you accept it.
 - `fp_verify` never compares `land_pattern.row_spacing_mm`, though `datasheet_extract` fills it. On a two-row leaded package a wrong row spacing slides both rows off the leads while pad count and pitch pass. Measure it by hand.
 - A footprint can contradict itself: `CONN-TH_2P-P5.00_WJ500V-5.08-2P` draws its silk entry arrows on the opposite face from its own 3D model's openings, and a render check then certifies the wrong orientation. Its wire entry is at local -Y, the opposite of the KF128 / DB128L family. For any new screw terminal prove the entry face from an orthographic side render AND the courtyard asymmetry, and note that a KF128 3D model is rotated 180 degrees, so its top-view "teeth" are the rear ledge.
 - A THT footprint with `attr through_hole` but no `exclude_from_pos_files` is classed `smt_placed` by `bom_cpl` and written into the CPL, which reports `pass`. Set `"assembly_class": "hand_install"` on the part.
+- EasyEDA footprints for polymer and electrolytic cans can draw the courtyard round the leads only (7 x 2 mm on a 12.5 mm can), so placement lets parts overlap the can's body. Add a body-sized courtyard circle.
+- Pulled EasyEDA SOIC-16W footprints differ by variant: one had its lands 7.1 mm apart, another 8.08 mm. Check land-to-land against the datasheet's land pattern.
+- A board library named `power` shadows KiCad's `power:` symbols, and the schematic build fails with "power:VCC not found". Give the board library another name.
+- A stock DFN footprint can carry its die pad on F.Cu only, with no paste or mask layer. Read the pad's layers before trusting that the pad is soldered.
+- A `lib_pull` interrupted part-way leaves symbols with `unspecified` pins (ERC floods with pin_to_pin) and footprints without their fixups (an absolute 3D path, a courtyard smaller than the pads). Rerun the pull, or run the fixes on their own.
+- `datasheet_extract --fetch` needs a `datasheet` URL in the part's row; without one there is nothing to fetch.
+- A footprint made in pcbnew code with `FootprintLoad` and no `SetFPID` has an empty library id. It reads as `footprint_symbol_mismatch`, and after a full route `ImportSpecctraSES` returned False with no message. Set the FPID on every footprint you create.
 
 ## Output contract (end your final message with exactly this block)
 FILES: <lib paths + registered tables + overlay SVGs>
