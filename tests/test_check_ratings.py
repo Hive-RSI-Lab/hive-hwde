@@ -3281,8 +3281,8 @@ DRIVER = {"mpn": "TESTDRVOUT", "pinout": [
     {"pin": "3", "name": "OUT", "type": "output"}]}
 
 
-def _driven(tmp_path, vmax, supply="+3V3"):
-    fps = [("U1", "C40", {"1": supply, "2": "GND", "3": "/D"}),
+def _driven(tmp_path, vmax, supply="+3V3", ref="U1"):
+    fps = [(ref, "C40", {"1": supply, "2": "GND", "3": "/D"}),
            ("U9", "C30", {"1": "/D", "2": "GND"}),
            ("J1", "C31", {"1": "+5V", "2": "GND"})]
     return _run(_ws(tmp_path, fps, {"C40": DRIVER, "C30": _sink(vmax)}))
@@ -3299,3 +3299,8 @@ def test_a_net_is_bounded_by_its_drivers_rail(tmp_path):
 
 def test_a_driver_with_an_unknown_supply_bounds_nothing(tmp_path):
     assert not _over(_driven(tmp_path, 1, supply="/VX"))
+
+
+def test_a_connector_is_not_a_driver(tmp_path):
+    # J2's far side is off the board: its supply pins don't bound its others
+    assert not _over(_driven(tmp_path, 1, ref="J2"))

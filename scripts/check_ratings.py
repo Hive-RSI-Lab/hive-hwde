@@ -908,11 +908,11 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
     the refs whose own pins made that bound (they are not judged against
     it). A net is bounded only when everything on it is a resistor, a
     capacitor, an input pin, a clamp or a driver - an output pin of a part
-    whose supplies are all known (#869). Each resistor to a known or bounded
-    net contributes that net's span, each to any other net the board's
-    rails; a push-pull output pins the net to its part's rail, other drivers
-    (tristate, open collector, bidirectional) add their rail to the feeds'
-    hull. A zener/TVS clamp then narrows it from its other side: A in
+    whose supplies are all known (#869), never a connector's. Each resistor
+    to a known or bounded net contributes that net's span, each to any other
+    net the board's rails; a push-pull output pins the net to its part's
+    rail, other drivers (tristate, open collector, bidirectional) add their
+    rail to the feeds' hull. A zener/TVS clamp then narrows it from its other side: A in
     K - Vz .. K + a diode drop, K in A - a diode drop .. A + Vz (#868).
     Bounded nets feed each other, so the passes repeat until nothing moves.
     clamp_power[ref] = (watts the clamp can dissipate, its Pd): a clamp is
@@ -949,7 +949,10 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
                           if p["pin"] == pad), None)
             if ptype in ("input", "passive"):
                 continue
-            rail = _supply_rail(b, ext, volts) if ptype in OUT_TYPES else None
+            # a connector's pins are driven from off the board: its own
+            # supply pins say nothing about what arrives on the others
+            rail = (_supply_rail(b, ext, volts) if ptype in OUT_TYPES
+                    and not INPUT_CONN_RE.match(ref) else None)
             if rail is None:
                 ok = False
                 break
