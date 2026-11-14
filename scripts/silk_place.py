@@ -44,9 +44,12 @@ place_edit's atomic pipeline; --verify-drc then runs the REAL DRC and
 reports silk-class findings (check_silk is lenient and never the oracle,
 LEARNINGS 2026-07-27).  Cut from the full recipe (reported): no automatic
 batch-bisect on a DRC regression - the report carries the findings and the
-agent bisects.  Board-only refs (H*) and hidden texts are never touched.
+agent bisects.  Board-only refs (H*) and hidden texts are never touched;
+a board_only ref named in --refs is a warning (silk_board_only_skipped)
+with a ready `hide` fix op, never a silent skip.
 
-Exit 0 all placed / 1 residuals or post-apply silk DRC findings / 2 error.
+Exit 0 all placed / 1 residuals, a board_only ref named in --refs, or
+post-apply silk DRC findings / 2 error.
 """
 from __future__ import annotations
 
@@ -353,6 +356,12 @@ UNPLACEABLE_FIX = ("hide this reference on silk and keep it on the fab "
                    "holds both as place_edit set_text ops")
 
 
+BOARD_ONLY_FIX = ("silk_place never moves a board_only part's refdes (a "
+                  "mounting hole carries no assembly information): hide it "
+                  "(fix_ops.hide), or move it by hand with a place_edit "
+                  "move_text op at the part's own position")
+
+
 def rule_verdict(ref, info, x, y, deg, side_pads, boxes):
     """check_silk's verdict on this refdes at (x, y, deg), from check_silk's
     own functions and text model -> (failure | None, own_off, attribution).
@@ -428,7 +437,14 @@ def solve(pcb: Path, refs: list[str] | None, min_clear: float):
             skipped.append({"ref": ref, "reason": "hidden"})
             continue
         if "board_only" in fp.attrs:
-            skipped.append({"ref": ref, "reason": "board_only"})
+            entry = {"ref": ref, "reason": "board_only"}
+            if refs is not None and info["layer"] in SILK_LAYERS:
+                # asked for by name but never solved: say so, with the fix
+                entry["suggest"] = BOARD_ONLY_FIX
+                entry["fix_ops"] = {"hide": {
+                    "op": "set_text", "ref": ref, "field": "reference",
+                    "hide": True}}
+            skipped.append(entry)
             continue
         if info["layer"] not in SILK_LAYERS:
             skipped.append({"ref": ref,
@@ -639,6 +655,12 @@ def run(argv: list[str] | None = None):
         f"Fix: {r['suggest']}", SCRIPT, kind="silk_residual",
         suggest=r["suggest"], fix_ops=r.get("fix_ops"))
         for r in residual]
+    violations += [checklib.violation(
+        SCRIPT, "warning", None, None, None, [s["ref"]],
+        f"{s['ref']}: board_only, asked for by --refs but not placed. "
+        f"Fix: {s['suggest']}", SCRIPT, kind="silk_board_only_skipped",
+        suggest=s["suggest"], fix_ops=s["fix_ops"])
+        for s in skipped if "suggest" in s]
 
     facts = {
         "targets": len(results) + len(residual),
