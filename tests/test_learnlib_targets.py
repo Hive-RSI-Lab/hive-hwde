@@ -65,17 +65,21 @@ def test_missing_workspace_is_a_problem(tmp_path):
     assert problems and "does not exist" in problems[0]
 
 
-def test_artifact_in_workspace_but_not_its_own_learnings(tmp_path,
-                                                         monkeypatch):
+def test_artifact_in_workspace_but_not_its_own_learnings(tmp_path):
     ws = _ws(tmp_path)
     (ws / "archive").mkdir()
     (ws / "archive" / "LEARNINGS.md").write_text("# archive\n")
     assert learnlib._artifact_exists("archive/LEARNINGS.md", ws)
-    # The module root carries the old archive as LEARNINGS.md; with the
-    # module side hidden, the workspace's own file must not stand in for it.
-    real_exists = learnlib._exists
-    monkeypatch.setattr(learnlib, "_exists",
-                        lambda rel: rel != "LEARNINGS.md" and real_exists(rel))
     assert not learnlib._artifact_exists("LEARNINGS.md", ws)
     assert not learnlib._artifact_exists("archive/missing.md", ws)
     assert learnlib._artifact_exists("agents/router.md", ws)
+
+
+def test_closed_root_archive_is_not_an_artifact(tmp_path):
+    """The module root ships the closed archive pair, but a ruling can no
+    longer promote into it, so citing it must not pass validate."""
+    assert learnlib.ROOT_LEARNINGS.is_file() and learnlib.TRIAGE.is_file()
+    assert not learnlib._artifact_exists("LEARNINGS.md")
+    assert not learnlib._artifact_exists("design/ladder-triage.md")
+    assert not learnlib._artifact_exists("LEARNINGS.md", _ws(tmp_path))
+    assert learnlib._artifact_exists("learnings.d/README.md")
