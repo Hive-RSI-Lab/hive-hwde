@@ -5,7 +5,7 @@
  "board": "usbbuck4",
  "metrics": {
   "errors": 1,
-  "warnings": 4,
+  "warnings": 5,
   "by_check": {
    "check_return_path": 1,
    "check_current": 0,
@@ -38,7 +38,7 @@
    "check_rf_match": 0,
    "check_si": 0,
    "check_stackup": 0,
-   "check_straps": 0,
+   "check_straps": 1,
    "check_surge": 0,
    "check_testpoints": 0,
    "check_transformer": 0,
@@ -51,6 +51,7 @@
   "by_kind": {
    "body_unjudged": 1,
    "missing_return_via": 1,
+   "no_netlist": 1,
    "tht_hole_ipc2222": 2,
    "wick_via_in_pad": 1
   },
@@ -65,11 +66,11 @@
  "metrics_live": null,
  "penalties": {
   "errors": 1.0,
-  "warnings": 4.0,
+  "warnings": 5.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 99.1,
+ "composite": 99.0,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
