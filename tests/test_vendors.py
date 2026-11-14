@@ -270,6 +270,97 @@ def test_dfm_check_vendor_without_castellation_rules_flags_castellations(
     assert rep["vendor"] == "testfab"
 
 
+# ------------------------------------------------ the gate's dfm vendor
+
+STACKUPS = yaml.safe_load((REPO / "reference" / "stackups.yaml")
+                          .read_text(encoding="utf-8"))["stackups"]
+
+
+def _ws_board(root: Path, stackup: str | None = None,
+              choice: str | None = None) -> Path:
+    """A workspace's kicad/b.kicad_pcb carrying `stackup`'s (stackup) block
+    (none when None), and a state.json naming `choice` when given."""
+    import board_init
+    import jlcstack
+    s = STACKUPS[stackup] if stackup else None
+    n = s["layers"] if s else 2
+    ids = {"F.Cu": 0, "B.Cu": 2}
+    ids.update({f"In{k}.Cu": 2 + 2 * k for k in range(1, n - 1)})
+    layers = "\n".join(f'\t\t({ids[c]} "{c}" signal)' for c in
+                       (jlcstack.copper_name(i, n) for i in range(1, n + 1)))
+    setup = board_init.build_stackup_block(s) if s else ""
+    pcb = root / "ws" / "kicad" / "b.kicad_pcb"
+    pcb.parent.mkdir(parents=True)
+    pcb.write_text(
+        f'(kicad_pcb\n\t(version 20250114)\n\t(generator "pcbnew")\n'
+        f'\t(general\n\t\t(thickness {s["thickness_mm"] if s else 1.6})\n\t)\n'
+        f'\t(layers\n{layers}\n\t\t(44 "Edge.Cuts" user)\n\t)\n'
+        f'\t(setup\n{setup}\t)\n\t(net 0 "")\n)\n', encoding="utf-8")
+    if choice:
+        (root / "ws" / "state.json").write_text(
+            json.dumps({"vendor": choice}), encoding="utf-8")
+    return pcb
+
+
+@pytest.mark.parametrize("stackup,vid", [
+    ("OSHPARK-4L-1.6-FR408HR", "oshpark"),
+    ("AISLER-4L-1.6-1080", "aisler"),
+    ("PCBWAY-4L-1.6-7628", "pcbway"),
+])
+def test_gate_dfm_holds_a_board_to_its_stackups_fab(tmp_path, stackup, vid):
+    import gate
+    assert gate.dfm_vendor(_ws_board(tmp_path, stackup)) == (vid, "stackup")
+
+
+def test_gate_dfm_chosen_vendor_wins_over_the_stackup(tmp_path):
+    import gate
+    pcb = _ws_board(tmp_path, "OSHPARK-4L-1.6-FR408HR", choice="aisler")
+    assert gate.dfm_vendor(pcb) == ("aisler", "state.json")
+
+
+@pytest.mark.parametrize("stackup,choice,src", [
+    ("JLC04161H-7628G", None, "stackup"),                # JLC's own build
+    ("OSHPARK-4L-1.6-FR408HR", "jlcpcb", "state.json"),  # JLC chosen
+    (None, None, "default"),                             # no stack block
+])
+def test_gate_dfm_jlc_is_the_default_run(tmp_path, stackup, choice, src):
+    import gate
+    pcb = _ws_board(tmp_path, stackup, choice=choice)
+    assert gate.dfm_vendor(pcb) == (None, src)
+
+
+def test_gate_dfm_vendor_of_an_unreadable_board_is_the_default(tmp_path):
+    """dfm_check itself reports the board it can't read; the vendor lookup
+    must not be what fails."""
+    import gate
+    pcb = tmp_path / "ws" / "kicad" / "b.kicad_pcb"
+    assert gate.dfm_vendor(pcb) == (None, "default")
+    pcb.parent.mkdir(parents=True)
+    pcb.write_text("(kicad_pcb (version", encoding="utf-8")
+    assert gate.dfm_vendor(pcb) == (None, "default")
+
+
+def test_gate_run_dfm_passes_the_vendor_and_says_where_from(tmp_path,
+                                                            monkeypatch):
+    import gate
+    seen: list[dict] = []
+    monkeypatch.setattr(dfm_check, "run", lambda pcb, **kw:
+                        seen.append(kw) or {"status": "pass"})
+    rep = gate.run_dfm(_ws_board(tmp_path, "OSHPARK-4L-1.6-FR408HR"))
+    assert seen[-1]["vendor"] == "oshpark"
+    assert (rep["vendor"], rep["vendor_from"]) == ("oshpark", "stackup")
+    rep = gate.run_dfm(_ws_board(tmp_path / "j", "JLC04161H-7628G"))
+    assert "vendor" not in seen[-1]
+    assert (rep["vendor"], rep["vendor_from"]) == ("jlcpcb", "stackup")
+
+
+def test_every_stackup_fab_has_a_vendor_profile():
+    """The gate's dfm takes a board's minimums from its stackup's fab, so
+    every fab a stackups.yaml build names must have a profile to load."""
+    named = {e["vendor"] for e in STACKUPS.values() if e.get("vendor")}
+    assert named and named <= set(vendors.ids()), named - set(vendors.ids())
+
+
 # -------------------------------------------------------------- package
 
 @pytest.fixture

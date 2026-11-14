@@ -20,8 +20,12 @@ to:
   ledger expects a `vendor` fact for it: a `fit` that passed, from the
   board's current files. Release refuses until that fact holds.
 
-JLC remains the default everywhere. `dfm_check` and `order_quote` read JLC's
-tables unless `--vendor` names another profile.
+JLC remains the default. `dfm_check` and `order_quote` read JLC's tables
+unless `--vendor` names another profile. The gate's dfm stage picks the
+vendor itself: the one `choose` recorded, else the fab of the
+`reference/stackups.yaml` build the board's stackup matches, so a board on an
+OSH Park stack is held to OSH Park's minimums. Its report's `vendor_from`
+says which: `state.json`, `stackup` or `default` (JLC).
 
 ```
 pcb-flow vendor list

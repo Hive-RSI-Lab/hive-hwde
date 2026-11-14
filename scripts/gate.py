@@ -284,18 +284,48 @@ def run_report_for_gate(gate: dict, input_file: Path) -> dict:
         f"got {tool!r}")
 
 
+def dfm_vendor(board: Path) -> tuple[str | None, str]:
+    """(vendor id, where it came from) for the dfm stage's minimums: the
+    workspace's chosen vendor (state.json "vendor", from `vendor choose`),
+    else the fab of the stackups.yaml build the board's (stackup) block is,
+    else (None, "default"): JLC's, the pipeline's default. JLC, chosen or
+    matched, is None too, so its run is the default one."""
+    from lib import ledgerlib
+    vid, src = ledgerlib.chosen_vendor(board.parent.parent), "state.json"
+    if not vid:
+        # top-level names, as check_vias imports geom: one GeomError class
+        lib = str(Path(__file__).resolve().parent / "lib")
+        if lib not in sys.path:
+            sys.path.insert(0, lib)
+        import geom  # noqa: E402
+        import viastub  # noqa: E402
+        try:
+            vid, known = viastub.board_vendor(geom.load_board(board).stackup)
+        except (geom.GeomError, OSError, ValueError):
+            vid, known = None, False
+        vid, src = (vid, "stackup") if known else (None, "default")
+    if not vid or vid == "jlcpcb":
+        return None, src if vid else "default"
+    return vid, src
+
+
 def run_dfm(board: Path, strict: bool = False) -> dict:
     """Run dfm_check on the board (P9). Gerbers are exported to a scratch dir,
     so gating never litters the design folder; the schematic beside the board
     (pipeline convention) is the CPL-polarity oracle, and parts.json - beside
     the board or in the workspace's parts/ - drives the BOM-completeness and
     CPL-placement legs, the latter on the workspace's fab/CPL.csv and
-    fab/cpl_visual.json when they exist. strict (U2/C7): a
+    fab/cpl_visual.json when they exist. The minimums are the board's fab's
+    (dfm_vendor: the chosen vendor, else its stackup's), JLC's by default;
+    the payload's vendor_from says which. strict (U2/C7): a
     sub-check that could not run (open outline, no netlist, no parts.json)
     is a coverage failure -> the payload comes back status error and the
     gate refuses instead of grading the partial report."""
     import dfm_check  # noqa: E402  (sibling script)
     kwargs: dict = {"strict": strict}
+    vendor, vendor_from = dfm_vendor(board)
+    if vendor:
+        kwargs["vendor"] = vendor
     sch = board.with_suffix(".kicad_sch")
     if sch.exists():
         kwargs["schematic"] = sch
@@ -314,6 +344,8 @@ def run_dfm(board: Path, strict: bool = False) -> dict:
     payload = dfm_check.run(board, **kwargs)
     if payload.get("status") == "error":
         raise RuntimeError(f"dfm could not run: {payload.get('error')}")
+    payload["vendor"] = vendor or "jlcpcb"
+    payload["vendor_from"] = vendor_from
     return payload
 
 

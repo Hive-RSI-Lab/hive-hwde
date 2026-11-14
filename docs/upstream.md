@@ -242,6 +242,11 @@ What moved where:
   numbering. On a board with that net the whole check went from a 4.5 GB
   peak to 0.75 GB with the same report, and runs in a 1.5 GB cgroup
   (`tests/test_layout_sim.py`).
+- `scripts/gate.py`'s dfm stage checked every board at JLC's minimums. It
+  now takes the board's fab: the vendor `vendor choose` recorded in
+  `state.json`, else the fab of the `reference/stackups.yaml` build the
+  board's (stackup) block matches, else JLC. The payload's `vendor` and
+  `vendor_from` say which (`tests/test_vendors.py`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
