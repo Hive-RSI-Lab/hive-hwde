@@ -11,6 +11,11 @@ Copper can bend round an obstacle where this line can't, so the walk can read
 long. slots=False ignores the refusal, which gives a floor on the length: only
 that floor is proof that the copper really is long.
 
+A walk F.Cu track -> via -> B.Cu track can skip the via node: netconn makes
+ends that round to one (x, y) a single node whatever their layer, so the walk
+goes track to track through that point. Such a layer change, at a point a via
+joins, counts as that via (#1021).
+
 Hops are checked when they're popped, not when they're pushed: most of a ground
 net's vias are never reached, and clipping a line against a big fill is slow.
 """
@@ -35,6 +40,7 @@ class CopperPaths:
         self.g = netconn.build(bg, net)
         self.bg = bg
         self.fills: list = []
+        self.fill_layer: list = []
         self._hops: dict = {}
         self.on_fill: dict = {}
         self.pos: dict = {}
@@ -96,6 +102,7 @@ class CopperPaths:
                         continue
                     k = len(self.fills)
                     self.fills.append((poly, members, prep(poly)))
+                    self.fill_layer.append(layer)
                     for n in members:
                         self.on_fill.setdefault(n, []).append(k)
 
@@ -115,6 +122,33 @@ class CopperPaths:
             self._hops[key] = ok
         return self._hops[key]
 
+    def _layer(self, fill, eid):
+        """Copper layer of one step: a track's or a fill hop's; None for a join."""
+        if fill is not None:
+            return self.fill_layer[fill]
+        t = self.g.tracks.get(eid)
+        return t.layer if t is not None else None
+
+    def _vias(self, path, hops) -> int:
+        """Via nodes on the path, plus each change of layer at a merged point
+        that a via joins (the walk went round the via node, #1021). hops[i] is
+        the step from path[i] to path[i + 1]."""
+        n = 0
+        last = None
+        for i, node in enumerate(path):
+            if node in self.via_nodes or node[0] == "pad":
+                n += node in self.via_nodes
+                last = None
+            if i < len(hops):
+                layer = self._layer(*hops[i])
+                if layer is None:
+                    continue
+                if (last is not None and layer != last and node[0] == "pt"
+                        and any(v in self.via_nodes for v, _, _ in self.g.adj.get(node, ()))):
+                    n += 1
+                last = layer
+        return n
+
     def between(self, a, b, slots: bool = True) -> dict | None:
         """{"mm", "vias", "path"} from node a to node b, or to the nearest of
         a set of nodes, or None when they aren't joined (not routed yet)."""
@@ -128,26 +162,27 @@ class CopperPaths:
         done: dict = {}
         came: dict = {}
         best: dict = {}   # floor only: a refused hop can't lose its better rival
-        heap = [(0.0, next(tie), a, None, None)]
+        heap = [(0.0, next(tie), a, None, None, None)]
         while heap:
-            d, _, u, prev, fill = heapq.heappop(heap)
+            d, _, u, prev, fill, eid = heapq.heappop(heap)
             if u in done:
                 continue
             if slots and fill is not None and not self._hop_ok(fill, prev, u):
                 continue
             done[u] = d
-            came[u] = prev
+            came[u] = (prev, fill, eid)
             if u in targets:
-                path, n = [], u
+                path, hops, n = [], [], u
                 while n is not None:
                     path.append(n)
-                    n = came[n]
+                    n, k, e = came[n]
+                    hops.append((k, e))
                 path.reverse()
-                return {"mm": d, "path": path,
-                        "vias": sum(n in self.via_nodes for n in path)}
-            for v, w, _eid in self.g.adj.get(u, ()):
+                hops.reverse()
+                return {"mm": d, "path": path, "vias": self._vias(path, hops[1:])}
+            for v, w, e in self.g.adj.get(u, ()):
                 if v not in done:
-                    heapq.heappush(heap, (d + w, next(tie), v, u, None))
+                    heapq.heappush(heap, (d + w, next(tie), v, u, None, e))
             for k in self.on_fill.get(u, ()):
                 ux, uy = self.pos[u]
                 for v in self.fills[k][1]:
@@ -157,7 +192,7 @@ class CopperPaths:
                     nd = d + math.hypot(ux - vx, uy - vy)
                     if slots or nd < best.get(v, math.inf):
                         best[v] = nd
-                        heapq.heappush(heap, (nd, next(tie), v, u, k))
+                        heapq.heappush(heap, (nd, next(tie), v, u, k, None))
         # same island, so copper joins them: every line across a pour was
         # refused, and the floor is all that can be said
         return self.between(a, b, slots=False)

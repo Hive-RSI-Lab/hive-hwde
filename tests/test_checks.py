@@ -546,6 +546,31 @@ def test_copperpath_pour_costs_the_line_and_a_slot_refuses_it(tmp_path_factory):
     assert walk.between(("pad", "A1", "1"), ("pad", "A2", "1")) is None
 
 
+def test_copperpath_counts_a_via_the_walk_goes_round(tmp_path_factory):
+    """#1021: an F.Cu and a B.Cu track ending at one via centre share one
+    netconn node, so the walk never visits the via node; it still crossed it."""
+    fps = "".join(f"""  (footprint "R" (at {x} 5) (layer "{lay}")
+    (property "Reference" "{r}" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 0.5 0.5) (layers "{lay}") (net "VDD")))
+""" for r, x, lay in (("A1", 2, "F.Cu"), ("A2", 18, "B.Cu")))
+    body = fps + """  (segment (start 2 5) (end 10 5) (width 0.2) (layer "F.Cu") (net "VDD"))
+  (segment (start 10 5) (end 18 5) (width 0.2) (layer "B.Cu") (net "VDD"))
+  (via (at 10 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "VDD"))
+"""
+    bg = _board(tmp_path_factory, "viaround", body)
+    got = copperpath.CopperPaths(bg, "VDD").between(
+        ("pad", "A1", "1"), ("pad", "A2", "1"))
+    assert got["mm"] == pytest.approx(16.0, abs=0.01)
+    assert got["vias"] == 1
+    # a straight F.Cu run past a via's point is not a via
+    body = fps.replace('"B.Cu"', '"F.Cu"') + body.split(fps)[1].replace(
+        '(layer "B.Cu")', '(layer "F.Cu")')
+    bg = _board(tmp_path_factory, "viapast", body)
+    got = copperpath.CopperPaths(bg, "VDD").between(
+        ("pad", "A1", "1"), ("pad", "A2", "1"))
+    assert got["vias"] == 0
+
+
 def test_decoupling_declared_limit_is_error(tmp_path_factory):
     """U20: a DECLARED per-association limit is the board's own contract -
     exceeding it is an ERROR at the limit itself, never a warning until the
