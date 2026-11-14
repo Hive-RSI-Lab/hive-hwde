@@ -17,8 +17,9 @@ is fetched into this repo. Checks run here (RUNNERS), each with an empty
 constraints file, what hwde reads before anyone has written one:
 netlist_audit on the schematic, check_mate_pins and check_current on the
 board, check_straps on the board with the netlist kicad-cli exports from the
-schematic, check_bom_sync on the board with --live (the package of each LCSC
-part comes from JLC's record, as nothing in the foreign tree holds it). A
+schematic, check_connector_fit on the board (no parts/), check_bom_sync on
+the board with --live (the package of each LCSC part comes from JLC's
+record, as nothing in the foreign tree holds it). A
 catch for another script is reported as not run.
 """
 from __future__ import annotations
@@ -100,6 +101,10 @@ def _check_current(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
             "--constraints", str(empty)]
 
 
+def _check_connector_fit(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_connector_fit.py", "--pcb", str(repo / b[rev]["pcb"])]
+
+
 def _check_bom_sync(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
     return ["check_bom_sync.py", "--pcb", str(repo / b[rev]["pcb"]), "--live"]
 
@@ -124,7 +129,8 @@ def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
 # before anyone has written one)
 RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
            "check_current": _check_current, "check_straps": _check_straps,
-           "check_bom_sync": _check_bom_sync}
+           "check_bom_sync": _check_bom_sync,
+           "check_connector_fit": _check_connector_fit}
 
 
 def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
@@ -177,8 +183,8 @@ def table(cache: Path, boards: list[dict]) -> str:
     lines = ["# The real-errata corpus", "",
              "Public boards whose next revision fixed a defect the first one shipped with,",
              "quoted from the designer's own errata (`reference/errata_corpus.yaml`), and",
-             "what hwde's checks do with the first revision. Written by",
-             "`bin/hwde errata_corpus table` after `fetch` and `run`.", ""]
+             "what pcb-flow's checks do with the first revision. Written by",
+             "`bin/pcb-flow errata_corpus table` after `fetch` and `run`.", ""]
     count: dict[str, int] = {}
     for b in boards:
         rf = cache / "runs" / b["id"] / "result.json"
@@ -186,7 +192,7 @@ def table(cache: Path, boards: list[dict]) -> str:
         lines += [f"## {b['id']}: {b['rev_a']['name']} -> {b['rev_b']['name']}", "",
                   f"[{b['url']}]({b['url']}) at `{b['commit'][:12]}`, {b['licence']}; "
                   f"errata `{b['source']}`.", "",
-                  "| defect | class | hwde on rev A | follow-up |", "|---|---|---|---|"]
+                  "| defect | class | pcb-flow on rev A | follow-up |", "|---|---|---|---|"]
         for d in b["defects"]:
             count[d["verdict"]] = count.get(d["verdict"], 0) + 1
             catch = d.get("catch")

@@ -53,6 +53,17 @@ never failed for it. A part with no `mechanical.pins` whose footprint is a
 stock pin header is held to reference/tht_leads.yaml's lead instead (the
 part's fact says `lead_source: stock`).
 
+A solder-wire pad pair (KiCad's Connector_Wire:SolderWire-*) has no part
+and no drawing: its holes are sized for the wire the footprint is named
+for. With no extraction, the wire is sized from the copper that feeds the
+pads instead (`wire_feed`): the widths of the same-net tracks ending on a
+pad, plus a thermal-relief pour's spokes, give a current (IPC-2221 outer
+layer, WIRE_DT_C rise), the current gives the least wire that carries it
+(IEC 60335-1 Table 11), and the wire's conductor (KiCad's own table) is
+the lead. A pad tied solid to a pour, or one fed by nothing, is not
+judged. One tht_hole_loose per part, `lead_source: wire` (oasis J1,
+issue #881: 2.5 mm^2 holes for a 0.5 mm wide feed).
+
 CLI: --pcb board.kicad_pcb [--parts DIR] [--out report.json]
      exit 0 pass / 1 violations / 2 error, per SPEC section 6.
 """
@@ -67,7 +78,7 @@ from pathlib import Path
 import sexpdata
 import yaml
 from shapely import affinity
-from shapely.geometry import LineString, MultiPoint
+from shapely.geometry import LineString, MultiPoint, Point, Polygon
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -76,6 +87,7 @@ import checklib  # noqa: E402
 import fplib  # noqa: E402
 import matinglib  # noqa: E402
 import placelib  # noqa: E402
+import geom  # noqa: E402
 from geom import _kids, _strs  # noqa: E402
 
 SCRIPT = "check_connector_fit"
@@ -95,6 +107,22 @@ SPEC_TOL_MM = 0.10
 POST_TOL_MM = 0.05
 EDGE_TOL_MM = 0.30
 CONNECTOR_REF = re.compile(r"^(J|CN|P|USB|X)\d", re.I)
+SOLDER_WIRE = re.compile(r"^SolderWire-")
+# IPC-2221 outer-layer trace current, I = k dT^0.44 (W t)^0.725 (mil); a
+# 20 degC rise, generous for a wire's feed (check_current holds tracks to 10)
+IPC2221_K_OUTER = 0.048
+WIRE_DT_C = 20.0
+CU_MM = 0.035
+# A thermal relief joins a pad with this many spokes (KiCad's default)
+SPOKES = 4
+# IEC 60335-1 Table 11 (cord conductors): the least cross-section, mm^2,
+# for a current up to amps
+WIRE_FOR_AMPS = [(3.0, 0.5), (6.0, 0.75), (10.0, 1.0), (16.0, 1.5),
+                 (25.0, 2.5), (32.0, 4.0), (40.0, 6.0)]
+# KiCad Connector_Wire SolderWire-*sqmm: the wire's conductor diameter, mm
+WIRE_DIA = {0.1: 0.4, 0.127: 0.48, 0.15: 0.5, 0.25: 0.65, 0.5: 0.9,
+            0.75: 1.25, 1.0: 1.4, 1.5: 1.7, 2.0: 2.0, 2.5: 2.4, 4.0: 3.0,
+            6.0: 3.5}
 
 
 def _cross(spec: dict) -> tuple[float, float] | None:
@@ -285,6 +313,145 @@ def stock_lead(fpid: str, leads: list[dict]) -> dict | None:
     return None
 
 
+def ipc2221_amps(width_mm: float, cu_mm: float = CU_MM,
+                 dt: float = WIRE_DT_C) -> float:
+    """IPC-2221 outer-layer current for a trace width_mm wide."""
+    mil = 1 / 0.0254
+    return IPC2221_K_OUTER * dt ** 0.44 * (width_mm * mil * cu_mm * mil) ** 0.725
+
+
+def wire_for(amps: float) -> float | None:
+    """The least wire (mm^2) for amps, or None past the table."""
+    for lim, mm2 in WIRE_FOR_AMPS:
+        if amps <= lim + 1e-9:
+            return mm2
+    return None
+
+
+def _num(node, key):
+    k = _kids(node, key)
+    for v in (k[0][1:] if k else []):
+        if isinstance(v, (int, float)):
+            return float(v)
+    return None
+
+
+def zone_connects(root) -> list[dict]:
+    """Per copper zone, in geom's zone order (rule areas skipped): how it
+    joins pads ("solid", "none", "thermal", "tht_thermal") and its spoke
+    width."""
+    out = []
+    for z in _kids(root, "zone"):
+        if _kids(z, "keepout"):
+            continue
+        cp = _kids(z, "connect_pads")
+        word = next((str(v) for v in (cp[0][1:] if cp else [])
+                     if isinstance(v, sexpdata.Symbol)), "")
+        mode = {"yes": "solid", "no": "none",
+                "thru_hole_only": "tht_thermal"}.get(word, "thermal")
+        fill = _kids(z, "fill")
+        tw = _num(fill[0], "thermal_bridge_width") if fill else None
+        out.append({"mode": mode, "spoke": tw if tw is not None else 0.5})
+    return out
+
+
+# KiCad's pad/footprint zone_connect: 0 none, 1 thermal, 2 solid, 3 THT thermal
+_PAD_CONNECT = {0: "none", 1: "thermal", 2: "solid", 3: "tht_thermal"}
+
+
+def wire_feed(ref, node, g, zconn) -> list[dict] | None:
+    """Each plated pad of `ref`: {pad, net, feed_mm, layers}, the copper
+    width that feeds it (same-net tracks ending on it, thermal spokes of
+    same-net pours around it), or None when a pad cannot be bounded (tied
+    solid to a pour)."""
+    fp_mode = _num(node, "zone_connect")
+    pad_modes = {}
+    for pn in _kids(node, "pad"):
+        s = _strs(pn)
+        zc = _num(pn, "zone_connect")
+        tw = _num(pn, "thermal_bridge_width")
+        if s:
+            pad_modes[s[0]] = (zc, tw)
+    rows = []
+    for p in g.pads_of(ref=ref):
+        if p.kind != "thru_hole" or not p.net:
+            continue
+        hit = p.poly.buffer(0.05)
+        feed = 0.0
+        for t in g.tracks_of(net=p.net):
+            if t.layer in p.layers and t.shape.intersects(hit):
+                feed += t.width
+        zc, tw = pad_modes.get(p.number, (None, None))
+        for z in g.zones_of(net=p.net):
+            if z.teardrop:
+                continue
+            for layer in p.layers:
+                polys = z.fills.get(layer)
+                if polys is not None:
+                    on = any(q.intersects(hit) for q in polys)
+                elif layer in z.layers and len(z.outline) >= 3:
+                    on = Polygon(z.outline).contains(Point(p.center))
+                else:
+                    on = False
+                if not on:
+                    continue
+                zmode = zconn[z.zone_id] if z.zone_id < len(zconn) else {"mode": "thermal",
+                                                         "spoke": 0.5}
+                mode = (_PAD_CONNECT.get(int(zc)) if zc is not None and zc >= 0
+                        else _PAD_CONNECT.get(int(fp_mode))
+                        if fp_mode is not None and fp_mode >= 0
+                        else zmode["mode"])
+                if mode == "solid":
+                    return None
+                if mode in ("thermal", "tht_thermal"):
+                    feed += SPOKES * (tw if tw else zmode["spoke"])
+        rows.append({"pad": p.number, "net": p.net, "feed_mm": feed,
+                     "drill": p.drill})
+    return rows
+
+
+def check_wire(ref, f, pads, node, g, zconn, viols, fact) -> bool:
+    """A solder-wire footprint held to the wire its copper feed needs."""
+    rows = wire_feed(ref, node, g, zconn)
+    if not rows or any(r["feed_mm"] <= 0 for r in rows):
+        return False
+    feed = max(r["feed_mm"] for r in rows)
+    cu = max((g.stackup.copper_thickness.get(l, CU_MM) for l in
+              g.stackup.copper_layers), default=CU_MM)
+    amps = ipc2221_amps(feed, cu)
+    mm2 = wire_for(amps)
+    if mm2 is None:
+        return False
+    lead = WIRE_DIA[mm2]
+    fact["lead_source"] = "wire"
+    fact["wire"] = {"feed_mm": checklib.rnd(feed, 3),
+                    "amps": checklib.rnd(amps, 2), "mm2": mm2,
+                    "lead_mm": lead}
+    loose = []
+    for p in _holes(pads):
+        if p.ptype != "thru_hole" or abs(p.drill_xy[0] - p.drill_xy[1]) > 1e-6:
+            continue
+        gap = p.drill_xy[0] - lead
+        if gap > LOOSE_MM:
+            loose.append((p, gap))
+    if loose:
+        p, gap = min(loose, key=lambda t: t[1])
+        nums = sorted({q.number for q, _ in loose}, key=_padkey)
+        viols.append(checklib.violation(
+            SCRIPT, "warning", f.to_abs(p.at[:2]), None, None, [ref],
+            f"{ref}: {_fmt_drill(p.drill_xy)} hole(s) (pads "
+            f"{', '.join(nums)}) for a wire whose copper feed is "
+            f"{feed:.2f} mm wide: about {amps:.1f} A (IPC-2221, "
+            f"{WIRE_DT_C:.0f} degC rise), which a {mm2:g} mm^2 wire "
+            f"({lead:.2f} mm conductor) carries, leaving {gap:.2f} mm "
+            f"(over {LOOSE_MM} mm): the joint may not fill. Use the "
+            f"SolderWire footprint for that wire, or widen the feed",
+            SOURCE, kind="tht_hole_loose", pads=nums,
+            gap_mm=checklib.rnd(gap, 3), wire_mm2=mm2,
+            amps=checklib.rnd(amps, 2), footprint=f.fpid))
+    return True
+
+
 def check_posts(ref, f, pads, mech, used, viols, fact):
     # the holes the pins took are not post holes; with no pins in the
     # drawing, a numbered plated hole is taken as a lead's
@@ -388,6 +555,7 @@ def check(pcb: Path, parts: Path | None) -> tuple[list[dict], dict]:
     metas = matinglib.board_meta(pcb)
     table = matinglib.load_table()
     leads = load_leads()
+    g = zconn = None
     viols: list[dict] = []
     facts = {"parts": [], "edges": [], "unverified": []}
     for ref in sorted(model.footprints):
@@ -411,6 +579,14 @@ def check(pcb: Path, parts: Path | None) -> tuple[list[dict], dict]:
             fact["lead_source"] = "stock"
             check_pins(ref, f, b["pads"], stock, viols, fact)
             facts["parts"].append(fact)
+        elif SOLDER_WIRE.search(f.fpid.split(":")[-1]):
+            if g is None:
+                g = geom.load_board(pcb)
+                zconn = zone_connects(sexpdata.loads(
+                    pcb.read_text(encoding="utf-8")))
+            if check_wire(ref, f, b["pads"], b["node"], g, zconn, viols,
+                          fact):
+                facts["parts"].append(fact)
         edge = None
         if (fam is not None and fam.get("entry") == "horizontal") \
                 or mech.get("edge"):
