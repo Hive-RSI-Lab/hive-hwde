@@ -75,6 +75,13 @@ schematic-level structural problems BEFORE board work starts:
    hierarchical design, that only parts drawn on other sheets span - the
    rail's caps belong to other parts and none was drawn for this pin
    (warning: confirm one sits at the pin on the board).
+ - pin_state: a pin reference/pin_states.yaml says the datasheet wants in
+   a state its net isn't in (#1033): a reset input left floating, a chip
+   select tied to ground instead of driven, a reference input on a net
+   above its limit or on the part's own regulator output, a mode pin tied
+   the wrong way. Each pin's net is read as open / ground / rail /
+   own_supply / pulled_up / pulled_down / driven / external (0 ohm is a
+   tie); the row's severity (error unless it says warning).
  - metadata_mismatch (error): a decoupling association that contradicts the
    netlist (cap/ic missing, IC pin not on the stated rail, cap not spanning
    rail+gnd); value drift cap-vs-netlist is a warning.
@@ -117,6 +124,7 @@ import engcalc  # noqa: E402
 SCRIPT = "netlist_audit"
 SOURCE = "audit.netlist"
 PIN_REQUIREMENTS = HERE.parent / "reference" / "pin_requirements.yaml"
+PIN_STATES = HERE.parent / "reference" / "pin_states.yaml"
 
 # Strong differential suffix families (subset of check_diffpair.SUFFIX_PAIRS:
 # the bare +/- and P/N tokens are too ambiguous for unpaired-net warnings).
@@ -402,6 +410,142 @@ def _cm_row(comp: dict, table: list[dict]) -> dict | None:
         if any(r["_re"].search(n.strip()) for n in names if n):
             return r
     return None
+
+
+def load_pin_states(path: Path = PIN_STATES) -> list[dict]:
+    """reference/pin_states.yaml's parts (its header says the form)."""
+    import yaml  # noqa: PLC0415
+    try:
+        doc = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError) as exc:
+        raise checklib.CheckError(f"pin states {path}: {exc}") from exc
+    return doc.get("parts") or []
+
+
+_DRIVE_TYPES = {"output", "bidirectional", "tri_state", "open_collector",
+                "open_emitter"}
+_POWER_TYPES = {"power_in", "power_out"}
+
+
+def _spec_matches(spec: dict, comp: dict) -> bool:
+    rx = re.compile(spec["match"], re.I)
+    return bool(rx.search(comp.get("value") or "")
+                or rx.search((comp.get("libsource") or ("", ""))[1]))
+
+
+def _supply_net(name: str, members: list[dict], rails: dict) -> bool:
+    return name in rails or any(_base_type(m.get("pintype")) in _POWER_TYPES
+                                for m in members)
+
+
+def _net_states(net: str, ref: str, pin: str, nets: dict, comps: dict,
+                comp_pins: dict[str, dict[str, str]], rails: dict,
+                own_volts: dict[str, float], _hop: int = 0
+                ) -> tuple[set[str], float | None, list[str]]:
+    """The states (reference/pin_states.yaml's header) of the net REF.PIN
+    sits on, the net's volts when known, and the refs that make them."""
+    members = nets.get(net, [])
+    others = [m for m in members if not (m["ref"] == ref and m["pin"] == pin)]
+    if net.startswith("unconnected-") or not others:
+        return {"open"}, None, []
+    states: set[str] = set()
+    volts = rails.get(net)
+    why: list[str] = []
+    if _is_ground_name(net):
+        states.add("ground")
+        volts = 0.0
+    elif _supply_net(net, members, rails):
+        states.add("rail")
+    supply = bool(states)  # on a ground or rail, a pin there drives nothing
+    for m in others:
+        r, bt = m["ref"], _base_type(m.get("pintype"))
+        if r == ref and bt == "power_out":
+            states.update({"own_supply", "rail"})
+            pv = own_volts.get(_norm_pin(m.get("pinfunction")))
+            if pv is not None:
+                volts = pv
+            why.append(f"{r}.{m['pin']} ({m.get('pinfunction') or '?'})")
+        elif supply:
+            continue
+        elif r != ref and bt in _DRIVE_TYPES:
+            states.add("driven")
+            why.append(f"{r}.{m['pin']}")
+        elif re.match(r"^(J|P|CN|X)\d", r or ""):
+            states.add("external")
+            why.append(r)
+    # a resistor to ground or a rail: 0 ohm is a tie, anything else a pull
+    for m in others if not supply else ():
+        if _part_kind(m["ref"]) != "R":
+            continue
+        pins = comp_pins.get(m["ref"], {})
+        if len(pins) != 2:
+            continue
+        far = next((n for p, n in pins.items() if p != m["pin"]), None)
+        if not far or far == net:
+            continue
+        ohm = engcalc.parse_value(comps.get(m["ref"], {}).get("value"))
+        fm = nets.get(far, [])
+        if ohm == 0 and _hop < 2:
+            fs, fv, _ = _net_states(far, m["ref"], next(
+                p for p in pins if p != m["pin"]), nets, comps, comp_pins,
+                rails, own_volts, _hop + 1)
+            got = fs & {"ground", "rail", "driven", "external"}
+            if got:
+                states |= got
+                volts = fv if volts is None else volts
+                why.append(m["ref"])
+        elif _is_ground_name(far):
+            states.add("pulled_down")
+            why.append(m["ref"])
+        elif _supply_net(far, fm, rails):
+            states.add("pulled_up")
+            why.append(m["ref"])
+        elif not states:
+            why.append(f"{m['ref']} to {far}")
+    return states, volts, why
+
+
+def _pin_states(nets: dict, comps: dict,
+                comp_pins: dict[str, dict[str, str]], rails: dict,
+                specs: list[dict]):
+    """Yield (rule, spec, ref, pin, net, states, volts, why, problem) per
+    datasheet pin-state rule the netlist breaks."""
+    for spec in specs:
+        aliases = {k.upper(): v.upper()
+                   for k, v in (spec.get("aliases") or {}).items()}
+        own = {k.upper(): float(v)
+               for k, v in (spec.get("supply_volts") or {}).items()}
+        for ref in sorted(comps):
+            if not _spec_matches(spec, comps[ref]):
+                continue
+            by_pin: dict[str, list[tuple[str, str]]] = {}
+            for pnum, name in comp_pins.get(ref, {}).items():
+                func = next((m.get("pinfunction") for m in nets.get(name, [])
+                             if m["ref"] == ref and m["pin"] == pnum), "")
+                pn = _norm_pin(func)
+                by_pin.setdefault(aliases.get(pn, pn), []).append(
+                    (pnum, name))
+            for rule in spec.get("pins") or []:
+                for pnum, name in by_pin.get(rule["pin"].upper(), []):
+                    st, volts, why = _net_states(
+                        name, ref, pnum, nets, comps, comp_pins, rails, own)
+                    allow, forbid = (set(rule.get("allow") or ()),
+                                     set(rule.get("forbid") or ()))
+                    problem = None
+                    if forbid & st:
+                        problem = f"is {'/'.join(sorted(forbid & st))}"
+                    elif allow and not allow & st:
+                        problem = (f"is {'/'.join(sorted(st))}, "
+                                   if st else "reaches no ground, rail, "
+                                   "pull or driver, ") + (
+                            f"not {' or '.join(sorted(allow))}")
+                    elif (rule.get("max_v") is not None and volts is not None
+                          and volts > float(rule["max_v"]) + 1e-6):
+                        problem = (f"sits at {volts:g} V, above its "
+                                   f"{float(rule['max_v']):g} V limit")
+                    if problem:
+                        yield (rule, spec, ref, pnum, name, st, volts, why,
+                               problem)
 
 
 def _rail_volts(constraints: dict, nets: dict) -> dict[str, float]:
@@ -992,7 +1136,8 @@ def _board_only_refs(pcb: Path) -> set[str]:
 def audit(parsed: dict, constraints: dict,
           decoupling: dict | None,
           pin_requirements: list[dict] | None = None,
-          board_only_refs: set[str] | None = None
+          board_only_refs: set[str] | None = None,
+          pin_states: list[dict] | None = None
           ) -> tuple[list[dict], dict]:
     nets = parsed["nets"]
     comps = parsed["components"]
@@ -1440,6 +1585,29 @@ def audit(parsed: dict, constraints: dict,
               pin=inv_p, out_pin=out_p, noise_gain=round(ng, 3),
               min_gain=row["min_gain"], at_hz=f_hz)
 
+    # 15. a pin the datasheet requires in a state it isn't in
+    # (reference/pin_states.yaml, #1033; errata corpus: glasgow revD0 left
+    # the PCA6416A RESET floating, bedlift v0.2 tied the DRV8434S nSCS to
+    # GND and its VREF to its own 5 V DVDD, echoplayer grounded the
+    # USB3320C ID on a device-only board, glasgow put the NAFE71388 AICOM
+    # on a remote common)
+    ps_specs = load_pin_states() if pin_states is None else pin_states
+    ps_rails = _rail_volts(constraints, nets)
+    pin_states_checked = 0
+    for spec in ps_specs:
+        pin_states_checked += sum(1 for r in comps
+                                  if _spec_matches(spec, comps[r]))
+    for (rule, spec, ref, pnum, name, st, volts, why,
+         problem) in _pin_states(nets, comps, comp_pins, ps_rails, ps_specs):
+        via = f" (via {', '.join(why)})" if why else ""
+        v(rule.get("severity", "error"), "pin_state", name, [ref],
+          f"{ref} ({comps[ref].get('value')}) pin {pnum} {rule['pin']} on "
+          f"'{name}' {problem}{via}: {' '.join(rule['why'].split())} "
+          f"[{' '.join(rule['source'].split()).split(':')[0]}]"
+          + ("" if spec.get("verified") else " (not yet re-read)"),
+          pin=rule["pin"], pin_number=pnum, states=sorted(st),
+          volts=volts, part=spec["mpn"])
+
     facts = {
         "nets": len(nets),
         "components": len(comps),
@@ -1455,6 +1623,7 @@ def audit(parsed: dict, constraints: dict,
         "amp_inputs_dc_checked": dc_checked,
         "polarized_caps_checked": pol_checked,
         "min_gain_loops_checked": loops_checked,
+        "pin_state_parts_checked": pin_states_checked,
     }
     return violations, facts
 

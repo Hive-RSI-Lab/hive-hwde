@@ -137,6 +137,16 @@ phys:
       and USB2514B and their industrial Bi parts. On a downstream port the
       hub's own resistors are the host's pull-downs, so nothing goes outside
       there either (row added 2026-11-13).
+  - name: Microchip USB3320 ULPI hi-speed PHY (USB3320C)
+    match: '^USB3320'
+    series_r: none
+    dp_pullup: internal
+    source: >-
+      Microchip USB3320 data sheet DS00001792F (2023), section 5.2.2: the
+      USB3320 "fully integrates all of the USB termination resistors on both
+      DP and DM. This includes 1.5kohm pull-up resistors, 15kohm pull-down
+      resistors and the 45ohm high speed termination resistors." DP is pin
+      18, DM pin 19 (Table 2-1). Read 2026-11-14 for #1033.
   - name: TI AM62x (AM620/AM623/AM625) and Octavo OSD62x-PM, USB0/USB1
     match: '^([XP]?AM62(0[124]|3[124]|5[124])|OSD6254-1G-IPM)'
     pins: '^USB[01]_D[PM]$'

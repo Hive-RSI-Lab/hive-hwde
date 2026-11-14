@@ -1,0 +1,176 @@
+"""reference/pin_states.yaml and netlist_audit's pin_state rule (#1033).
+
+Each row is seeded from an errata-corpus defect; each test plants that
+board's fault (rev A) and its fix (rev B, which must stay quiet)."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+
+import netlist_audit  # noqa: E402
+
+
+def _m(ref, pin, func="", ptype="passive"):
+    return {"ref": ref, "pin": pin, "pintype": ptype, "pinfunction": func}
+
+
+def _audit(comps, nets):
+    parsed = {"components": {r: {"value": v, "libsource": ("", "")}
+                             for r, v in comps.items()},
+              "nets": nets}
+    viol, facts = netlist_audit.audit(parsed, {}, None, pin_requirements=[])
+    return [x for x in viol if x["kind"] == "pin_state"], facts
+
+
+def _drv(scs, vref, extra_comps=None, extra_nets=None):
+    """A DRV8434S U1 with an MCU U2: SCS on net `scs`, VREF on `vref`."""
+    comps = {"U1": "DRV8434SPWPR", "U2": "STM32C051C8T6", "C1": "1u",
+             **(extra_comps or {})}
+    nets = {"GND": [_m("U1", "13", "GND", "power_in"), _m("C1", "2"),
+                    _m("U2", "8", "VSS", "power_in")],
+            "+3.3V": [_m("U2", "7", "VDD", "power_in")],
+            "/DVDD": [_m("U1", "15", "DVDD", "power_out"), _m("C1", "1")],
+            "/SCS": [_m("U2", "15", "PA4", "bidirectional")]}
+    for name, ms in (extra_nets or {}).items():
+        nets.setdefault(name, []).extend(ms)
+    nets.setdefault(scs, []).append(_m("U1", "18", "~{SCS}", "input"))
+    nets.setdefault(vref, []).append(_m("U1", "17", "VREF", "input"))
+    return comps, nets
+
+
+def test_drv8434s_scs_on_gnd_is_the_planted_fault():
+    hits, facts = _audit(*_drv("GND", "+3.3V"))
+    assert [(h["pin"], h["net"], h["severity"]) for h in hits] == [
+        ("SCS", "GND", "error")]
+    assert "SLOSE70" in hits[0]["msg"]
+    assert facts["pin_state_parts_checked"] == 1
+
+
+def test_drv8434s_scs_driven_by_the_mcu_is_quiet():
+    assert _audit(*_drv("/SCS", "+3.3V"))[0] == []
+
+
+def test_drv8434s_scs_on_its_pullup_alone_fires():
+    hits, _ = _audit(*_drv("unconnected-(U1-~{SCS}-Pad18)", "+3.3V"))
+    assert [h["pin"] for h in hits] == ["SCS"]
+    assert hits[0]["states"] == ["open"]
+
+
+def test_drv8434s_vref_on_its_own_dvdd_is_the_planted_fault():
+    hits, _ = _audit(*_drv("/SCS", "/DVDD"))
+    assert [(h["pin"], h["volts"]) for h in hits] == [("VREF", 5.0)]
+    assert "own_supply" in hits[0]["states"]
+
+
+def test_drv8434s_vref_on_a_5v_rail_is_over_its_limit():
+    hits, _ = _audit(*_drv("/SCS", "+5V",
+                           extra_nets={"+5V": [_m("U2", "1", "VDD5",
+                                                  "power_in")]}))
+    assert [h["pin"] for h in hits] == ["VREF"]
+    assert "above its 3.3 V limit" in hits[0]["msg"]
+
+
+def test_drv8434s_vref_from_a_dvdd_divider_is_quiet():
+    comps, nets = _drv("/SCS", "/VREF", {"R1": "10k", "R2": "22k"},
+                       {"/DVDD": [_m("R1", "1")],
+                        "/VREF": [_m("R1", "2"), _m("R2", "1")],
+                        "GND": [_m("R2", "2")]})
+    assert _audit(comps, nets)[0] == []
+
+
+@pytest.mark.parametrize("value", ["PCA6416APW", "TCA6416APW"])
+def test_io_expander_reset_floating_is_the_planted_fault(value):
+    comps = {"U24": value}
+    nets = {"+3V3": [_m("U24", "24", "VCCP", "power_in")],
+            "GND": [_m("U24", "12", "GND", "power_in")],
+            "unconnected-(U24-~{RESET}-Pad3)": [
+                _m("U24", "3", "~{RESET}", "input+no_connect")]}
+    hits, _ = _audit(comps, nets)
+    assert [(h["refs"], h["pin"], h["severity"]) for h in hits] == [
+        (["U24"], "RESET", "error")]
+
+
+@pytest.mark.parametrize("pull", [False, True])
+def test_io_expander_reset_tied_or_pulled_up_is_quiet(pull):
+    comps = {"U24": "TCA6416APW"}
+    nets = {"+3V3": [_m("U24", "24", "VCCP", "power_in")],
+            "GND": [_m("U24", "12", "GND", "power_in")]}
+    if pull:
+        comps["R1"] = "10k"
+        nets["+3V3"].append(_m("R1", "1"))
+        nets["/RESET"] = [_m("R1", "2"), _m("U24", "3", "~{RESET}", "input")]
+    else:
+        nets["+3V3"].append(_m("U24", "3", "~{RESET}", "input"))
+    assert _audit(comps, nets)[0] == []
+
+
+def _adc(far, value):
+    """NAFE71388 U7 with AICOM through R34 (`value`) to net `far`."""
+    comps = {"U7": "NAFE71388", "R34": value, "C51": "1n", "J3": "Conn"}
+    nets = {"GND": [_m("U7", "1", "AGND", "power_in"), _m("C51", "2")],
+            "Net-(U7-AICOM)": [_m("U7", "8", "AICOM", "input"),
+                               _m("R34", "1"), _m("C51", "1")]}
+    nets.setdefault(far, []).append(_m("R34", "2"))
+    if far != "GND":
+        nets[far].append(_m("J3", "1"))
+    return comps, nets
+
+
+def test_adc_aicom_on_a_remote_common_is_the_planted_fault():
+    hits, _ = _audit(*_adc("/ADC/REMOTE_COM", "2.49k"))
+    assert [(h["pin"], h["severity"]) for h in hits] == [("AICOM", "warning")]
+    assert "R34 to /ADC/REMOTE_COM" in hits[0]["msg"]
+
+
+@pytest.mark.parametrize("value", ["2.49k", "0"])
+def test_adc_aicom_through_its_resistor_or_0r_to_gnd_is_quiet(value):
+    assert _audit(*_adc("GND", value))[0] == []
+
+
+def _phy(id_net, via_0r=False):
+    comps = {"U8": "USB3320C-EZK"}
+    nets = {"3V3": [_m("U8", "20", "VDD33", "power_in")],
+            "GND": [_m("U8", "33", "GND", "power_in")]}
+    if via_0r:
+        comps["R13"] = "0"
+        nets[id_net].append(_m("R13", "1"))
+        nets["/ID"] = [_m("R13", "2"), _m("U8", "23", "ID", "input")]
+    else:
+        nets[id_net].append(_m("U8", "23", "ID", "input"))
+    return comps, nets
+
+
+@pytest.mark.parametrize("via_0r", [False, True])
+def test_usb3320_id_grounded_is_the_planted_fault(via_0r):
+    hits, _ = _audit(*_phy("GND", via_0r))
+    assert [(h["pin"], h["severity"]) for h in hits] == [("ID", "warning")]
+
+
+def test_usb3320_id_on_vdd33_is_quiet():
+    assert _audit(*_phy("3V3"))[0] == []
+
+
+def test_a_part_with_no_row_is_not_judged():
+    comps = {"U1": "DRV8434XYZ_NOT"}
+    nets = {"GND": [_m("U1", "18", "~{SCS}", "input")]}
+    assert _audit(comps, nets)[0] == []
+
+
+def test_every_row_cites_its_datasheet():
+    doc = yaml.safe_load((REPO / "reference" / "pin_states.yaml").read_text())
+    states = {"open", "ground", "rail", "own_supply", "pulled_up",
+              "pulled_down", "driven", "external"}
+    for part in doc["parts"]:
+        assert part["verified"] is True and part["match"], part["mpn"]
+        for rule in part["pins"]:
+            assert rule["source"].strip() and rule["why"].strip()
+            assert set(rule.get("allow", [])) | set(
+                rule.get("forbid", [])) <= states
+            assert rule.get("allow") or rule.get("forbid") or "max_v" in rule

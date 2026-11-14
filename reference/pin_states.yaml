@@ -1,0 +1,118 @@
+# What state a datasheet requires a pin to be left in, for netlist_audit.py's
+# pin_state rule (#1033): a reset that must not float, a chip select that
+# must be driven, a reference input with a voltage limit, a pin whose tie
+# picks a mode.
+#
+# match: a regex tried against the part's Value, then its symbol name
+# (case-insensitive). Pins are named as the netlist's pinfunction gives them,
+# upper-cased, with KiCad's ~{...} overbar dropped; `aliases` maps other
+# names a symbol may use onto those.
+#
+# The rule reads each pin's net as a set of states:
+#   open        unconnected, no-connect, or nothing else on the net
+#   ground      a ground-named net, or a 0 ohm hop to one
+#   rail        a supply: a rail by name (+3V3, 5V), a power pin's net, or a
+#               0 ohm hop to one; its volts when the name or a power_out
+#               pin's `supply_volts` gives them
+#   own_supply  the same part's own power_out pin (a regulator output)
+#   pulled_up / pulled_down
+#               a resistor (not 0 ohm) from the net to a rail / to ground
+#   driven      another IC's output, bidirectional or tri-state pin
+#   external    a connector pin (driven from off the board)
+# Each pin rule:
+#   pin       the pin
+#   allow     states the pin may be in: at least one must hold
+#   forbid    states it must not be in
+#   max_v     the most the net may sit at, when its volts are known
+#   severity  error (default) | warning
+#   why       one line for the finding
+#   source    the datasheet, its revision, the section or table
+# supply_volts: the part's power_out pins and their nominal volts.
+# verified: true means the source was re-read for this row.
+#
+# Seeded from the errata corpus's datasheet-pin-state misses (#1033):
+# glasgow-1, glasgow-9, echoplayer-1, bedlift-2, bedlift-4.
+
+parts:
+  - mpn: DRV8434S
+    match: '^DRV8434S'
+    verified: true   # TI SLOSE70 (December 2020) read 2026-11-14
+    aliases: {NSCS: SCS}
+    supply_volts:
+      DVDD: 5.0      # SLOSE70 7.3.10 and 6.5: DVDD 4.75-5.25 V
+    pins:
+      - pin: SCS
+        allow: [driven, external]
+        why: >-
+          nSCS frames every SPI transfer and must go high between frames;
+          tied low or left on its pull-up, the serial interface never sees
+          a frame start
+        source: >-
+          SLOSE70 section 5 pin table: "Serial chip select. An active low on
+          this pin enables the serial interface communications. Internal
+          pullup to DVDD." Section 7.5.1.2: "The nSCS pin should be taken
+          high for at least 500 ns between frames."
+      - pin: VREF
+        max_v: 3.3
+        forbid: [own_supply]
+        why: >-
+          VREF is limited to 3.3 V; DVDD is 5 V, so DVDD reaches VREF only
+          through a divider
+        source: >-
+          SLOSE70 6.3 Recommended Operating Conditions: VVREF 0.05 to 3.3 V.
+          Section 8.2.2.2: "The maximum allowable voltage on the VREF pin is
+          3.3 V. DVDD can be used to provide VREF through a resistor
+          divider."
+
+  - mpn: TCA6416A / PCA6416A
+    match: '^[TP]CA6416A'
+    verified: true   # TI SCPS194F (rev. January 2023), NXP PCA6416A Rev. 2 (10 January 2013) read 2026-11-14
+    aliases: {NRESET: RESET}
+    pins:
+      - pin: RESET
+        forbid: [open]
+        why: an active-low reset input that floats can reset the expander at random
+        source: >-
+          TI SCPS194F section 5 Pin Configuration and Functions, RESET:
+          "Active-low reset input. Connect to VCCI or VCCP through a pull-up
+          resistor, if no active connection is used." NXP PCA6416A Rev. 2
+          Table 3 Pin description, RESET: "Active LOW reset input. Connect
+          to VDD(I2C-bus) through a pull-up resistor if no active connection
+          is used."
+
+  - mpn: NAFE71388
+    match: '^NAFE7138'
+    verified: true   # NXP NAFE71388 Rev. 2 (21 March 2023) read 2026-11-14
+    pins:
+      - pin: AICOM
+        allow: [ground, pulled_down]
+        severity: warning
+        why: >-
+          single-ended inputs are measured against AICOM, so it belongs on
+          ground (directly or through its series resistor); on another net
+          every single-ended reading carries that net's offset
+        source: >-
+          NAFE71388 Rev. 2 pin table, pin 8 AICOM: "Analog GND or common
+          input in series with external 2.5 kohm resistor with 1 nF or 10 nF
+          cap to AGND." Section 7.3.2.2.1: "To ensure precise single-ended
+          measurements, AICOM pin should be connected in series with a 2.5
+          kohm resistor and connected to an external GND reference
+          physically close to the measured positive signal."
+
+  - mpn: USB3320
+    match: '^USB3320'
+    verified: true   # Microchip DS00001792F (2023) read 2026-11-14
+    pins:
+      - pin: ID
+        forbid: [ground]
+        severity: warning
+        why: >-
+          a grounded ID makes the PHY report an A-device, so the USB core
+          starts as a host; a device-only board ties ID to VDD33 or leaves
+          it floating (fine on a host or OTG board)
+        source: >-
+          DS00001792F Table 2-1, pin 23 ID: "For applications not using ID
+          this pin can be connected to VDD33. For an A-Device ID is
+          grounded. For a B-Device ID is floated." Section 5.6.1: "For
+          device only applications that do not use the ID signal the ID pin
+          should be connected to VDD33."

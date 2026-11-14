@@ -350,3 +350,14 @@ def test_every_row_names_its_source():
     for row in kb["chokes"]:
         pads = [p for w in row["windings"] for p in w]
         assert sorted(pads) == ["1", "2", "3", "4"], row["name"]
+
+
+def test_usb3320_ulpi_phy_is_known(tmp_path):
+    """#1033: the USB3320C carries its own terminations (DS00001792F 5.2.2),
+    so it is no usb_phy_unknown."""
+    p = _run(tmp_path, *_micro("USB3320C-EZK", ("18", "DP_18"),
+                               ("19", "DM_19")))
+    assert _kinds(p) == []
+    p = _run(tmp_path, *_micro("USB3320C-EZK", ("18", "DP_18"),
+                               ("19", "DM_19"), pullup=("R3", "1k5")))
+    assert "usb_phy_unknown" not in _kinds(p) and _kinds(p)
