@@ -1,8 +1,11 @@
 # check_body_clash: the parts' 3D bodies against each other, their own
 # courtyards, the outline and mounting holes (hifi core's RCA jack ear ran 2 mm
-# into a speaker post with every 2D check green, #608). Board only.
+# into a speaker post with every 2D check green, #608). With the parts dir,
+# a part whose drawing puts its front past the PCB edge (the extraction's
+# mechanical.edge.overhang_mm) is held to that overhang, not to the outline.
 name: check_body_clash
 needs: []
 args: []
 optional:
   constraints: [--constraints, "{constraints}"]
+  parts: [--parts, "{parts}"]

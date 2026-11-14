@@ -1776,6 +1776,67 @@ def test_read_cpl_reads_past_a_byte_order_mark(tmp_path):
     assert cv.read_cpl(p)["MISTER1"]["rot"] == 90.0
 
 
+_POS = ("Ref,Val,Package,PosX,PosY,Rot,Side\n"
+        '"U1","X","SOT-23-6",10.000000,-10.000000,{u1},top\n'
+        '"U3","X","SOT-23-6",70.000000,-10.000000,0.000000,bottom\n'
+        '"C3","100nF","C0603",80.000000,-10.000000,90.000000,bottom\n')
+
+
+def _run_main(ws, tmp_path, cpl):
+    pcb, cache = ws
+    parts = tmp_path / "parts.json"
+    parts.write_text(json.dumps(LCSC), encoding="utf-8")
+    out = tmp_path / "rep.json"
+    rc = cv.main(["--pcb", str(pcb), "--cpl", str(cpl), "--parts", str(parts),
+                  "--cache-dir", str(cache), "--offline", "--out", str(out)])
+    return rc, json.loads(out.read_text(encoding="utf-8"))
+
+
+def test_kicad_placement_file_is_read_as_the_cpl_it_stands_for(ws, tmp_path):
+    """kicad-cli's own pos CSV raised KeyError 'Mid X' (rc 2). Its PosX/PosY
+    are the CPL's Mid X/Mid Y and its Rot is the board's rotation: U3 at
+    KiCad 0 on the bottom stands for CPL 180, which fits its model."""
+    pos = tmp_path / "board-pos.csv"
+    pos.write_text(_POS.format(u1="90.000000"), encoding="utf-8")
+    fmt, rows = cv.read_placement(pos)
+    assert fmt == "kicad_pos"
+    assert rows["U3"] == {"x": 70.0, "y": 10.0, "rot": 180.0,
+                          "layer": "Bottom"}
+    assert rows["U1"]["rot"] == 90.0 and rows["U1"]["layer"] == "Top"
+    rc, rep = _run_main(ws, tmp_path, pos)
+    v = {p["ref"]: p for p in rep["parts"]}
+    assert rep["status"] != "error", rep
+    assert [v[r]["verdict"] for r in ("U1", "U3", "C3")] == ["ok"] * 3
+    assert rep["cpl_format"] == "kicad_pos"
+    assert "no correction" in rep["cpl_note"]
+
+
+def test_kicad_placement_file_with_a_wrong_rotation_fails(ws, tmp_path):
+    pos = tmp_path / "board-pos.csv"
+    pos.write_text(_POS.format(u1="270.000000"), encoding="utf-8")
+    rc, rep = _run_main(ws, tmp_path, pos)
+    v = {p["ref"]: p for p in rep["parts"]}
+    assert rc == 1 and v["U1"]["verdict"] == "wrong_rotation"
+
+
+def test_a_cpl_header_is_matched_whatever_its_case(tmp_path):
+    p = tmp_path / "cpl.csv"
+    p.write_text(" designator ,MID X,mid y,LAYER,rotation\nU1,10,-10,Top,450\n",
+                 encoding="utf-8")
+    fmt, rows = cv.read_placement(p)
+    assert fmt == "cpl"
+    assert rows["U1"] == {"x": 10.0, "y": 10.0, "rot": 90.0, "layer": "Top"}
+
+
+def test_a_file_that_is_neither_names_both_column_sets(ws, tmp_path):
+    p = tmp_path / "other.csv"
+    p.write_text("Part,X,Y\nU1,1,2\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Mid X.*PosX.*part, x, y"):
+        cv.read_cpl(p)
+    rc, rep = _run_main(ws, tmp_path, p)
+    assert rc == 2 and "PosX" in rep["error"] and "KeyError" not in rep["error"]
+
+
 def test_designators_match_the_board_whatever_their_case(ws):
     """Fabrication Toolkit upper-cases designators (mister1 ships MISTER1) and
     JLC matches them so: the row is the board's part, not 'not on the board'."""

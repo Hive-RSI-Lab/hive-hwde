@@ -105,6 +105,9 @@ CLI:
   cpl_verify.py --pcb board.kicad_pcb --cpl fab/CPL.csv
                 [--parts parts.json] [--cache-dir DIR] [--offline]
                 [--visual fab/cpl_visual.json] [--out report.json]
+--cpl may also be KiCad's own placement file (Ref,Val,Package,PosX,PosY,Rot,
+Side): its rotations are the board's, read with no correction
+(read_placement), and the report says so in `cpl_note`.
 LCSC numbers come from the board's footprint fields, overridden by parts.json.
 The cache is $HWDE_EASYEDA_CACHE, else <parts.json dir>/easyeda (made on the
 first fetch - commit it), else ~/.cache/hwde/easyeda (env.easyeda_cache), which
@@ -896,17 +899,74 @@ def _footprint_row(fp: Footprint, cpl: dict, row: dict, a1: dict | None) -> dict
 
 # ------------------------------------------------------------------- run
 
-def read_cpl(path: Path) -> dict[str, dict]:
-    """CPL.csv -> {ref: {x, y (board frame, y down), rot, layer}}. A byte
-    order mark is read past (Fabrication Toolkit writes one: oasis v0.2)."""
-    out = {}
+# A CPL's columns, and those of KiCad's own placement file (kicad-cli pcb
+# export pos --format csv: Ref,Val,Package,PosX,PosY,Rot,Side), matched
+# without regard to case or spaces round them.
+CPL_COLUMNS = ("Designator", "Mid X", "Mid Y", "Rotation")
+POS_COLUMNS = ("Ref", "PosX", "PosY", "Rot", "Side")
+POS_NOTE = ("KiCad's placement file: each Rot is the board's own rotation, "
+            "read as the CPL rotation it stands for with no correction (r on "
+            "the top, 180 - r on the bottom), so wrong_rotation marks a part "
+            "whose LCSC model needs a correction that a CPL would carry and "
+            "this file does not")
+
+
+def cpl_format(header) -> str:
+    """'cpl' or 'kicad_pos' from a CSV's heading row; neither is a
+    ValueError that names both column sets."""
+    cols = {str(h).strip().lower() for h in header or () if h}
+    if {c.lower() for c in CPL_COLUMNS} <= cols:
+        return "cpl"
+    if {c.lower() for c in POS_COLUMNS} <= cols:
+        return "kicad_pos"
+    raise ValueError(
+        f"not a CPL ({', '.join(CPL_COLUMNS)}, Layer) nor KiCad's placement "
+        f"file ({', '.join(POS_COLUMNS)}): its columns are "
+        f"{', '.join(sorted(cols)) or 'none'}")
+
+
+def read_placement(path: Path) -> tuple[str, dict[str, dict]]:
+    """(format, {ref: {x, y (board frame, y down), rot, layer}}) from a CPL
+    or from KiCad's own placement file. A byte order mark is read past
+    (Fabrication Toolkit writes one: oasis v0.2).
+
+    The placement file's PosX/PosY are the CPL's Mid X/Mid Y (bom_cpl copies
+    them across, y up). Its Rot is the board's KiCad rotation r on either
+    side, so the row is taken as the CPL rotation r stands for with no
+    correction, cpl_rotation(side, r, 0): POS_NOTE says what a verdict on it
+    means."""
+    out: dict[str, dict] = {}
     with Path(path).open(newline="", encoding="utf-8-sig") as fh:
-        for r in csv.DictReader(fh):
-            out[r["Designator"].strip()] = {
-                "x": float(r["Mid X"]), "y": -float(r["Mid Y"]),
-                "rot": float(r["Rotation"]) % 360.0,
-                "layer": r.get("Layer", "Top").strip()}
-    return out
+        rd = csv.DictReader(fh)
+        fmt = cpl_format(rd.fieldnames)
+        col = {str(h).strip().lower(): h for h in rd.fieldnames if h}
+
+        def cell(r: dict, key: str, default: str = "") -> str:
+            name = col.get(key.lower())
+            v = r.get(name) if name is not None else None
+            return default if v is None else str(v).strip()
+
+        for r in rd:
+            if fmt == "cpl":
+                out[cell(r, "Designator")] = {
+                    "x": float(cell(r, "Mid X")),
+                    "y": -float(cell(r, "Mid Y")),
+                    "rot": float(cell(r, "Rotation")) % 360.0,
+                    "layer": cell(r, "Layer", "Top")}
+                continue
+            side = ("bottom" if cell(r, "Side").lower() in ("bottom", "back")
+                    else "top")
+            out[cell(r, "Ref")] = {
+                "x": float(cell(r, "PosX")), "y": -float(cell(r, "PosY")),
+                "rot": cpl_rotation(side, float(cell(r, "Rot")), 0.0),
+                "layer": side.capitalize()}
+    return fmt, out
+
+
+def read_cpl(path: Path) -> dict[str, dict]:
+    """CPL.csv (or KiCad's placement file) -> {ref: {x, y (board frame,
+    y down), rot, layer}}: read_placement without the format."""
+    return read_placement(path)[1]
 
 
 def offline() -> bool:
@@ -1092,7 +1152,9 @@ def merge_visual(parts: list[dict], visual: dict | None) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
-    ap.add_argument("--cpl", required=True, help="CPL.csv to verify")
+    ap.add_argument("--cpl", required=True,
+                    help="CPL.csv to verify, or KiCad's placement file "
+                         "(kicad-cli pcb export pos --format csv)")
     ap.add_argument("--parts", help="parts.json (LCSC numbers per ref)")
     ap.add_argument("--cache-dir", help="EasyEDA model cache directory")
     ap.add_argument("--offline", action="store_true",
@@ -1103,10 +1165,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         pcb = Path(args.pcb)
         pj = Path(args.parts) if args.parts else None
-        rep = verify(pcb, read_cpl(Path(args.cpl)), lcsc_map(pcb, pj),
+        fmt, rows = read_placement(Path(args.cpl))
+        rep = verify(pcb, rows, lcsc_map(pcb, pj),
                      Path(args.cache_dir) if args.cache_dir
                      else default_cache(pj),
                      fetch=not (args.offline or offline()))
+        if fmt == "kicad_pos":
+            rep["cpl_format"], rep["cpl_note"] = fmt, POS_NOTE
         if args.visual:
             vis = json.loads(Path(args.visual).read_text(encoding="utf-8"))
             rep["parts"] = merge_visual(rep["parts"], vis)

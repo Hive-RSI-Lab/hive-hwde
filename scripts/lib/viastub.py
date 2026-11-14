@@ -17,6 +17,7 @@ barrel stops there.
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
 
 import yaml
@@ -232,6 +233,9 @@ def load_vendor_backdrill(vendor: str | None) -> dict:
 def board_vendor(stk) -> tuple[str | None, bool]:
     """(vendor id, known). A stackups.yaml build names its fab (JLC's entries
     name none); a stack nobody listed leaves the fab unknown."""
+    scripts_dir = Path(__file__).resolve().parents[1]   # python -I
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
     import check_vias
     import fabfloors
     data = yaml.safe_load(check_vias.STACKUPS.read_text(encoding="utf-8"))

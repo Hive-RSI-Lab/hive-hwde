@@ -188,6 +188,24 @@ What moved where:
   reset, need a defined level each (`want: defined`), VIL/VIH from the
   bank's rail, and a net tie's copper joining the nets it bridges
   (`tests/test_antenna_straps.py`).
+- Every script that imports a `scripts/` module, at the top or lazily inside
+  a function, puts `scripts/` on `sys.path` itself, and every one that
+  imports a `scripts/lib` module puts `lib/` there, so each runs under
+  `python -I`. `check_ratings` put only `lib/` there and died on its lazy
+  `import datasheet_extract`; `check_creepage` and `check_pdn` died at their
+  first import. `tests/test_scripts_isolated_imports.py` reads every
+  module's imports, the lazy ones too.
+- `scripts/check_body_clash.py` and `scripts/check_isolation.py` take
+  `--parts`, as the gate passes it to every check. In body_clash a part
+  whose drawing puts its front past the PCB edge (its extraction's
+  `mechanical.edge.overhang_mm`, as `check_connector_fit` reads it) may
+  stand out that far. In isolation `--parts` only names each crossing part's
+  MPN; a rating still comes only from `isolation.parts`.
+- `scripts/cpl_verify.py` reads KiCad's own placement file
+  (`Ref,Val,Package,PosX,PosY,Rot,Side`) as well as a CPL; it raised
+  KeyError 'Mid X' on one. A placement file's Rot is taken with no fab
+  correction, and the report's `cpl_note` says what a wrong_rotation then
+  means (`tests/test_cpl_verify.py`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps

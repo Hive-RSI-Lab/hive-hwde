@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import itertools
 import re
+import sys
 from pathlib import Path
 
 import yaml
@@ -367,6 +368,9 @@ def check_spice(bounds, parsed, netmap, work: Path, dll) -> list:
 def run_deck(cir: str, path: Path, dll) -> dict:
     """The bench's deck through sim_run's killable worker (the one engine
     recipe the sim gate uses)."""
+    scripts_dir = Path(__file__).resolve().parents[1]   # python -I
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
     import sim_run
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(cir, encoding="utf-8")
@@ -398,6 +402,9 @@ def check_placement(bounds: dict, pcb: Path | None, decoupling) -> list:
     if pcb is None:
         return [_check(i, "layout", 0.0, note="no board in the workspace")
                 for i in ids]
+    scripts_dir = Path(__file__).resolve().parents[1]   # python -I
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
     import place_metrics
     argv = ["--pcb", str(pcb)]
     if decoupling:
