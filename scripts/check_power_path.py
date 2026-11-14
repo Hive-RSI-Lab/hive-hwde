@@ -282,6 +282,15 @@ def build_graph(bg: geom.BoardGeom, net: str, dt_c: float,
             g.edge(node, ("pad", p.ref, p.number), INF)
         for j in fills_at(pt, layer):
             g.edge(node, ("fill", j), INF)
+    # stacked vias (a microvia chain, VIPPO): vias of this net on one
+    # centre that share a layer are one copper there
+    for vi, v in enumerate(vias):
+        for vj in range(vi + 1, len(vias)):
+            w = vias[vj]
+            if math.dist(v.at, w.at) <= TOL:
+                for layer in v.layers:
+                    if layer in w.layers:
+                        g.edge(("via", vi, layer), ("via", vj, layer), INF)
     for vi, v in enumerate(vias):
         cap = via_a if via_a else via_amps(v.drill, plating, dt_c)
         disc = v.poly
