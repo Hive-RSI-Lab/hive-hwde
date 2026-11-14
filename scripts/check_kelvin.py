@@ -501,6 +501,43 @@ def _far_mm(contact, pad_poly) -> float:
                 for c in shapely.get_coordinates(contact)), default=0.0)
 
 
+_ROOT = ("root",)
+
+
+def root_block(neigh: dict, root) -> set:
+    """The nodes that share a biconnected block with `root` (it not counted):
+    those on a cycle through it. Tarjan's, iterative."""
+    disc, low = {root: 0}, {root: 0}
+    out, stack, t = set(), [], 1
+    walk = [(root, iter(neigh[root]))]
+    while walk:
+        v, nbrs = walk[-1]
+        for w in nbrs:
+            if w not in disc:
+                disc[w] = low[w] = t
+                t += 1
+                stack.append(w)
+                walk.append((w, iter(neigh[w])))
+                break
+            low[v] = min(low[v], disc[w])
+        else:
+            walk.pop()
+            if not walk:
+                break
+            p = walk[-1][0]
+            low[p] = min(low[p], low[v])
+            if low[v] >= disc[p]:
+                block = []
+                while True:
+                    x = stack.pop()
+                    block.append(x)
+                    if x == v:
+                        break
+                if p == root and len(block) > 1:
+                    out.update(block)
+    return out
+
+
 def sense_walk(bg, sense, tap) -> dict:
     """Walk the copper joined to the sense pad, outward, until it meets the tap
     pad. Power copper is every pad and pour, and every track and via on a path
@@ -533,9 +570,12 @@ def sense_walk(bg, sense, tap) -> dict:
                 if not contact.is_empty:
                     yield other, contact
 
-    # power copper carries current: prune dead ends (the sense line itself is
-    # one, since the sense pad is no terminal) until each piece left lies
-    # between two pads or pours
+    # power copper carries current: each pad and pour, and each piece on a
+    # path between two of them (the sense line, whose sense pad is no
+    # terminal, is a dead end). Pruning dead ends one by one missed a
+    # router's line whose short 45-degree jogs overlap in a cycle (#1043): a
+    # piece is on such a path when it shares a biconnected block with a
+    # root joined to every terminal
     terminal = {it[1] for it in items if it[0] in ("pad", "zone")} - {start}
     neigh: dict[tuple, set] = {k: set() for k in by_key if k != start}
     for k in neigh:
@@ -544,15 +584,10 @@ def sense_walk(bg, sense, tap) -> dict:
             if o != start and (goal in (k, o) or not near.contains(contact)):
                 neigh[k].add(o)
                 neigh[o].add(k)
-    queue = [k for k in neigh if k not in terminal and len(neigh[k]) < 2]
-    while queue:
-        k = queue.pop()
-        for o in neigh.pop(k, ()):
-            if o in neigh:
-                neigh[o].discard(k)
-                if o not in terminal and len(neigh[o]) < 2:
-                    queue.append(o)
-    power = set(neigh)
+    neigh[_ROOT] = set(terminal)
+    for k in terminal:
+        neigh[k].add(_ROOT)
+    power = terminal | root_block(neigh, _ROOT)
 
     seen, queue = {start}, [start]
     joins, reached = [], False
