@@ -1,0 +1,29 @@
+# Seeded faults for check_mating family matching (#953) and the
+# extraction-first mouth reading (#952).
+mutants:
+  usb-faces-inward-unnamed:
+    board: usbbuck4
+    script: mutations/usb_faces_inward_unnamed.py
+    check: check_mating
+    defect: >-
+      PLACEMENT fault, generic footprint: the usb-faces-inward fault, with J1's
+      footprint renamed to a name that says nothing about USB; only its
+      value (USB_micro) shows the family, so a footprint-only match misses it
+    expect:
+      kind: mating_faces_inward
+      ref: J1
+      pos: [106.885, 131.5]
+
+  usb-contacts-at-mouth:
+    board: usbbuck4
+    script: mutations/usb_contacts_at_mouth.py
+    check: check_mating
+    defect: >-
+      LIBRARY fault: J1 sits correctly on the left edge, but its part's
+      datasheet extraction (parts/C9900002.json) says the contacts are at the
+      mouth, not the back, so the pads reading points the wrong way; the
+      extraction wins, and J1 now faces into the board
+    expect:
+      kind: mating_faces_inward
+      ref: J1
+      pos: [102.715, 131.5]

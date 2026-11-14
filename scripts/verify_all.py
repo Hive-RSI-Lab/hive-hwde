@@ -146,7 +146,8 @@ BUILTIN_CHECKS = [
      "args": lambda a: []},
     {"name": "check_mating", "needs": [],
      "args": lambda a: (["--constraints", a["constraints"]]
-                        if a.get("constraints") else [])},
+                        if a.get("constraints") else [])
+     + (["--parts", a["parts"]] if a.get("parts") else [])},
     {"name": "check_pdn", "needs": ["constraints", "decoupling"],
      "args": lambda a: ["--constraints", a["constraints"],
                         "--decoupling", a["decoupling"]]},

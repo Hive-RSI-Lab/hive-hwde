@@ -13,8 +13,11 @@ from the boards repo through tests/_boards.py (skipped when it is absent).
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
+
+import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPTS = REPO / "scripts"
@@ -509,3 +512,115 @@ def test_4mm_jack_is_judged_with_its_mouth_from_the_table(tmp_path):
     # the bore is 7.5 mm up, so a nose a few mm behind the edge still mates
     good = _board(tmp_path, jack(15, 10, 90), w=90, h=70)
     assert not _run(good)[0]
+
+
+def _props(**kv):
+    return "".join(f'    (property "{k}" "{v}" (at 0 0 0))\n'
+                   for k, v in kv.items())
+
+
+def _plain(ref, x, y, angle=0.0, **props):
+    """The USB-C-like copper under a name no family knows (an EasyEDA
+    CONN-SMD_* name), with the given footprint properties."""
+    return _fp(ref, "CONN-SMD_8P-TEST", x, y, angle, USBC_PADS, USBC_CY,
+               extra=_props(**props))
+
+
+def _parts_dir(tmp_path, rows=(), mech=None):
+    d = tmp_path / "parts"
+    d.mkdir(exist_ok=True)
+    (d / "parts.json").write_text(json.dumps({"parts": list(rows)}),
+                                  encoding="utf-8")
+    for lcsc, m in (mech or {}).items():
+        (d / f"{lcsc}.json").write_text(json.dumps(
+            {"mpn": "X", "pinout": [], "mechanical": m}), encoding="utf-8")
+    return d
+
+
+def test_unnamed_connector_matched_on_value_mpn_and_category(tmp_path):
+    """#953: the laptop hub's microSD sat under SIM-SMD_8P-1040310811, a name
+    that says nothing. The value, MPN or LCSC category name the part; each is
+    read only for a connector reference (an SMA diode is not a connector)."""
+    pcb = _board(tmp_path, _plain("J1", 5, 4.5, Value="microSD")
+                 + _plain("J2", 15, 4.5, MPN="TF-PUSH-01")
+                 + _plain("J3", 25, 4.5)
+                 + _plain("U1", 15, 14, Value="microSD")
+                 + _plain("J4", 25, 14, Value="Conn_01x08"), w=30, h=20)
+    parts = _parts_dir(tmp_path, [
+        {"refdes": ["J3"], "lcsc": "C1", "value": "",
+         "description": "Push-Push SMD SD Card / Memory Card Connector ROHS"},
+        {"refdes": ["J4"], "lcsc": "C2", "description": "USB Connectors ROHS"}])
+    vs, facts = matinglib.violations(placelib.PlaceModel(pcb), pcb, None,
+                                     parts)
+    by = {f["ref"]: f for f in facts}
+    assert {r: (by[r]["family"], by[r]["matched_on"]) for r in by} == {
+        "J1": ("card_slot", "value"), "J2": ("card_slot", "mpn"),
+        "J3": ("card_slot", "category")}
+    assert sorted(v["connector"] for v in vs
+                  if v["kind"] == "mating_faces_inward") == ["J1", "J2", "J3"]
+    # without the parts dir only the board's own properties are read
+    _, facts = _run(pcb)
+    assert sorted(f["ref"] for f in facts) == ["J1", "J2"]
+    # and the footprint name still comes first
+    t = matinglib.load_table()
+    assert matinglib.classify("J9", "x:USB-C_X", {"Value": "microSD"}, None,
+                              t)[0]["family"] == "usb_c"
+
+
+def test_check_mating_reads_the_parts_dir_and_names_the_unjudged(tmp_path):
+    ws = tmp_path / "ws"
+    (ws / "kicad").mkdir(parents=True)
+    pcb = _board(ws / "kicad", _plain("J1", 15, 4.5, LCSC="C1"))
+    _parts_dir(ws, [{"refdes": ["J1"], "lcsc": "C1",
+                     "description": "SIM Card Connectors ROHS"}])
+    rep, _ = check_mating.run(["--pcb", str(pcb)])
+    assert rep["connectors"][0]["matched_on"] == "category"
+    assert [v["kind"] for v in rep["violations"]] == ["mating_faces_inward"]
+    rep, _ = check_mating.run(["--pcb", str(pcb),
+                               "--parts", str(tmp_path / "none")])
+    assert rep["not_judged"] == ["J1 (CONN-SMD_8P-TEST)"]
+
+
+def test_extraction_contacts_at_the_mouth_turns_the_mouth(tmp_path):
+    """#952: Molex 104031 (inner lead) has its signal tails at the card's
+    mouth, the opposite of the pad rule. The part's own extraction says so
+    (mechanical.entry.contacts_at) and wins over the pads and the yaml; a
+    disagreement is a warning so the wrong one gets fixed."""
+    pcb = _board(tmp_path, usbc("J1", 8, 17, 0).replace(
+        '(attr smd)', '(attr smd)\n' + _props(LCSC="C9001").rstrip())
+        + _fp("J2", "USB-C_TEST", 22, 17, 0, USBC_PADS, USBC_CY,
+              extra=_props(LCSC="C9002")))
+    parts = _parts_dir(tmp_path, mech={
+        "C9001": {"entry": {"contacts_at": "mouth", "source": "p.3"}},
+        "C9002": {"entry": {"contacts_at": "back"}}})
+    m = placelib.PlaceModel(pcb)
+    # pads alone: both face the bottom edge and pass
+    assert not _run(pcb)[0]
+    vs, facts = matinglib.violations(m, pcb, None, parts)
+    by = {f["ref"]: f for f in facts}
+    assert by["J1"]["mouth"] == "-y" and by["J1"]["mouth_from"] == "extraction"
+    assert by["J2"]["mouth"] == "+y" and by["J2"]["mouth_from"] == "extraction"
+    assert sorted((v["kind"], v["connector"]) for v in vs) == [
+        ("mating_faces_inward", "J1"), ("mating_mouth_disagrees", "J1")]
+    w = next(v for v in vs if v["kind"] == "mating_mouth_disagrees")
+    assert w["severity"] == "warning" and w["table_from"] == "pads"
+    assert w["mouth_local"] == "-y" and w["table_mouth_local"] == "+y"
+
+
+def test_model_reversed_reads_the_other_way_with_contacts_at_the_mouth():
+    # contacts at the back: the housing must reach ahead of them
+    assert matinglib.model_reversed((-12.0, 0.5))
+    assert not matinglib.model_reversed((-0.5, 12.0))
+    # at the mouth: the housing lies behind them, so that is the right way
+    assert not matinglib.model_reversed((-12.0, 0.5), "mouth")
+    assert matinglib.model_reversed((-0.5, 12.0), "mouth")
+
+
+def test_extraction_schema_takes_the_entry_block():
+    import datasheet_extract
+    import jsonschema
+    ok = {"entry": {"contacts_at": "mouth", "source": "p.4 fig 2"}}
+    jsonschema.validate(ok, datasheet_extract.MECHANICAL_SCHEMA)
+    for bad in ({"entry": {"contacts_at": "front"}}, {"entry": {}}):
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(bad, datasheet_extract.MECHANICAL_SCHEMA)

@@ -113,6 +113,23 @@ MECHANICAL_SCHEMA: dict = {
                 },
             },
         },
+        "entry": {
+            "type": "object",
+            "description": "a horizontal connector's mating end, read by "
+                           "check_mating for its mouth direction (#952)",
+            "additionalProperties": False,
+            "required": ["contacts_at"],
+            "properties": {
+                "contacts_at": {
+                    "enum": ["back", "mouth"],
+                    "description": "which end of the housing the contact "
+                                   "tails (the signal pads) are at, from "
+                                   "the drawing: back (most connectors) or "
+                                   "mouth (Molex 104031 inner-lead microSD, "
+                                   "many push-push card sockets)"},
+                "source": _SRC,
+            },
+        },
         "posts": {
             "type": "array",
             "description": "locating posts / bosses / snap pegs that need "
@@ -508,7 +525,9 @@ def do_pdf(args) -> tuple[dict, int]:
                  "rendered pages directly (--render DIR writes them as PNGs, "
                  "OCR'd when tesseract is installed). Read the mechanical "
                  "drawing into `mechanical` (pin and post cross-sections, "
-                 "where the PCB edge falls) for check_connector_fit."),
+                 "where the PCB edge falls) for check_connector_fit, and "
+                 "for a side-entry connector which end the contact tails "
+                 "are at (mechanical.entry.contacts_at) for check_mating."),
     }
     if rendered is not None:
         payload["rendered"] = rendered

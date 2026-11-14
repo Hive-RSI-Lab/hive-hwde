@@ -8,6 +8,13 @@
 # pads and test points are out of scope; a J/P part left out is named in
 # check_mating's not_judged, so read that list when a new connector appears.
 #
+# A J/P/CN/CON part whose footprint name matches no family is then tried, in
+# order, on its Value, its MPN (footprint property, else its parts.json row)
+# and its LCSC category (the parts.json row's category, else the end of its
+# LCSC description) through `categories` below (#953): EasyEDA names like
+# SIM-SMD_8P-1040310811 hide what the part is, but the value says microSD.
+# Other refs are never matched on value (an "SMA" diode is not a connector).
+#
 # entry: horizontal - the plug goes in parallel to the board. The mouth must
 #          face a board edge and sit at or over it (mouth_tol_mm inside at
 #          most: the courtyard front, which is what is measured, sits a
@@ -30,6 +37,14 @@
 # KiCad y down). On the boards corpus (2026-10-02) the pad-layout reading
 # put every edge connector of a board that mates as built facing its edge,
 # so no override was needed.
+#
+# The part's own datasheet extraction comes before both (#952): its
+# mechanical.entry.contacts_at ("back" or "mouth", from the drawing) says
+# which end of the housing the contact tails are at, and the mouth is read
+# from that and the pads. Where it disagrees with a `mouth` entry or the
+# pad rule, the extraction wins and check_mating warns
+# (mating_mouth_disagrees). The `mouth` entries are the fallback for parts
+# with no extraction.
 #
 # The name is a hint and the copper is the part: a connector whose SMD pads
 # sit on both outer copper layers straddles the board edge, so it is checked
@@ -108,6 +123,15 @@ families:
   # did not take is vertical.
   - {family: sma_vertical, entry: vertical,
      match: 'CONSMA|SMA-SMD|SMA-TH_|BWSMA|SMA[-_](JACK|CONN|VERT)|COAXIAL'}
+
+# LCSC category regex -> family name, for a connector the footprint name,
+# value and MPN leave unmatched. Only categories that name one family: "USB
+# Connectors" covers A, C and micro alike, so it is not here.
+categories:
+  'Card (Connector|Socket)|Card Holder|SIM Card': card_slot
+  'Ethernet Connectors|Modular Connectors': rj45
+  'DC Power Connectors|Barrel': barrel_jack
+  'FFC.*FPC|FPC.*Connector': fpc_ffc
 
 # footprint-name regex -> mouth direction in the footprint's local frame
 mouth:
