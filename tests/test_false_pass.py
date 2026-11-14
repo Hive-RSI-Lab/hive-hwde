@@ -182,11 +182,14 @@ def test_verify_all_reads_it_from_the_check(tmp_path):
 # ------------------------------------------------------------- check_pdn
 
 class _Caps:
-    """A geometry stand-in: nets, and each cap's footprint value."""
+    """A geometry stand-in: nets, and each cap's footprint value; every cap
+    sits across RAW and GND, and those in `dnp` are marked do-not-populate."""
     nets = {"RAW", "GND"}
 
-    def __init__(self, values):
-        self.footprints = {r: {"value": v} for r, v in values.items()}
+    def __init__(self, values, dnp=()):
+        self.footprints = {r: {"value": v,
+                               "attrs": ("smd", "dnp") if r in dnp else ("smd",)}
+                           for r, v in values.items()}
 
     def pads_of(self, ref=None, net=None):
         return [NS(net="RAW"), NS(net="GND")]
@@ -227,6 +230,65 @@ def test_pdn_unread_value_is_said_not_called_no_bulk():
     vs, _ = check_pdn.check_rail(_Caps({"C7": "CAP", "C8": "10uF"}),
                                  "RAW", 0.35, assocs)
     assert vs == []
+
+
+def test_pdn_board_bulk_cap_joins_the_recorded_ceramics():
+    """The IC's 100 nF is recorded against its pin; the rail's 10 uF by its
+    connector or regulator is on the board and not in decoupling.json. Read
+    as 'no bulk reservoir' until the board's caps joined the recorded ones."""
+    assocs = [{"ic": "U1", "pin": "1", "cap": "C7", "rail": "RAW"}]
+    vs, facts = check_pdn.check_rail(_Caps({"C7": "100nF", "C9": "10uF"}),
+                                     "RAW", 0.35, assocs)
+    assert vs == [] and facts["caps_from_board"] == ["C9"]
+    assert facts["cap_count"] == 2 and facts["bulk_count"] == 1
+    assert facts["total_uf"] == pytest.approx(10.1)
+
+
+def test_pdn_board_ceramic_is_still_no_bulk():
+    assocs = [{"ic": "U1", "pin": "1", "cap": "C7", "rail": "RAW"}]
+    vs, facts = check_pdn.check_rail(_Caps({"C7": "100nF", "C9": "100nF"}),
+                                     "RAW", 0.35, assocs)
+    assert [v["kind"] for v in vs] == ["pdn_no_bulk"]
+    assert vs[0]["refs"] == ["C7", "C9"] and facts["caps_from_board"] == ["C9"]
+
+
+def test_pdn_dnp_board_cap_is_no_reservoir():
+    """A contingency footprint (a second bulk cap, DNP: first-spin.md) ships
+    empty; counting it would pass a rail that has only ceramics."""
+    assocs = [{"ic": "U1", "pin": "1", "cap": "C7", "rail": "RAW"}]
+    vs, facts = check_pdn.check_rail(
+        _Caps({"C7": "100nF", "C9": "10uF"}, dnp={"C9"}), "RAW", 0.35, assocs)
+    assert [v["kind"] for v in vs] == ["pdn_no_bulk"]
+    assert facts["caps_from_board"] == [] and facts["bulk_count"] == 0
+
+
+def test_pdn_reads_dnp_off_the_board_file(tmp_path):
+    """geom carries KiCad's (attr smd dnp): the fitted cap counts, the DNP
+    one beside it doesn't."""
+    def cap(ref, x, attr):
+        return (f'  (footprint "t:C_0805" (layer "F.Cu") (at {x} 10)\n'
+                f'    (property "Reference" "{ref}" (at 0 0 0))\n'
+                f'    (property "Value" "10uF" (at 0 0 0))\n'
+                f'    (attr {attr})\n'
+                f'    (pad "1" smd rect (at -1 0) (size 1 1) (layers "F.Cu")'
+                f' (net "V"))\n'
+                f'    (pad "2" smd rect (at 1 0) (size 1 1) (layers "F.Cu")'
+                f' (net "GND")))\n')
+    pcb = tmp_path / "pdn.kicad_pcb"
+    pcb.write_text(f"""(kicad_pcb (version 20260206) (generator "test")
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (2 "B.Cu" signal) (25 "Edge.Cuts" user))
+  (setup)
+  (gr_rect (start 0 0) (end 40 20) (stroke (width 0.1)) (fill no)
+    (layer "Edge.Cuts"))
+{cap("C1", 10, "smd")}{cap("C2", 20, "smd dnp")})
+""", encoding="utf-8")
+    import geom
+    bg = geom.load_board(pcb)
+    assert bg.footprints["C2"]["attrs"] == ("smd", "dnp")
+    assert bg.footprints["C1"]["attrs"] == ("smd",)
+    vs, facts = check_pdn.check_rail(bg, "V", 0.1, [])
+    assert vs == [] and facts["caps_from_board"] == ["C1"]
 
 
 def test_decoupling_class_reads_the_footprint_value_too():

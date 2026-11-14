@@ -115,12 +115,23 @@ def test_bulk_cap_counted_on_a_rail_with_no_ic():
     assert facts["bulk_count"] == 1
 
 
-def test_recorded_association_wins_over_board():
+def test_board_caps_join_the_recorded_ones():
+    """decoupling.json records a cap against an IC pin; the rail's bulk cap
+    by its connector (C1) is on the board, not in the file, and counts."""
     bg = geom.load_board(LED_PCB)
     assoc = [{"cap": "C9", "rail": "+5V", "value": "100nF"}]
     vs, facts = check_pdn.check_rail(bg, "+5V", 0.01, assoc)
-    assert facts["caps_from_board"] == [] and facts["caps"] == ["C9"]
-    assert [v["kind"] for v in vs] == ["pdn_no_bulk"]
+    assert vs == []
+    assert facts["caps"] == ["C1", "C9"] and facts["caps_from_board"] == ["C1"]
+    assert facts["cap_count"] == 2 and facts["bulk_count"] == 1
+
+
+def test_a_recorded_board_cap_is_counted_once():
+    bg = geom.load_board(LED_PCB)
+    vs, facts = check_pdn.check_rail(bg, "+5V", 0.01,
+                                     [{"cap": "C1", "rail": "+5V"}])
+    assert vs == [] and facts["caps_from_board"] == []
+    assert facts["caps"] == ["C1"] and facts["cap_count"] == 1
 
 
 def test_rail_with_no_cap_still_errors():

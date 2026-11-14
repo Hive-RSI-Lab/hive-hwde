@@ -37,7 +37,8 @@ What moved where:
     ("Voltage-Supply(Max)", "Working Voltage") and says which parts.json
     lines carry no attributes.
   - `scripts/check_pdn.py` counts a cap the board puts straight across a rail
-    and ground when decoupling.json records none for that rail.
+    and ground when decoupling.json records none for that rail (since
+    widened: such caps join the recorded ones, below).
   - `agents/part-sourcer.md` copies the parts_search row whole (attributes
     included) and writes no refdes.
 - Knowledge the Hive added (offer upstream once approved):
@@ -206,6 +207,14 @@ What moved where:
   KeyError 'Mid X' on one. A placement file's Rot is taken with no fab
   correction, and the report's `cpl_note` says what a wrong_rotation then
   means (`tests/test_cpl_verify.py`).
+- `scripts/check_pdn.py` counts the caps the board puts straight across a
+  rail and ground together with the ones decoupling.json records, not only
+  when it records none. The file records a cap against an IC pin, so a
+  rail's bulk cap at its regulator output or connector was never in it, and
+  any rail with one recorded 100 nF read as "no bulk reservoir". A footprint
+  KiCad marks `dnp` (a contingency) ships empty and is not counted; `geom`
+  now carries each footprint's `attr` flags for that
+  (`tests/test_false_pass.py`, `tests/test_sourcer_records.py`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps

@@ -855,8 +855,13 @@ class BoardGeom:
             # ref -> lib id + Value field (check_current bounds a resistor
             # branch's current from these; check_thermal knows a package by
             # its LCSC/MPN props); the last duplicate ref wins
+            # attrs: KiCad's (attr smd dnp ...) flags; check_pdn leaves a
+            # dnp cap out of a rail's reservoir
+            attr = _kid(fp, "attr")
             self.footprints[ref] = {"lib": lib, "value": value, "props": props,
-                                    "at": (fx, fy), "angle": fangle}
+                                    "at": (fx, fy), "angle": fangle,
+                                    "attrs": tuple(str(_tok(x)) for x in _strs(attr))
+                                    if attr is not None else ()}
             first_pad = len(self._pads)
             for pad in _kids(fp, "pad"):
                 self._add_pad(pad, fx, fy, fangle, ref)
