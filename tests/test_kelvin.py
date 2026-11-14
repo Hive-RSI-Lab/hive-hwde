@@ -172,3 +172,89 @@ def test_cli_and_registration(tmp_path):
     rep = json.loads(cp.stdout)
     assert rep["violations"][0]["source"] == "check_kelvin"
     assert (REPO / "reference" / "remediations" / "kelvin_error.md").is_file()
+
+
+# ---- declared sense taps (#936) ---------------------------------------------
+
+def _zone(net, x0, y0, x1, y1, name="POUR"):
+    pts = f"(xy {x0} {y0}) (xy {x1} {y0}) (xy {x1} {y1}) (xy {x0} {y1})"
+    return (f'  (zone (net "{net}") (name "{name}") (layer "F.Cu")\n'
+            f'    (polygon (pts {pts}))\n'
+            f'    (filled_polygon (layer "F.Cu") (pts {pts})))\n')
+
+
+def _rail(sense=None):
+    """L1 feeds C1 on P over a 1 mm track; R1.1 (a feedback divider's top) is
+    to read P at C1.1. `sense` is the sense line's copper."""
+    body = (_fp("L1", "4.7uH", 10, 10, ("1", 0, "P", ""))
+            + _fp("C1", "22u", 30, 10, ("1", 0, "P", ""))
+            + _seg("P", 10, 10, 30, 10, 1)
+            + _fp("R1", "100k", 30, 20, ("1", 0, "P", ""), ("2", 2, "FB", ""), size=1))
+    return body + (_seg("P", 30, 20, 30, 10, 0.2) if sense is None else sense)
+
+
+SENSE = [{"net": "P", "sense_pads": {"R1.1": "C1.1"}}]
+
+
+def _sense(pcb, power=SENSE):
+    return check_kelvin.judge_sense(geom.BoardGeom.from_file(pcb), power)
+
+
+def test_sense_line_on_its_own_track_to_the_pad_is_clean(tmp_path):
+    """Both the power track and the sense track end on C1.1: that is the tap."""
+    vios, (f,) = _sense(_board(tmp_path, _rail()))
+    assert not vios and f["reached"] and not f["joins"]
+
+
+def test_sense_line_teed_off_the_power_track_is_caught(tmp_path):
+    t = _seg("P", 30, 20, 20, 20, 0.2) + _seg("P", 20, 20, 20, 10, 0.2)
+    (v,), (f,) = _sense(_board(tmp_path, _rail(t)))
+    assert v["kind"] == "sense_tap_off_pad" and v["severity"] == "error"
+    assert "a power track" in v["msg"] and 8 < v["tap_mm"] < 10
+    assert v["pos"][0] == pytest.approx(20, abs=0.2)
+
+
+def test_sense_pad_sitting_in_a_pour_is_caught(tmp_path):
+    """The voice board's fault: the sense pad and its track sit in the rail's
+    own pour, so it reads the pour under it, not C1.1."""
+    pour = _zone("P", 26, 16, 34, 24)
+    (v,), _ = _sense(_board(tmp_path, _rail() + pour))
+    assert v["kind"] == "sense_tap_off_pad" and "P pour POUR" in v["msg"]
+    assert v["tap_mm"] > 8 and v["refs"] == ["C1", "R1"]
+
+
+def test_pour_that_only_meets_the_tap_pad_is_fine(tmp_path):
+    """The pour feeds C1.1 from below; the sense line comes in from above and
+    meets it only inside the pad."""
+    vios, _ = _sense(_board(tmp_path, _rail() + _zone("P", 27, 5, 40, 10.5)))
+    assert not vios
+
+
+def test_sense_line_not_routed_is_missing(tmp_path):
+    (v,), (f,) = _sense(_board(tmp_path, _rail("")))
+    assert v["kind"] == "sense_tap_missing" and not f["reached"]
+
+
+def test_bad_sense_pads_declaration(tmp_path):
+    pcb = _board(tmp_path, _rail())
+    for pads, why in [({"R9.1": "C1.1"}, "R9.1 is not a pad"),
+                      ({"R1.1": "C1"}, "C1 is not a pad"),
+                      ({"R1.1": "R1.2"}, "R1.2 is on FB, not P"),
+                      ({"C1.1": "C1.1"}, "same pad")]:
+        (v,), facts = _sense(pcb, [{"net": "P", "sense_pads": pads}])
+        assert v["kind"] == "sense_tap_bad" and why in v["msg"] and not facts
+
+
+def test_cli_reads_sense_pads(tmp_path):
+    pcb = _board(tmp_path, _rail() + _zone("P", 26, 16, 34, 24))
+    cons = tmp_path / "constraints.json"
+    cons.write_text(json.dumps({"power": SENSE}))
+    cp = subprocess.run([sys.executable, str(SCRIPTS / "check_kelvin.py"), "--pcb",
+                         str(pcb), "--constraints", str(cons)],
+                        capture_output=True, text=True, timeout=300)
+    assert cp.returncode == 1, cp.stderr
+    rep = json.loads(cp.stdout)
+    assert [v["kind"] for v in rep["violations"]] == ["sense_tap_off_pad"]
+    assert rep["sense_taps"][0]["tap"] == "C1.1"
+    for kind in ("sense_tap_off_pad", "sense_tap_missing", "sense_tap_bad"):
+        assert (REPO / "reference" / "remediations" / f"{kind}.md").is_file()

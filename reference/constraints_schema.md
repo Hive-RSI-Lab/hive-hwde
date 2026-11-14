@@ -71,6 +71,18 @@ Consumers per key (script -> phase):
     "switch_node": {"ref": "U3", "layer": "F.Cu",
                     "keep_away": ["MK1", "U5"], "keep_away_mm": 2.0}
   }, {
+    // Kelvin sense taps (#936, check_kelvin). "sense_pads" maps the pad a
+    // sense line starts on (a feedback divider's top, a regulator's SENSE
+    // pin) to the pad it must read, both as REF.PAD on this net. The sense
+    // line must run on copper of its own from one to the other: a pour,
+    // another pad, or a power track or via it touches before it gets there
+    // is where it really reads (sense_tap_off_pad, with the mm from the
+    // pad); no copper of its own to the pad is sense_tap_missing; a pad not
+    // on the board or not on this net is sense_tap_bad. The power track and
+    // the sense track may both end on the named pad.
+    "net": "+5V", "current_a": 2.0,
+    "sense_pads": {"R113.1": "C114.1"}
+  }, {
     // width-only entry: "pdn": false opts a net OUT of check_pdn's
     // decoupling inventory. Use for nets declared solely so rules_gen sizes
     // their trace (e.g. the raw-input stub BEFORE a reverse-polarity

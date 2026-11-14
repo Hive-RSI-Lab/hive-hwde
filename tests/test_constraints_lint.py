@@ -380,3 +380,15 @@ def test_switch_node_entry_shape(tmp_path):
         "keepaway": ["MK1"]})]})
     assert any(v["kind"] == "bad_type" and "switch_node" in v["msg"]
                for v in errors(vs))
+
+
+def test_sense_pads_entry_shape(tmp_path):
+    """#936: power[].sense_pads maps the sense line's end pad to the pad it
+    must tap, both as REF.PAD; anything else is a bad_type error."""
+    ok = {"net": "+5V", "current_a": 1, "sense_pads": {"R113.1": "C114.1"}}
+    vs, _ = lint_doc(tmp_path, {"power": [ok]})
+    assert errors(vs) == [] and not [v for v in vs if "sense_pads" in v["msg"]]
+    for bad in ("C114.1", {"R113.1": "C114"}, {"R113.1": 1}, {}):
+        vs, _ = lint_doc(tmp_path, {"power": [dict(ok, sense_pads=bad)]})
+        assert any(v["kind"] == "bad_type" and "sense_pads" in v["msg"]
+                   for v in errors(vs)), bad
