@@ -1467,6 +1467,13 @@ def run_audit(netlist: Path, constraints_path: Path | None,
     power_undeclared is dropped, since with nothing declared every rail
     would fire."""
     parsed = parse_netlist(netlist)
+    if not parsed["components"] and not parsed["nets"]:
+        # an empty export is no clean pass (#1023)
+        payload = checklib.report(
+            SCRIPT, str(netlist), [], mode="audit",
+            nothing_to_judge=f"{Path(netlist).name} has 0 components")
+        payload["status"] = "pass"
+        return payload, out
     constraints = (checklib.load_json(constraints_path, "constraints")
                    if constraints_path else {})
     decoupling = (checklib.load_json(decoupling_path, "decoupling metadata")
@@ -1487,12 +1494,31 @@ def run_audit(netlist: Path, constraints_path: Path | None,
 
 # ------------------------------------------------------------ CLI
 
+def _modern_netlist(net: Path) -> Path:
+    """An eeschema 4/5 netlist names no pins; fill them from its libparts."""
+    from lib import legacy_net  # noqa: PLC0415
+    if not legacy_net.is_legacy_net(net):
+        return net
+    out = Path(tempfile.mkdtemp(prefix="aiee_audit_")) / net.name
+    try:
+        legacy_net.from_shipped(net, out)
+    except (OSError, legacy_net.LegacyError, ValueError) as exc:
+        raise checklib.CheckError(f"{net.name} (KiCad 4/5): {exc}") from exc
+    return out
+
+
 def _export_netlist(sch: Path) -> Path:
     """Export the schematic's netlist via kc.py into a temp file."""
+    out = Path(tempfile.mkdtemp(prefix="aiee_audit_")) / (sch.stem + ".net")
+    from lib import legacy_net  # noqa: PLC0415
+    if legacy_net.is_legacy(sch):  # KiCad 4/5: kicad-cli exports it empty
+        r = legacy_net.netlist(sch, out)
+        if r.get("status") != "pass":
+            raise checklib.CheckError(r["error"])
+        return out
     import kc  # noqa: PLC0415  (deferred: only the --sch path needs kicad-cli)
     from lib import env  # noqa: PLC0415
     cli = env.find_kicad_cli()
-    out = Path(tempfile.mkdtemp(prefix="aiee_audit_")) / (sch.stem + ".net")
     r = kc.export_netlist(cli, sch, out)
     if r.get("status") != "pass":
         raise checklib.CheckError(
@@ -1533,8 +1559,12 @@ def run(argv=None):
         pcb = Path(args.pcb)
         own_sch, own_net = (pcb.with_suffix(".kicad_sch"),
                             pcb.with_suffix(".net"))
+        legacy = pcb.with_suffix(".sch")
         why = None
-        if own_sch.is_file() and _have_kicad_cli():
+        from lib import legacy_net  # noqa: PLC0415
+        if not own_sch.is_file() and legacy_net.is_legacy(legacy):
+            sch = legacy  # KiCad 4/5: read its shipped .net or the board
+        elif own_sch.is_file() and _have_kicad_cli():
             sch = own_sch
         elif own_net.is_file():
             netlist = own_net
@@ -1550,6 +1580,7 @@ def run(argv=None):
             return payload, args.out
     if sch and not netlist:
         netlist = _export_netlist(sch)
+    netlist = _modern_netlist(netlist)
 
     if args.compare:
         return run_compare(netlist, Path(args.compare), args.out)

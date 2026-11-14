@@ -413,8 +413,10 @@ boards:
     fault_class: SCH (standard connector pinout)
     verdict: missed
     note: >-
-      A KiCad 5 legacy schematic: kicad-cli exports an empty netlist from it,
-      so no schematic check reads this board (#1023).
+      A KiCad 5 legacy schematic, read since #1023 through lib/legacy_net
+      (pads from the board, pin names from the -cache.lib): netlist_audit
+      reads 186 parts on both revisions and reports the same four undeclared
+      rails on each, so nothing it checks tells rev.C from rev.C1.
     follow_up: "off-board and standard connector pinouts, with the mate stated (#1027)"
   - id: sizif-2
     summary: J3 header's silkscreen is wrong
@@ -436,6 +438,8 @@ boards:
     fault_class: SCH (datasheet pin state)
     verdict: missed
     note: >-
-      A KiCad 5 legacy schematic (#1023). The errata's other line, "Random
+      A KiCad 5 legacy schematic, read since #1023 from its shipped .net:
+      netlist_audit on rev_c and rev_d finds nothing, as no check knows the
+      SWD pins want pull-ups. The errata's other line, "Random
       trace on pin32?", is a question with no stated fix, so it is not judged.
     follow_up: "a datasheet pin-state table read against each pin's net (#1033)"

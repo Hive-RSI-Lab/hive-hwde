@@ -332,14 +332,35 @@ def board_netlist(pcb: Path, reports_dir: Path, given: str | None = None
     dir>/netlist/, so a schematic-only board is still judged (#885). No
     schematic, no kicad-cli or a failed export returns None with the
     reason: the checks then say there is no netlist."""
+    from lib import legacy_net  # noqa: PLC0415
+    out = Path(reports_dir) / "netlist" / f"{pcb.stem}.net"
     if given:
         if not Path(given).is_file():
             raise checklib.CheckError(f"netlist not found: {given}")
-        return Path(given), {"source": "given", "path": str(given)}
-    from check_straps import find_netlist  # noqa: PLC0415
-    if find_netlist(pcb) is not None:
-        return None, None
+        if not legacy_net.is_legacy_net(Path(given)):
+            return Path(given), {"source": "given", "path": str(given)}
+        found = Path(given)
+    else:
+        from check_straps import find_netlist  # noqa: PLC0415
+        found = find_netlist(pcb)
+    if found is not None:
+        if not legacy_net.is_legacy_net(found):
+            return None, None
+        # an eeschema 4/5 netlist has no pin names: fill them (#1023)
+        try:
+            legacy_net.from_shipped(found, out)
+        except (OSError, legacy_net.LegacyError, ValueError) as exc:
+            return None, {"source": None,
+                          "reason": f"{found.name} (KiCad 4/5) unreadable: {exc}"}
+        return out, {"source": "legacy", "from": found.name, "path": str(out)}
     sch = pcb.with_suffix(".kicad_sch")
+    legacy = pcb.with_suffix(".sch")
+    if not sch.is_file() and legacy_net.is_legacy(legacy):
+        r = legacy_net.netlist(legacy, out, pcb=pcb)
+        if r.get("status") != "pass":
+            return None, {"source": None, "reason": r["error"][:300]}
+        return out, {"source": "legacy", "from": f"{r['from']} ({r['source']})",
+                     "path": str(out)}
     if not sch.is_file():
         return None, {"source": None,
                       "reason": f"no {pcb.with_suffix('.net').name} or "
@@ -354,7 +375,6 @@ def board_netlist(pcb: Path, reports_dir: Path, given: str | None = None
         return None, {"source": None,
                       "reason": f"no kicad-cli on this host to export "
                                 f"{sch.name}"}
-    out = Path(reports_dir) / "netlist" / f"{pcb.stem}.net"
     out.unlink(missing_ok=True)
     r = kc.export_netlist(cli, sch, out)
     if r.get("status") != "pass" or not out.is_file():
