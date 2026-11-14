@@ -67,7 +67,12 @@ CLI:
                 [--md reports/first-spin/dispositions.md] [--out F]
   first_spin.py --dir <review dir> ...
   [--modes docs/failure-modes.yaml] [--briefs F (the draft briefs, JSON)]
-Exit 0 nothing open / 1 open items / 2 error.
+Exit 0 nothing open / 1 open items / 2 error. A workspace whose review
+dir isn't written yet (or holds no <domain>.json) has no first-spin review
+to answer: exit 0 with `nothing_to_judge`. The schematic and board
+reviewers' files, if there, are still classed and judged, and `not_judged`
+says the first-spin review is missing. A --dir that is missing or holds no
+domain review is an error.
 """
 from __future__ import annotations
 
@@ -234,7 +239,8 @@ def draft_brief(g: dict) -> dict:
             "class": g["class"], "verdict": g["verdict"]}
 
 
-def load_reviews(d: Path) -> list[dict]:
+def load_reviews(d: Path, required: bool = True) -> list[dict]:
+    """The domain reviews in `d`; none raises unless not `required`."""
     out = []
     for p in sorted(d.glob("*.json")):
         if p.name in NOT_REVIEWS:
@@ -245,7 +251,7 @@ def load_reviews(d: Path) -> list[dict]:
         data.setdefault("domain", p.stem)
         data["_file"] = p.name
         out.append(data)
-    if not out:
+    if not out and required:
         raise checklib.CheckError(
             f"no domain review in {d} (a <domain>.json with a findings list)")
     return out
@@ -376,10 +382,13 @@ def run(a) -> dict:
         d = Path(a.workspace) / DEFAULT_DIR
     else:
         raise checklib.CheckError("give --workspace or --dir")
-    if not d.is_dir():
+    # the workspace's own review dir may not be written yet: nothing to
+    # answer. A --dir that isn't there, or holds no review, is a wrong path.
+    default = not a.dir
+    if not d.is_dir() and not (default and Path(a.workspace).is_dir()):
         raise checklib.CheckError(f"no review dir {d}: reference/first-spin.md "
                                   "says what goes there")
-    reviews = load_reviews(d)
+    reviews = load_reviews(d, required=not default) if d.is_dir() else []
     dp, rp = d / "dispositions.json", d / "resolutions.json"
     disp = checklib.load_json(dp, "dispositions") if dp.is_file() else {}
     res = checklib.load_json(rp, "resolutions") if rp.is_file() else {}
@@ -392,9 +401,17 @@ def run(a) -> dict:
                                   encoding="utf-8")
     if a.md:
         Path(a.md).write_text(render_md(out), encoding="utf-8", newline="\n")
-    return {"script": SCRIPT, "status": "open" if out["open"] else "pass",
-            "dir": d.as_posix(), "domains": [r["domain"] for r in reviews],
-            "md": a.md, **out}
+    payload = {"script": SCRIPT, "status": "open" if out["open"] else "pass",
+               "dir": d.as_posix(), "domains": [r["domain"] for r in reviews],
+               "md": a.md, **out}
+    if not reviews:
+        why = (f"no first-spin review yet: {d.as_posix()} has no <domain>.json "
+               "(reference/first-spin.md says what goes there)")
+        if extra:   # the reviewers' files were still classed
+            payload["not_judged"] = [why]
+        else:
+            payload["nothing_to_judge"] = why
+    return payload
 
 
 def main(argv: list[str] | None = None) -> int:

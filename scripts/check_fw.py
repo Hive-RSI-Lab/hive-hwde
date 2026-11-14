@@ -16,7 +16,13 @@ this board and adds what only the board side can check:
    reaches nothing but the ESP32 (no pull-ups inside those pins).
  - fw_i2c_pullup (error): an I2C line the firmware drives with no resistor
    to a supply.
- - fw_unavailable (error, exit 2): no fw, or one without `constraints`.
+ - fw_unavailable (error, exit 2): no fw, or one without `constraints`, on
+   a board that needs it.
+
+A board with no ESP32 on it (no part whose value, footprint or symbol
+names one, fw's own test) and no --target has no firmware for fw to check:
+it reports nothing_to_judge and needs no fw. So does an ESP32 board that no
+target in targets.json names; give --target for its firmware.
 
 The board's firmware targets come from fw's targets.json: every target
 whose constraints board is this board's netlist (core: hifi-plus and
@@ -26,8 +32,9 @@ project holds it (an agent's checkout), else from the target's project.
 netlist (antenna keep-out, crystal, I2C address straps) come back under
 "needs" for the agent to weigh.
 
-fw is --fw, else $HWDE_FW, else hive-fw in $HIVE_MODULES (or
-/hive/modules, /hive/tools). It is standard-library python and takes a few
+fw is --fw, else $HWDE_FW, else the module's bin/fw (hive-fw or fw) in
+$HIVE_MODULES, in the folder this module is installed in, or in
+/hive/modules or /hive/tools. It is standard-library python and takes a few
 seconds; nothing here runs KiCad.
 
 CLI:
@@ -58,10 +65,15 @@ _RAIL_RE = re.compile(r"^\+|^(VDD|VCC)|^3V3$|^5V$", re.I)
 
 
 def find_fw(given: str | None) -> Path | None:
+    """--fw, $HWDE_FW, else the fw module installed in a modules folder:
+    $HIVE_MODULES, the one this module sits in (fw beside hwde), the Hive's
+    own. The module is hive-fw in some Hives and fw in others."""
     cands = [given, os.environ.get("HWDE_FW")]
-    for root in (os.environ.get("HIVE_MODULES"), "/hive/modules", "/hive/tools"):
+    beside = str(HERE.parent.parent)
+    for root in (os.environ.get("HIVE_MODULES"), beside, "/hive/modules", "/hive/tools"):
         if root:
-            cands.append(str(Path(root) / "hive-fw" / "bin" / "fw"))
+            for name in ("hive-fw", "fw"):
+                cands.append(str(Path(root) / name / "bin" / "fw"))
     for c in cands:
         if c and Path(c).is_file() and os.access(c, os.X_OK):
             return Path(c).resolve()
@@ -86,6 +98,17 @@ def board_files(board: Path) -> tuple[Path | None, Path | None]:
     own = [n for n in nets if n.stem == board.name]
     c = kicad / "constraints.json"
     return (own or nets or [None])[0], c if c.is_file() else None
+
+
+def esp32_refs(parsed: dict) -> list[str]:
+    """The parts that are an ESP32: its name in the value, footprint or
+    symbol (fw's pins.is_esp32 reads value and footprint)."""
+    out = []
+    for ref, c in parsed["components"].items():
+        names = [c.get("value") or "", c.get("footprint") or "", *(c.get("libsource") or ())]
+        if "ESP32" in " ".join(names).upper():
+            out.append(ref)
+    return sorted(out)
 
 
 def targets_for(fw: Path, netlist: Path, names: list[str]) -> list[dict]:
@@ -260,17 +283,25 @@ def run(argv=None):
         cpath = Path(a.constraints).resolve()
     if netlist is None or not netlist.is_file():
         raise checklib.CheckError(f"no netlist for {board} (export one: kicad-cli sch export netlist)")
+    parsed = parse_netlist(netlist)
+    esps = esp32_refs(parsed)
+    if not esps and not a.target:
+        return checklib.report(SCRIPT, str(netlist), [], esp32=[], nothing_to_judge=(
+            "no ESP32 on the board (no part's value, footprint or symbol names one), "
+            "so no firmware for fw to check; give --target if one runs here")), a.out
     fw = find_fw(a.fw)
     if fw is None:
-        raise checklib.CheckError("fw_unavailable: no hive-fw bin/fw (--fw, $HWDE_FW, $HIVE_MODULES/hive-fw)")
+        raise checklib.CheckError(
+            f"fw_unavailable: {', '.join(esps) or 'the board'} needs fw's checks, and there is no "
+            "bin/fw (--fw, $HWDE_FW, hive-fw or fw in $HIVE_MODULES or beside this module)")
     if not has_constraints(fw):
         raise checklib.CheckError(f"fw_unavailable: {fw} has no `fw constraints` (hive-fw older than issue #22)")
     targets = targets_for(fw, netlist, a.target)
     if not targets:
-        raise checklib.CheckError(f"no firmware target in {fw.parent.parent / 'targets.json'} names "
-                                  f"{netlist.name} as its board: give --target")
+        return checklib.report(SCRIPT, str(netlist), [], fw=str(fw), esp32=esps, nothing_to_judge=(
+            f"{', '.join(esps)}: no firmware target in {fw.parent.parent / 'targets.json'} names "
+            f"{netlist.name} as its board: give --target")), a.out
 
-    parsed = parse_netlist(netlist)
     constraints = checklib.load_json(cpath, "constraints") if cpath else None
     violations: list[dict] = []
     ran = []
@@ -284,7 +315,7 @@ def run(argv=None):
         violations += board_checks(res, parsed, constraints, t["name"])
         ran.append({"target": t["name"], "firmware": str(t["project"] or "the target's project"),
                     "needs": res.get("needs", []), "fw_ok": res.get("ok")})
-    payload = checklib.report(SCRIPT, str(netlist), violations, fw=str(fw),
+    payload = checklib.report(SCRIPT, str(netlist), violations, fw=str(fw), esp32=esps,
                               constraints=str(cpath) if cpath else None, targets=ran)
     payload["status"] = ("violations" if any(x["severity"] == "error" for x in violations)
                          else "pass")

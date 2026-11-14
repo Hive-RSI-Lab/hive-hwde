@@ -17,7 +17,14 @@ validation). Per constrained power net:
    spike). Multi-layer (THT) pads are tied the same way with an assumed drill
    of 0.6 x min(pad size) - geom carries no pad drill;
  - sparse SPD system (graph Laplacian, Dirichlet nodes eliminated) solved with
-   scipy.sparse.linalg.spsolve.
+   scipy.sparse.linalg.spsolve up to DIRECT_MAX_UNKNOWNS unknowns; above it
+   with CG to a 1e-10 relative residual, preconditioned by smoothed-
+   aggregation multigrid on the grid's own 2x2 cell blocks (memory linear in
+   the cells, where an 800k-cell net's LU fill took 4.5 GB). If CG doesn't
+   converge, spsolve is the fallback. Each net's facts say which ran
+   ("grid.solver"). Grids hold node ids only for in-copper cells and the
+   rasterizer tests a block of rows at a time: on a board with that net the
+   whole check went from a 4.5 GB peak to 0.75 GB, with the same report.
 
 INJECTION MODEL (v1, worst-case by default - document to consumers):
  - If the constraints entry carries "source_ref", the source is that
@@ -74,7 +81,7 @@ import numpy as np
 import shapely
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import LinearOperator, cg, splu, spsolve
 from scipy.spatial import cKDTree
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
@@ -95,6 +102,12 @@ REFINE_CELL_CAP = 800_000  # doubling allowed only below this (else coarsen)
 RICHARDSON_WARN = 0.10     # grid_unconverged threshold
 NECK_MIN_SEP_MM = 1.5      # reported neck maxima are at least this far apart
 NECK_KEEP = 5              # top-N reported necks
+DIRECT_MAX_UNKNOWNS = 50_000  # sparse LU up to here; multigrid CG above
+CG_RTOL = 1e-10            # CG's relative residual target
+CG_MAXITER = 500           # then the sparse LU is the fallback
+MG_COARSE_UNKNOWNS = 3000  # multigrid's coarsest level, solved by LU
+MG_MAX_LEVELS = 16
+RASTER_POINTS = 4_000_000  # cell centers tested per contains_xy call
 
 
 def sheet_res_ohm_sq(cu_mm: float) -> float:
@@ -136,18 +149,50 @@ class NetGrid:
         self.ys = miny + (np.arange(self.ny) + 0.5) * cell
         self.mask: dict[str, np.ndarray] = {
             l: self._raster(polys[l]) for l in layers}
-        self.ids: dict[str, np.ndarray] = {}
-        n = 0
-        for l in layers:
-            ids = np.full((self.ny, self.nx), -1, dtype=np.int64)
-            m = self.mask[l]
-            ids[m] = n + np.arange(int(m.sum()))
-            n += int(m.sum())
-            self.ids[l] = ids
-        self.n_nodes = n
+        self._number()
         self._trees: dict[str, tuple[cKDTree, np.ndarray]] = {}
 
+    def _number(self):
+        """Give every in-copper cell its node id: layer after layer, row-major.
+
+        A layer keeps its cells' flat indices (i * nx + j, sorted) and its
+        first id, not a dense id array: a thin net's frame can be 38 M cells
+        a layer around 0.1 M nodes, and an int64 per frame cell was 300 MB a
+        layer. Call it again after changing a mask."""
+        self.keys: dict[str, np.ndarray] = {}
+        self.n0: dict[str, int] = {}
+        n = 0
+        for l in self.layers:
+            self.keys[l] = np.flatnonzero(self.mask[l])
+            self.n0[l] = n
+            n += len(self.keys[l])
+        self.n_nodes = n
+
+    def node_ids(self, layer: str, ii, jj) -> np.ndarray:
+        """Node ids of the in-copper cells (ii, jj) on layer."""
+        flat = (np.asarray(ii, dtype=np.int64) * self.nx
+                + np.asarray(jj, dtype=np.int64))
+        return self.n0[layer] + np.searchsorted(self.keys[layer], flat)
+
+    def layer_edges(self, layer: str):
+        """The layer's neighbour pairs: [(a, b, ka, kb)] for the horizontal
+        pairs, then the vertical, each in row-major order of its first cell;
+        a, b are node ids, ka, kb flat cell indices."""
+        keys, n0, nx = self.keys[layer], self.n0[layer], self.nx
+        ph = np.flatnonzero((keys[1:] == keys[:-1] + 1)
+                            & (keys[:-1] % nx != nx - 1))
+        below = keys + nx
+        q = np.searchsorted(keys, below)
+        hit = q < len(keys)
+        hit[hit] = keys[q[hit]] == below[hit]
+        pv = np.flatnonzero(hit)
+        qv = q[pv]
+        return [(n0 + ph, n0 + ph + 1, keys[ph], keys[ph + 1]),
+                (n0 + pv, n0 + qv, keys[pv], keys[qv])]
+
     def _raster(self, poly) -> np.ndarray:
+        """Cells whose center lies in poly, tested a block of rows at a time
+        so the test points never take more than RASTER_POINTS."""
         m = np.zeros((self.ny, self.nx), dtype=bool)
         if poly.is_empty:
             return m
@@ -157,9 +202,14 @@ class NetGrid:
         if not len(ix) or not len(iy):
             return m
         shapely.prepare(poly)
-        xx, yy = np.meshgrid(self.xs[ix], self.ys[iy])
-        hits = shapely.contains_xy(poly, xx.ravel(), yy.ravel())
-        m[np.ix_(iy, ix)] = hits.reshape(len(iy), len(ix))
+        j0, j1 = int(ix[0]), int(ix[-1]) + 1
+        xs = self.xs[j0:j1]
+        step = max(1, RASTER_POINTS // len(xs))
+        for i0 in range(int(iy[0]), int(iy[-1]) + 1, step):
+            i1 = min(i0 + step, int(iy[-1]) + 1)
+            xx, yy = np.meshgrid(xs, self.ys[i0:i1])
+            hits = shapely.contains_xy(poly, xx.ravel(), yy.ravel())
+            m[i0:i1, j0:j1] = hits.reshape(i1 - i0, j1 - j0)
         return m
 
     def cell_center(self, i: int, j: int) -> tuple[float, float]:
@@ -191,9 +241,8 @@ class NetGrid:
         xx, yy = np.meshgrid(self.xs[ix], self.ys[iy])
         hits = shapely.contains_xy(poly, xx.ravel(), yy.ravel())
         hits = hits.reshape(len(iy), len(ix))
-        sub = self.mask[layer][np.ix_(iy, ix)] & hits
-        ids = self.ids[layer][np.ix_(iy, ix)][sub]
-        return ids
+        si, sj = np.nonzero(self.mask[layer][np.ix_(iy, ix)] & hits)
+        return self.node_ids(layer, iy[si], ix[sj])
 
     def nearest_node(self, layers: list[str], cx: float, cy: float,
                      max_dist: float):
@@ -203,16 +252,111 @@ class NetGrid:
             if l not in self.mask:
                 continue
             if l not in self._trees:
-                ii, jj = np.nonzero(self.mask[l])
-                if not len(ii):
+                if not len(self.keys[l]):
                     continue
+                ii, jj = np.divmod(self.keys[l], self.nx)
                 pts = np.column_stack([self.xs[jj], self.ys[ii]])
-                self._trees[l] = (cKDTree(pts), self.ids[l][ii, jj])
+                self._trees[l] = (cKDTree(pts), self.n0[l]
+                                  + np.arange(len(ii), dtype=np.int64))
             tree, ids = self._trees[l]
             d, k = tree.query([cx, cy])
             if d <= max_dist and (best is None or d < best[0]):
                 best = (float(d), int(ids[k]))
         return None if best is None else best[1]
+
+    def node_coords(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """(layer index, row, column) of every node, in node-id order."""
+        lay, rows, cols = [], [], []
+        for k, l in enumerate(self.layers):
+            ii, jj = np.divmod(self.keys[l], self.nx)   # in node-id order
+            lay.append(np.full(len(ii), k, dtype=np.int64))
+            rows.append(ii.astype(np.int64))
+            cols.append(jj.astype(np.int64))
+        return (np.concatenate(lay), np.concatenate(rows),
+                np.concatenate(cols))
+
+
+# ============================================================ linear solve
+
+class _Multigrid:
+    """Smoothed-aggregation multigrid, used as CG's preconditioner.
+
+    The aggregates are the grid's own 2x2 cell blocks, layer by layer, so
+    the setup needs no strength-of-connection graph. The prolongator is the
+    block indicator smoothed by one damped Jacobi step (omega = 4/3 over a
+    Gershgorin bound on rho(D^-1 A)), the coarse operators are Galerkin
+    (P^T A P), and the V-cycle smooths with two damped Jacobi sweeps each way,
+    so the preconditioner is symmetric positive definite, as CG needs.
+    Deterministic: no random start vectors.
+    """
+
+    def __init__(self, a: sparse.csr_matrix, coords):
+        lay, ii, jj = (np.asarray(c, dtype=np.int64) for c in coords)
+        self.levels: list[tuple] = []
+        while (a.shape[0] > MG_COARSE_UNKNOWNS
+               and len(self.levels) < MG_MAX_LEVELS):
+            n = a.shape[0]
+            ii, jj = ii >> 1, jj >> 1
+            span_i, span_j = int(ii.max()) + 1, int(jj.max()) + 1
+            key = (lay * span_i + ii) * span_j + jj
+            _, first, agg = np.unique(key, return_index=True,
+                                      return_inverse=True)
+            nc = len(first)
+            if nc > 0.8 * n:
+                break                       # cells too scattered to coarsen
+            tent = sparse.csr_matrix((np.ones(n), (np.arange(n), agg)),
+                                     shape=(n, nc))
+            dinv = 1.0 / a.diagonal()
+            rho = float(np.max(np.asarray(abs(a).sum(axis=1)).ravel() * dinv))
+            w = 4.0 / (3.0 * rho)
+            p = (tent - sparse.diags(w * dinv) @ (a @ tent)).tocsr()
+            self.levels.append((a, p, w * dinv))
+            a = (p.T @ (a @ p)).tocsr()
+            lay, ii, jj = lay[first], ii[first], jj[first]
+        self.coarse = splu(a.tocsc())
+        self.coarse_unknowns = a.shape[0]
+
+    def vcycle(self, b: np.ndarray, k: int = 0) -> np.ndarray:
+        if k == len(self.levels):
+            return self.coarse.solve(b)
+        a, p, wd = self.levels[k]
+        x = wd * b
+        x += wd * (b - a @ x)
+        x += p @ self.vcycle(p.T @ (b - a @ x), k + 1)
+        x += wd * (b - a @ x)
+        x += wd * (b - a @ x)
+        return x
+
+
+def solve_spd(a: sparse.csr_matrix, b: np.ndarray, coords):
+    """Solve the grid's SPD system: (x, solver facts).
+
+    Up to DIRECT_MAX_UNKNOWNS, sparse LU (spsolve). Above it, CG with the
+    multigrid preconditioner to CG_RTOL: its memory grows linearly, where
+    the LU's fill on an 800k-cell net took 4.5 GB and failed under a 2.5 GB
+    address-space limit (SUPERLU_MALLOC). If CG doesn't converge in
+    CG_MAXITER iterations, the LU is the fallback.
+    """
+    n = a.shape[0]
+    if n <= DIRECT_MAX_UNKNOWNS:
+        return spsolve(a.tocsc(), b), {"method": "direct"}
+    mg = _Multigrid(a.tocsr(), coords)
+    pre = LinearOperator(a.shape, matvec=mg.vcycle, dtype=float)
+    its = [0]
+
+    def count(_x):
+        its[0] += 1
+
+    x, info = cg(a, b, rtol=CG_RTOL, atol=0.0, maxiter=CG_MAXITER, M=pre,
+                 callback=count)
+    relres = float(np.linalg.norm(b - a @ x) / max(np.linalg.norm(b), 1e-300))
+    facts = {"method": "multigrid_cg", "levels": len(mg.levels) + 1,
+             "iterations": its[0], "relres": float(f"{relres:.2g}")}
+    if info != 0:
+        return spsolve(a.tocsc(), b), {
+            "method": "direct", "note": f"CG stopped after {its[0]} "
+                                        f"iterations at relres {relres:.2g}"}
+    return x, facts
 
 
 # ============================================================ injection plan
@@ -274,16 +418,10 @@ def sink_currents(entry: dict, groups: dict[str, list], source_ref: str):
 def _grid_edges(grid: NetGrid, rows, cols, vals):
     for l in grid.layers:
         g = 1.0 / sheet_res_ohm_sq(grid.bg.stackup.copper_thickness[l])
-        m = grid.mask[l]
-        ids = grid.ids[l]
-        h = m[:, :-1] & m[:, 1:]
-        rows.append(ids[:, :-1][h])
-        cols.append(ids[:, 1:][h])
-        vals.append(np.full(int(h.sum()), g))
-        v = m[:-1, :] & m[1:, :]
-        rows.append(ids[:-1, :][v])
-        cols.append(ids[1:, :][v])
-        vals.append(np.full(int(v.sum()), g))
+        for a, b, _ka, _kb in grid.layer_edges(l):
+            rows.append(a)
+            cols.append(b)
+            vals.append(np.full(len(a), g))
 
 
 def _barrel_edges(grid: NetGrid, cx, cy, radius, drill, span_layers,
@@ -302,8 +440,8 @@ def _barrel_edges(grid: NetGrid, cx, cy, radius, drill, span_layers,
         if common:
             ii = np.array([c[0] for c in common], dtype=int)
             jj = np.array([c[1] for c in common], dtype=int)
-            rows.append(grid.ids[la][ii, jj])
-            cols.append(grid.ids[lb][ii, jj])
+            rows.append(grid.node_ids(la, ii, jj))
+            cols.append(grid.node_ids(lb, ii, jj))
             vals.append(np.full(len(common), g_total / len(common)))
             continue
         reach = radius + 2.0 * grid.cell
@@ -441,8 +579,10 @@ def solve_grid(bg: geom.BoardGeom, entry: dict, net: str, layers: list[str],
     unknown = np.nonzero(kept & ~is_src)[0]
     deg = np.asarray(adj.sum(axis=1)).ravel()
     lap = (sparse.diags(deg) - adj).tocsr()
-    lap_uu = lap[unknown][:, unknown].tocsc()
-    v_u = spsolve(lap_uu, b[unknown])
+    lap_uu = lap[unknown][:, unknown].tocsr()
+    lay, rows, cols = grid.node_coords()
+    v_u, solver = solve_spd(lap_uu, b[unknown],
+                            (lay[unknown], rows[unknown], cols[unknown]))
     v = np.zeros(grid.n_nodes)
     v[unknown] = v_u
     drop = -v  # volts below the source
@@ -470,6 +610,7 @@ def solve_grid(bg: geom.BoardGeom, entry: dict, net: str, layers: list[str],
         "jmax": jmax, "jmax_pos": jmax_pos, "jmax_layer": jmax_layer,
         "necks": necks,
         "vias_used": vias_used, "vias_skipped": vias_skipped,
+        "solver": dict(solver, unknowns=int(len(unknown))),
         "warnings": warnings,
     }
 
@@ -479,43 +620,36 @@ def current_density(grid: NetGrid, v: np.ndarray):
     Returns (jmax, [x, y], layer, top-neck list). K on the edge between two
     cells is the edge current / cell size; a cell's K averages its incident
     edge currents per axis, so interior necks are exact and boundary cells
-    read slightly low (documented; necks are interior by construction)."""
+    read slightly low (documented; necks are interior by construction).
+    Worked per node, not per frame cell, so it costs memory in the copper."""
     h = grid.cell
     jmax, jmax_pos, jmax_layer = 0.0, None, None
     cands: list[tuple[float, tuple[float, float], str]] = []
     for l in grid.layers:
-        m = grid.mask[l]
-        if not m.any():
+        keys, n0 = grid.keys[l], grid.n0[l]
+        cnt = len(keys)
+        if not cnt:
             continue
         g = 1.0 / sheet_res_ohm_sq(grid.bg.stackup.copper_thickness[l])
-        vg = np.zeros(m.shape)
-        vg[m] = v[grid.ids[l][m]]
-        ex = (m[:, :-1] & m[:, 1:])
-        ix = np.where(ex, g * (vg[:, :-1] - vg[:, 1:]), 0.0)
-        ey = (m[:-1, :] & m[1:, :])
-        iy = np.where(ey, g * (vg[:-1, :] - vg[1:, :]), 0.0)
-        jx = np.zeros(m.shape)
-        jx[:, :-1] += 0.5 * ix
-        jx[:, 1:] += 0.5 * ix
-        jy = np.zeros(m.shape)
-        jy[:-1, :] += 0.5 * iy
-        jy[1:, :] += 0.5 * iy
-        jj = np.hypot(jx, jy) / h
-        jj[~m] = 0.0
+        half = []
+        for a, b, _ka, _kb in grid.layer_edges(l):
+            w = 0.5 * (g * (v[a] - v[b]))
+            half.append(np.bincount(a - n0, weights=w, minlength=cnt)
+                        + np.bincount(b - n0, weights=w, minlength=cnt))
+        jj = np.hypot(half[0], half[1]) / h
         peak = float(jj.max())
         if peak > jmax:
-            k = int(np.argmax(jj))
-            i, j = divmod(k, grid.nx)
+            i, j = divmod(int(keys[int(np.argmax(jj))]), grid.nx)
             jmax = peak
             jmax_pos = grid.cell_center(i, j)
             jmax_layer = l
-        ci, cj = np.nonzero(jj >= 0.3 * peak) if peak > 0 else \
-            (np.empty(0, int), np.empty(0, int))
-        vals = jj[ci, cj]
+        sel = (np.flatnonzero(jj >= 0.3 * peak) if peak > 0
+               else np.empty(0, dtype=np.int64))
+        vals = jj[sel]
         order = np.argsort(-vals, kind="stable")[:2000]
-        cands.extend((float(vals[o]),
-                      grid.cell_center(int(ci[o]), int(cj[o])), l)
-                     for o in order)
+        ci, cj = np.divmod(keys[sel[order]], grid.nx)
+        cands.extend((float(vals[o]), grid.cell_center(int(i), int(j)), l)
+                     for o, i, j in zip(order, ci, cj))
     necks: list[dict] = []
     cands.sort(key=lambda t: (-t[0], t[1], t[2]))
     for val, pos, layer in cands:
@@ -625,6 +759,8 @@ def check_net(bg: geom.BoardGeom, entry: dict):
             "refine": refine,
             "cell_mm_pair": checklib.rnd(coarse["cell"], 5),
             "cells_pair": coarse["cells"],
+            "solver": fine["solver"],
+            "solver_pair": coarse["solver"],
         },
         "resistance_mohm": checklib.rnd(r_fine * 1e3),
         "resistance_pair_mohm": [checklib.rnd(r_fine * 1e3),
@@ -686,6 +822,10 @@ def run(argv=None):
                                   "via_plating_mm": PLATING_MM,
                                   "injection": "worst-case uniform per pad "
                                                "unless source_ref/sinks given",
+                                  "solver": f"sparse LU up to "
+                                            f"{DIRECT_MAX_UNKNOWNS} unknowns, "
+                                            f"multigrid-preconditioned CG "
+                                            f"(rtol {CG_RTOL:g}) above",
                               })
     return payload, args.out
 

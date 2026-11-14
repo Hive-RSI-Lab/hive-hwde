@@ -107,8 +107,10 @@ each finding's id with one of
 dispositions, lists what is still open (a blocker or major with no
 disposition, a disposition with no `how`, a `could_stop_board` fact not
 verified), merges the tools wanted, and writes the dispositions table
-(`--md`). Exit 1 while anything is open. A board goes to the order with
-nothing open, or with the open items in the H4 packet as the person's call.
+(`--md`). Exit 1 while anything is open. Before the review is written it
+exits 0 with `nothing_to_judge`: not a pass, since nothing was reviewed. A
+board goes to the order with nothing open, or with the open items in the H4
+packet as the person's call.
 
 Re-run the gates after the fixes, then re-run the domain reviews whose
 blocks changed (a fresh reviewer reads the fix, as `fix-check.md` did on

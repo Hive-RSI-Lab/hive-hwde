@@ -250,6 +250,43 @@ def test_first_spin_bad_disposition_and_errors(tmp_path):
     assert first_spin.main(["--dir", str(tmp_path / "nope")]) == 2
 
 
+def test_a_workspace_with_no_review_yet_has_nothing_to_judge(tmp_path):
+    """A board before its first-spin review (no reports/first-spin, or an
+    empty one) has nothing to answer: exit 0 and say why, not exit 2."""
+    (tmp_path / "ws").mkdir()
+    code, rep = fs(tmp_path)
+    assert code == 0 and rep["status"] == "pass"
+    assert "no first-spin review yet" in rep["nothing_to_judge"]
+    assert rep["open"] == [] and rep["domains"] == []
+    d = tmp_path / "ws" / "reports" / "first-spin"
+    d.mkdir(parents=True)
+    (d / "eth_clk.report.json").write_text("{}", encoding="utf-8")  # not a review
+    code, rep = fs(tmp_path)
+    assert code == 0 and "no first-spin review yet" in rep["nothing_to_judge"]
+
+
+def test_no_review_yet_still_classes_the_reviewers_files(tmp_path):
+    """With no domain review, the schematic/board reviewers' files are still
+    classed, and an unclassed blocker in them is still open."""
+    rp = tmp_path / "ws" / "reports"
+    rp.mkdir(parents=True)
+    (rp / "review-board.json").write_text(json.dumps({"violations": [
+        {"check": "board-review", "severity": "error", "msg": "no keep-out"}]}),
+        encoding="utf-8")
+    code, rep = fs(tmp_path)
+    assert code == 1
+    assert [(o["kind"], o["id"]) for o in rep["open"]] == [
+        ("unclassed", "review-board:0")]
+    assert "nothing_to_judge" not in rep
+    assert "no first-spin review yet" in rep["not_judged"][0]
+
+
+def test_a_wrong_path_is_still_an_error(tmp_path):
+    (tmp_path / "empty").mkdir()
+    assert first_spin.main(["--dir", str(tmp_path / "empty")]) == 2
+    assert first_spin.main(["--workspace", str(tmp_path / "no-such-ws")]) == 2
+
+
 # ------------------------------------------------------- fault classes -> checks
 
 MODES = """modes:

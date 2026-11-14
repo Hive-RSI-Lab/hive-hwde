@@ -209,7 +209,6 @@ class NetGrid(check_irdrop.NetGrid):
     def __init__(self, bg, net, layers, cell):
         super().__init__(bg, net, layers, cell)
         self.scale = {}
-        n = 0
         for l in layers:
             parts = [p.poly for p in bg.pads_of(net, l)]
             parts += [v.poly for v in bg.vias_of(net, l)]
@@ -227,11 +226,7 @@ class NetGrid(check_irdrop.NetGrid):
                 s[self._raster(pads) & m] = PAD_BOOST
             self.mask[l] = m
             self.scale[l] = s
-            ids = np.full(m.shape, -1, dtype=np.int64)
-            ids[m] = n + np.arange(int(m.sum()))
-            n += int(m.sum())
-            self.ids[l] = ids
-        self.n_nodes = n
+        self._number()
         self._trees = {}
 
     def _burn(self, t, m, s):
@@ -264,15 +259,11 @@ class NetGrid(check_irdrop.NetGrid):
 def _edges(grid, rows, cols, vals):
     for l in grid.layers:
         g = 1.0 / check_irdrop.sheet_res_ohm_sq(grid.bg.stackup.copper_thickness[l])
-        m, ids, s = grid.mask[l], grid.ids[l], grid.scale[l]
-        h = m[:, :-1] & m[:, 1:]
-        rows.append(ids[:, :-1][h])
-        cols.append(ids[:, 1:][h])
-        vals.append(g * np.minimum(s[:, :-1][h], s[:, 1:][h]))
-        v = m[:-1, :] & m[1:, :]
-        rows.append(ids[:-1, :][v])
-        cols.append(ids[1:, :][v])
-        vals.append(g * np.minimum(s[:-1, :][v], s[1:, :][v]))
+        s = grid.scale[l].ravel()
+        for a, b, ka, kb in grid.layer_edges(l):
+            rows.append(a)
+            cols.append(b)
+            vals.append(g * np.minimum(s[ka], s[kb]))
 
 
 def laplacian(grid) -> sparse.csr_matrix:
