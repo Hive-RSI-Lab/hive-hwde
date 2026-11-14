@@ -118,7 +118,9 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
 
 The capability key (<layers>layer_<oz>oz) is derived from the BOARD: layer
 count from its (layers ...) block, copper weight from its (stackup ...) block
-(0.035 mm = 1 oz), unless --copper-oz pins it explicitly.
+(0.035 mm = 1 oz), unless --copper-oz pins it explicitly. With no stackup
+thickness, or a weight the capability table has no rules for (kept as the
+copper_oz_stackup fact), the 1 oz floors are used and not_judged says which.
 
 Severity policy: a JLCPCB manufacturing minimum that is actually violated is an
 ERROR. Where the row carries JLC's absolute floor apart from the value a design
@@ -1975,6 +1977,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         oz, oz_source = derive_copper_oz(pcb)
     else:
         oz, oz_source = float(copper_oz), "cli"
+    stackup_oz = None  # a stackup weight the table has no rules for
 
     # The BOARD's declared copper set (pure text scan) is the truth the
     # package is audited AGAINST - both for completeness and for the
@@ -2014,7 +2017,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
             rules_material = material
         if oz_source == "stackup" and rule_key(
                 n_layers, oz, rules_material) not in caps["design_rules"]:
-            oz, oz_source = 1.0, "default"  # unknown key: today's behavior
+            # unknown key: today's behavior, but the report says why (#892)
+            stackup_oz, oz, oz_source = oz, 1.0, "default"
         key, rules = pick_rules(caps, n_layers, oz, rules_material)
 
         bg = geom.load_board(pcb)
@@ -2158,6 +2162,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                  for w in lg.trace_widths), default=None),
             "min_hole_mm": min((h.diameter for h in fab.holes), default=None),
         })
+        if stackup_oz is not None:
+            facts["copper_oz_stackup"] = stackup_oz
 
         # U2 coverage (codex C7): record which families never ran and why.
         skipped_cov: dict[str, str] = {}
@@ -2206,7 +2212,12 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                     "board: " + ", ".join(pol["refs_only_in_netlist"]))
     if pol.get("status") == "checked" and not pol.get("refs_checked"):
         left.append("polarity: no part could be compared")
-    if facts.get("copper_oz_source") == "default":
+    if facts.get("copper_oz_stackup") is not None:
+        left.append(f"copper weight: the stackup gives "
+                    f"{facts['copper_oz_stackup']:g} oz, which the "
+                    f"capability table has no {facts.get('layer_count')}-layer "
+                    "rules for, so the 1 oz floors were used")
+    elif facts.get("copper_oz_source") == "default":
         left.append("copper weight: no thickness in a (stackup) block, so "
                     "the 1 oz floors were used")
     facts["not_judged"] = left
