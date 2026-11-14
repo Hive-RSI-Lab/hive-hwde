@@ -1,0 +1,14 @@
+{
+  "board": {
+    "design_settings": {
+      "rules": {
+        "min_via_diameter": 0.254,
+        "min_through_hole_diameter": 0.127,
+        "min_via_annular_width": 0.0635,
+        "min_hole_to_hole": 0.25,
+        "min_clearance": 0.1,
+        "min_track_width": 0.1
+      }
+    }
+  }
+}

@@ -28,6 +28,17 @@ For each pad, in the order given:
   - otherwise report the pad as `no spot`.
 Each via and stub is an obstacle to the pads after it.
 
+Plane balls (fan(..., in_pad_only=True), route_escape --plane-balls, #956):
+a fine-pitch ball grid's power and ground balls have no room for a
+dog-bone, so each gets one via at its centre and nothing else: no spot
+search, no join. A ball already holding a via of its net is skipped. The
+via is `ball_via` (the board's via floor unless given), and only its drill
+must sit inside the ball's copper: a 0.5 mm grid's 0.2 mm land is smaller
+than any via the fab drills, and the filled, capped via becomes the land.
+It must clear everything else as above, except its own net's SMD pads: a
+filled via drains no paste, so a decoupler's pad on the far side, under the
+ball, is no reason to keep off.
+
 fan(bg, pads, rules, ...) -> (ops, report): route_edit add_track/add_via
 ops and one dict per pad.
 """
@@ -65,16 +76,19 @@ def _p(q) -> list[float]:
 class Fanout:
     def __init__(self, bg, rules=None, *, width: float | None = None,
                  via: tuple[float, float] | None = None,
-                 via_in_pad: bool = False):
+                 via_in_pad: bool = False,
+                 ball_via: tuple[float, float] | None = None):
         self.bg = bg
         self.rules = rules or rf.board_rules(Path(bg.path), bg)
         self.obs = rf.Obstacles(bg)
         self.width = width
         self.via = via or (self.rules.via_size, self.rules.via_drill)
         self.via_in_pad = via_in_pad
-        if self.via[1] >= self.via[0]:
-            raise CheckError(f"via drill {self.via[1]} must be under its "
-                             f"size {self.via[0]}")
+        self.ball_via = ball_via or via or self.rules.via_floor
+        for size, drill in {self.via, self.ball_via}:
+            if drill >= size:
+                raise CheckError(f"via drill {drill} must be under its "
+                                 f"size {size}")
         self.cu = frozenset(bg.copper_layers)
         out = bg.outline
         self.inside = None if out is None or out.is_empty else out
@@ -94,10 +108,14 @@ class Fanout:
     def _foreign(self, it, net: str) -> bool:
         return it.net != net and net not in it.tied
 
-    def via_ok(self, at, net: str, own=None) -> bool:
+    def via_ok(self, at, net: str, own=None, via=None,
+               filled: bool = False) -> bool:
         """A via of `net` at `at` clears everything; `own` (a pad) is the
-        pad it sits in, which is not an obstacle to it."""
-        size, drill = self.via
+        pad it sits in, which is not an obstacle to it; `via` is (size,
+        drill), default the fanout's. A `filled` via drains no paste, so its
+        own net's SMD pads (a decoupler's under the ball grid) do not keep
+        it off."""
+        size, drill = via or self.via
         P = Point(at)
         r = self.rules
         if self.inside is not None and not self.inside.buffer(
@@ -119,7 +137,7 @@ class Fanout:
                     return False
                 if d - it.half - drill / 2 < r.hole_clearance + r.margin:
                     return False
-            elif it.smd and d - drill / 2 < rf.VIA_PAD_KEEP_MM:
+            elif it.smd and not filled and d - drill / 2 < rf.VIA_PAD_KEEP_MM:
                 return False
         return True
 
@@ -182,15 +200,30 @@ class Fanout:
                         return v, dist
         return None
 
-    def in_pad(self, pad, net):
+    def in_pad(self, pad, net, ball: bool = False):
         """The pad's centre, if a via of the net fits there: an SMD pad
-        whose copper holds the whole via, clear of everything else."""
+        whose copper holds the whole via (a plane ball's: the ball via's
+        drill), clear of everything else."""
         if pad.drill is not None:
             return None
+        via = self.ball_via if ball else self.via
         c = (float(pad.center[0]), float(pad.center[1]))
-        if not pad.poly.contains(Point(c).buffer(self.via[0] / 2)):
+        if not pad.poly.contains(Point(c).buffer(via[1 if ball else 0] / 2)):
             return None
-        return c if self.via_ok(c, net, own=pad) else None
+        return c if self.via_ok(c, net, own=pad, via=via,
+                                filled=ball) else None
+
+    def _has_via(self, pad, net, skip: float, ball: bool) -> bool:
+        """A via of the net already fans the pad out: within `skip` of its
+        centre, or for a plane ball, on the ball's own copper (a neighbour
+        ball's via half a pitch away does not count)."""
+        P = Point(pad.center)
+        pts = [Point(v.at) for v in self.bg.vias_of(net=net)]
+        pts += [it.shape for it in self.obs.added
+                if it.net == net and it.shape.geom_type == "Point"]
+        if ball:
+            return any(pad.poly.intersects(q) for q in pts)
+        return any(q.distance(P) < skip for q in pts)
 
     def join(self, pad, net, layer, w, reach):
         """A straight, 45-degree or L path to own copper on the layer."""
@@ -223,7 +256,11 @@ class Fanout:
         return None
 
     def fan(self, specs: list[str], *, skip: float = SKIP_MM,
-            reach: float = JOIN_MM) -> tuple[list[dict], list[dict]]:
+            reach: float = JOIN_MM, in_pad_only: bool = False
+            ) -> tuple[list[dict], list[dict]]:
+        if in_pad_only and not self.via_in_pad:
+            raise CheckError("plane balls take a via in the pad: a filled, "
+                             "capped via the fab must offer (via_in_pad)")
         ops: list[dict] = []
         report: list[dict] = []
         for spec in specs:
@@ -246,12 +283,20 @@ class Fanout:
                 continue
             layer = on[0]
             row["layer"] = layer
-            if any(math.dist(v.at, pad.center) < skip
-                   for v in self.bg.vias_of(net=net)) or any(
-                    it.net == net and it.shape.geom_type == "Point"
-                    and it.shape.distance(Point(pad.center)) < skip
-                    for it in self.obs.added):
+            if self._has_via(pad, net, skip, in_pad_only):
                 row["result"] = "has via"
+                continue
+            if in_pad_only:
+                vip = self.in_pad(pad, net, ball=True)
+                if vip is None:
+                    row["result"] = "no spot"
+                    continue
+                new = [{"op": "add_via", "at": _p(vip),
+                        "size": self.ball_via[0], "drill": self.ball_via[1],
+                        "net": net}]
+                row.update(result="via in pad", at=_p(vip))
+                self._commit(new)
+                ops += new
                 continue
             w = self.width or self.rules.width(net)
             fp = self.bg.footprints.get(ref, {})

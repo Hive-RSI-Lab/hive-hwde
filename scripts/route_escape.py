@@ -105,6 +105,16 @@ options.via_fill_epoxy) or the run stops, and each such via is set filled
 and capped, so fab_export's VIA-FILL.md carries it to the order. --out-ops
 writes those fill ops under "then", to apply after "ops".
 
+Plane balls (#956): --plane-balls U301 --plane-nets +0V75,+1V2 --via-in-pad
+puts one filled, capped via at the centre of each ball of U301 on those
+nets, and leaves every other ball to the fan-out. A 0.5 mm field has no
+room for dog-bones, so route_escape leaves its plane balls and stitch_vias
+skips ball grids; this is the step for them once the fab option is taken
+(the same --via-in-pad gate). The via is --fan-via or the board's via
+floor; only its drill must sit inside the ball (lib/padfanout.py). A ball
+that already holds a via of its net is skipped; one with no room is a
+pad_fanout_incomplete warning. It may run with --pads in one pass.
+
 Facts: per BGA the geometry, budget, method, requested / escaped / kept
 nets, the balls left for the routers, via-in-pad stripped, caps moved; the
 DRU rules written; the DRC delta.
@@ -662,8 +672,16 @@ def run(argv: list[str] | None = None):
                          "board's most common through via)")
     ap.add_argument("--out-ops", default=None,
                     help="--pads: write the route_edit ops here")
+    ap.add_argument("--plane-balls", default=None,
+                    help="comma list of ball-grid refs whose --plane-nets "
+                         "balls each get a filled via in the pad; needs "
+                         "--via-in-pad (#956)")
+    ap.add_argument("--plane-nets", default=None,
+                    help="--plane-balls: comma list of the plane nets")
     args = ap.parse_args(argv)
-    if args.pads:
+    if bool(args.plane_balls) != bool(args.plane_nets):
+        raise CheckError("--plane-balls and --plane-nets go together")
+    if args.pads or args.plane_balls:
         return pad_fanout(args)
 
     pcb = Path(args.pcb).resolve()
@@ -928,6 +946,26 @@ def filled_via_layers() -> set[int]:
     return {int(k) for k in table}
 
 
+def plane_ball_specs(bg, refs: list[str], nets: list[str]) -> list[str]:
+    """REF.PAD for every pad of `refs` on `nets`, in pad order; a ref with
+    no pads, or a net on none of their pads, is a typo and stops the run."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for ref in refs:
+        pads = bg.pads_of(ref=ref)
+        if not pads:
+            raise CheckError(f"--plane-balls {ref}: no such part on the board")
+        for p in sorted(pads, key=lambda p: (len(p.number), p.number)):
+            if p.net in nets:
+                out.append(f"{ref}.{p.number}")
+                seen.add(p.net)
+    missing = [n for n in nets if n not in seen]
+    if missing:
+        raise CheckError(f"--plane-nets {', '.join(missing)}: on no ball of "
+                         f"{', '.join(refs)}")
+    return out
+
+
 def pad_fanout(args):
     """--pads: lib/padfanout's vias and stubs, applied with route_edit.
     With --via-in-pad a via may sit in its pad (#940): only on a layer count
@@ -959,9 +997,19 @@ def pad_fanout(args):
                 f"{', '.join(map(str, sorted(offered))) or 'no'}-layer "
                 f"boards (jlc_pricing.yaml options.via_fill_epoxy); this "
                 f"board has {n} copper layers")
-    specs = [s.strip() for s in args.pads.split(",") if s.strip()]
-    ops, rows = padfanout.Fanout(bg, width=args.fan_width, via=via,
-                                 via_in_pad=vip).fan(specs)
+    if args.plane_balls and not vip:
+        raise CheckError("--plane-balls puts a via in each ball's pad, a paid "
+                         "fab option (filled, capped vias): add --via-in-pad "
+                         "once that option is taken")
+    specs = [s.strip() for s in (args.pads or "").split(",") if s.strip()]
+    fo = padfanout.Fanout(bg, width=args.fan_width, via=via, via_in_pad=vip)
+    ops, rows = fo.fan(specs)
+    if args.plane_balls:
+        balls = plane_ball_specs(
+            bg, [r.strip() for r in args.plane_balls.split(",") if r.strip()],
+            [n.strip() for n in args.plane_nets.split(",") if n.strip()])
+        bops, brows = fo.fan(balls, in_pad_only=True)
+        ops, rows = ops + bops, rows + brows
     # a selector sees the board as it was before its list ran, so the
     # vias in pads are filled by a second list once they exist
     fill = [{"op": "fill_vias", "kind": "via", "net": r["net"],
