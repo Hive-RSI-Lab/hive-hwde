@@ -113,6 +113,13 @@ def _check_bom_sync(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
     return ["check_bom_sync.py", "--pcb", str(repo / b[rev]["pcb"]), "--live"]
 
 
+def _check_thermal(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    """On the board alone: with no thermal entry it screens the power ICs
+    reference/thermal_parts.yaml knows (#884)."""
+    return ["check_thermal.py", "--pcb", str(repo / b[rev]["pcb"]),
+            "--constraints", str(empty)]
+
+
 def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
     """On the board, with the netlist kicad-cli exports from its schematic
     (what the pipeline puts beside an hwde board)."""

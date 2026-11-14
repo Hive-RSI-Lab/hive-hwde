@@ -6064,11 +6064,14 @@
    "gate": "verify",
    "check": "check_thermal",
    "kind": "thermal_area",
-   "net": null,
+   "net": "GND",
    "refs": [
     "U5"
    ],
-   "pos": null,
+   "pos": [
+    98.0,
+    55.75
+   ],
    "verdict": "real",
    "reason": "erratum: areas reach over 50 C at 4 A per phase and over-temperature at 4.5 A; it needs front copper and thermal vias",
    "source": "https://github.com/brown-studios/minuet/blob/1e43aa3df01b33522db23f4b2139f89b5689da99/hardware/minuet/v3/design-and-errata.md"

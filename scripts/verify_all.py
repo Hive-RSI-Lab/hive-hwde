@@ -138,8 +138,9 @@ BUILTIN_CHECKS = [
                         if a.get("constraints") else [])},
     {"name": "check_creepage", "needs": ["constraints"],
      "args": lambda a: ["--constraints", a["constraints"]]},
-    {"name": "check_thermal", "needs": ["constraints"],
-     "args": lambda a: ["--constraints", a["constraints"]]},
+    {"name": "check_thermal", "needs": [],
+     "args": lambda a: (["--constraints", a["constraints"]]
+                        if a.get("constraints") else [])},
     {"name": "check_silk", "needs": [],
      "args": lambda a: []},
     {"name": "check_route_style", "needs": [],
