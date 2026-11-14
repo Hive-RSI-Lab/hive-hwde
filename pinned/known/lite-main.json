@@ -1128,6 +1128,70 @@
    "kind": "rating_over_voltage",
    "verdict": "real",
    "reason": "real: VBUS is 21 V (constraints: PD 20 V +5%) and the HRO TYPE-C-31-M-12 drawing (2020.12.08, REV A) p.1 Note 4 rates every contact 'VOLTAGE RATING: 20V'; a 20 V PD contract runs the receptacle above its rating"
+  },
+  {
+   "gate": "verify",
+   "check": "mating",
+   "net": null,
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    105.665,
+    66.023
+   ],
+   "kind": "mating_faces_inward",
+   "verdict": "real",
+   "reason": "J4 (DIBO DB128V-5.08, 4-way screw terminal) has its wire entries facing into the board: the DB128V datasheet, the silk arrows and the 3D render agree; a board fault the new screw_terminal_side row (#951) now reads, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "mating",
+   "net": null,
+   "refs": [
+    "C26",
+    "C50",
+    "C51",
+    "C52",
+    "C53",
+    "C54",
+    "C55",
+    "C59",
+    "C60",
+    "C61",
+    "C62",
+    "C63",
+    "C64",
+    "C65",
+    "C66",
+    "C67",
+    "C69",
+    "C70",
+    "C71",
+    "C80",
+    "J4",
+    "L2",
+    "L3",
+    "L4",
+    "R50",
+    "R51",
+    "R52",
+    "R54",
+    "R62",
+    "R63",
+    "R65",
+    "R68",
+    "SW3",
+    "U8",
+    "U9"
+   ],
+   "pos": [
+    105.665,
+    114.3013
+   ],
+   "kind": "mating_zone_blocked",
+   "verdict": "real",
+   "reason": "follows from J4's inward wire entries: the wires' path runs across the board's parts"
   }
  ]
 }
