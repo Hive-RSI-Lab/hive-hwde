@@ -48,3 +48,30 @@ mutants:
     expect:
       kind: rating_over_voltage
       ref: C7
+  groundless-driver-below-rating:
+    board: blinky2
+    script: mutations/groundless_driver_below_rating.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault + board edits: J1 carries -5V; U1 is extracted with its
+      VDD pins on +3V3, pin 15 a push-pull output onto /LED (no stated
+      voltage) and no ground pin, so its low side is the board's -5V rail,
+      not 0 V (#1006); C7, moved onto /LED and extracted as an input rated
+      -0.3 V min, is below its rating at the -5..3.3 V bound
+    expect:
+      kind: rating_reverse_polarity
+      ref: C7
+  pulled-output-over-rating:
+    board: blinky2
+    script: mutations/pulled_output_over_rating.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault + board edits: U1's pin 15 is typed a push-pull output
+      onto /LED on its 3.3 V rail, but R2 pulls /LED up from /LED_A, which
+      D1 (extracted as a driver, first pad on +5V) holds on a 0..5 V rail; the
+      pull-up past U1's rail says the pin is open drain in fact, so /LED
+      lies in 0..5 V (#1006); C7, moved onto /LED and extracted as a 3.6 V
+      input, is over its rating at that bound
+    expect:
+      kind: rating_over_voltage
+      ref: C7

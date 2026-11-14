@@ -1,0 +1,16 @@
+{
+  "mpn": "SEEDED-DRV5V",
+  "lcsc": "C991009",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "VDD",
+      "type": "power_in"
+    },
+    {
+      "pin": "2",
+      "name": "OUT",
+      "type": "output"
+    }
+  ]
+}
