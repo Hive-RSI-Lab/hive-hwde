@@ -91,6 +91,19 @@ def test_halving_fine_really_refines_the_antenna():
     assert cuts[1] > 1.7 * cuts[0]
 
 
+def test_a_feed_beside_a_conductor_edge_stays_on_the_mesh():
+    """#904: a feed within MERGE * fine of the edge lines lost its own line
+    to them and the port drove nothing, found only after the whole run."""
+    for fx in (-15.25, -15.05, -14.55):
+        geo, feed = patch_geo(feed_x=fx)
+        csx, _ = ea.deck(geo, feed, F, F / 2, [F], fine=1.0)
+        assert any(abs(fx - x) < 1e-6 for x in csx.lines["x"]), fx
+    # two feed points nearer than a cell can't both have a line: refuse now
+    geo, feed = dipole_geo(g=0.5)
+    with pytest.raises(ValueError, match="not on a mesh line"):
+        ea.deck(geo, feed, F, F / 2, [F], fine=2.0)
+
+
 def test_the_dielectric_is_the_outline_not_the_domain():
     geo, feed = patch_geo()
     csx, where = ea.deck(geo, feed, 2.4e9, 1.2e9, [2.4e9], fine=1.0)
