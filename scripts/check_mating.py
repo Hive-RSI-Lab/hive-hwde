@@ -89,15 +89,7 @@ def run(argv=None):
                       if CONNECTOR_REF.match(r) and r not in judged)
     left = [f"{r} ({matinglib._name(model.footprints[r].fpid)})"
             for r in unjudged]
-    edge = []
-    for r in unjudged:
-        f = model.footprints[r]
-        gap = matinglib.edge_gap_mm(model, f)
-        if gap is not None and gap <= matinglib.EDGE_NEAR_MM:
-            c = f.center_abs()
-            edge.append({"ref": r, "footprint": matinglib._name(f.fpid),
-                         "pos": [checklib.rnd(c[0]), checklib.rnd(c[1])],
-                         "edge_gap_mm": checklib.rnd(gap, 2)})
+    edge = matinglib.edge_unjudged(model, facts)
     return checklib.report(
         SCRIPT, str(pcb), violations, connectors=facts, not_judged=left,
         edge_unjudged=edge,

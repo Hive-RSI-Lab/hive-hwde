@@ -135,3 +135,50 @@ def test_unknown_edge_connector_fails_release_and_a_waiver_clears_it(
     m = _merged(pcb, tmp_path, strict=False)
     assert not [v for v in m["violations"]
                 if v["kind"] == "mating_edge_unjudged"]
+
+
+# #954: the same list, as a place-gate warning, while turning it is cheap
+import place_metrics  # noqa: E402
+
+
+def _place(pcb):
+    return place_metrics.run(["--pcb", str(pcb)])[0]
+
+
+def _edge_warnings(r):
+    return [v for v in r["violations"] if v["kind"] == "mating_edge_unjudged"]
+
+
+def test_planted_unknown_edge_connector_is_flagged_at_placement(tmp_path):
+    """The planted fault: the laptop's J6 under a name no family knows, at
+    the edge - flagged by the place gate, before routing, as a warning."""
+    r = _place(_unlisted(tmp_path))
+    w = _edge_warnings(r)
+    assert len(w) == 1, r["violations"]
+    assert w[0]["refs"] == ["J6"] and w[0]["severity"] == "warning"
+    assert w[0]["check"] == "place"
+    assert w[0]["footprint"] == "SOCKET-SMD_8P-UNLISTED"
+    assert w[0]["edge_gap_mm"] <= matinglib.EDGE_NEAR_MM
+    # the same part check_mating lists for the release gate
+    assert [e["ref"] for e in _mating(_unlisted(tmp_path))["edge_unjudged"]] \
+        == ["J6"]
+    # a warning: placement is not held up on it
+    assert not [v for v in r["violations"] if v["severity"] == "error"
+                and v["kind"] == "mating_edge_unjudged"]
+    assert "mating_edge_unjudged" in place_metrics.PLACE_FAMILIES["mating"]
+
+
+def test_known_or_inner_connector_gets_no_placement_warning(tmp_path):
+    assert _edge_warnings(_place(_sd(tmp_path, 0))) == []
+    pcb = _board(tmp_path, _fp("J6", "SOCKET-SMD_8P-UNLISTED", 15.0, 10.0,
+                               cy=(-2, -2, 2, 2)))
+    assert _edge_warnings(_place(pcb)) == []
+
+
+def test_the_note_is_not_counted_as_illegal_placement(tmp_path):
+    """The bench's legality score feeds placement tuning: the note must not
+    pay a placer to pull a connector off the edge."""
+    r = _place(_unlisted(tmp_path))
+    assert _edge_warnings(r)
+    assert not [v for v in place_metrics.illegal(r["violations"])
+                if v["kind"] == "mating_edge_unjudged"]

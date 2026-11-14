@@ -404,7 +404,7 @@ def check_placement(bounds: dict, pcb: Path | None, decoupling) -> list:
         argv += ["--decoupling", str(decoupling)]
     payload, _ = place_metrics.run(argv)
     m = payload["metrics"]
-    viol = payload["counts"]["total"]
+    viol = len(place_metrics.illegal(payload["violations"]))
     cross = m["crossings_signal"]["count"]
     out = [_check(ids[0], "layout", le_score(viol, 0), value=viol, bound=0),
            _check(ids[1], "layout",

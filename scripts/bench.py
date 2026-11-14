@@ -463,6 +463,8 @@ def score_p6(ctx):
         argv += ["--decoupling", str(ctx["files"]["decoupling"])]
     payload, _ = place_metrics.run(argv)
     m = payload["metrics"]
+    # notes such as an unjudged edge connector (#954) are not illegality
+    illegal = place_metrics.illegal(payload["violations"])
     # decap gradient (T6 P6A-1): caps the sidecar EXPLICITLY classes "bulk"
     # have no distance requirement (bulk-at-entry is a design position, e.g.
     # pd-trigger's VBUS caps at the connector).  The exemption requires the
@@ -485,8 +487,8 @@ def score_p6(ctx):
                "congestion_max": m["congestion"]["max"],
                "congestion_signal_max": m["congestion_signal_max"],
                "congestion_mean_nonzero": m["congestion"]["mean_nonzero"],
-               "violations_total": payload["counts"]["total"],
-               "by_kind": _kinds(payload["violations"]),
+               "violations_total": len(illegal),
+               "by_kind": _kinds(illegal),
                "decap_worst_mm": decap_worst,
                "utilization": m["utilization"]["ratio"]}
     # penalty KEY names unchanged (benchlib.WEIGHTS untouched); the crossing/
