@@ -23,7 +23,10 @@ standard_headers, a mate whose pinout is a standard):
    below, whose pad pattern seen from above is the mirror of the mate's: a
    footprint numbered for F.Cu (PinHeader_2x20) flipped to the back. No
    rotation mates it; the odd and even rows swap (digits v1 J1). A connector
-   in a declared pair is left to the pair rules.
+   in a declared pair is left to the pair rules. Each header judged is in the
+   standard_headers fact (a run that judged one is not nothing_to_judge,
+   #893); one whose pins 1-3 aren't the two-row pattern is named in
+   not_judged.
 
 MECH-06, on this board alone:
  - mate_unkeyed_rail_swap: two connectors with the same footprint in an
@@ -353,7 +356,14 @@ def standard_match(pads, std: dict) -> dict | None:
     return hits
 
 
-def standard_violations(model, table: dict, declared: set) -> list[dict]:
+def standard_violations(model, table: dict, declared: set,
+                        judged: list | None = None,
+                        left: list | None = None) -> list[dict]:
+    """Back-side headers that match a standard and face down mirrored.
+
+    judged gets each header whose handedness was read (pass or fail), so
+    a run that checked one is not nothing_to_judge (#893); left gets each
+    match whose handedness couldn't be read."""
     out = []
     for fp in sorted(model.footprints.values(), key=lambda f: f.ref):
         if fp.side != "back" or fp.ref in declared:
@@ -364,7 +374,17 @@ def standard_violations(model, table: dict, declared: set) -> list[dict]:
             if hits is None:
                 continue
             h = handedness(pads, float(std["pitch_mm"]), table["tol"])
-            if h is None or h == std["face_up_handedness"]:
+            if h is None:
+                if left is not None:
+                    left.append(
+                        f"{fp.ref} ({fp.fpid.split(':')[-1]}) on B.Cu matches "
+                        f"a {std['title']}'s supply pins but its pins 1-3 "
+                        "aren't its two-row pattern, so whether it is "
+                        "mirrored was not judged")
+                break
+            if judged is not None:
+                judged.append(fp.ref)
+            if h == std["face_up_handedness"]:
                 break
             # rows swap: pin 2k-1 meets the mate's pin 2k and back
             nets = {p[0]: p[1] for p in pads}
@@ -474,19 +494,23 @@ def run(argv=None):
         Path(args.wireviz).write_text(
             yaml.safe_dump(cablelib.wireviz(cables), sort_keys=False),
             encoding="utf-8")
+    judged: list = []
+    unread: list = []
     violations += standard_violations(
-        model, table, {p.get("ref") for p in pairs})
+        model, table, {p.get("ref") for p in pairs}, judged, unread)
     violations += unkeyed_violations(model, table)
     for v in violations:
         v["check"] = "mate_pins"
     groups, left = identical_connectors(model, table)
     left += [f"{f['ref']} <-> {f['mate_ref']}: no pin has a net on both sides"
-             for f in facts if not f["compared"]]
+             for f in facts if not f["compared"]] + unread
     compared = any(f["compared"] for f in facts)
     return checklib.report(
-        SCRIPT, str(pcb), violations, pairs=facts, not_judged=left,
-        nothing_to_judge=None if compared or groups else
-        "no mating_pairs compared and no identical unkeyed connectors"), args.out
+        SCRIPT, str(pcb), violations, pairs=facts, standard_headers=judged,
+        not_judged=left,
+        nothing_to_judge=None if compared or groups or judged else
+        "no mating_pairs compared, no identical unkeyed connectors and no "
+        "standard header on B.Cu"), args.out
 
 
 def main(argv=None) -> int:

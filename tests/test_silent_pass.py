@@ -243,7 +243,29 @@ def _mate(tmp_path, body, cons=None):
 
 def test_no_pairs_and_no_identical_connectors_is_nothing_to_judge(tmp_path):
     p = _mate(tmp_path, mate_fp("J1", HDR4, 5, 5, ["+5V", "A", "B", "GND"]))
-    assert "no mating_pairs" in p["nothing_to_judge"]
+    assert "no standard header on B.Cu" in p["nothing_to_judge"]
+
+
+def test_a_back_side_standard_header_that_was_judged_is_not_nothing(tmp_path):
+    """#893: the B.Cu header rule ran and passed, so this is a pass."""
+    from test_mate_pins import _pi_board
+    pcb = _pi_board(tmp_path, False)
+    p, _ = check_mate_pins.run(["--pcb", str(pcb)])
+    assert not p["violations"]
+    assert "nothing_to_judge" not in p
+    assert p["standard_headers"] == ["J1"]
+
+
+def test_a_standard_header_off_its_pattern_is_named_not_passed(tmp_path):
+    """Pi nets on a 1x40 row: the mirror can't be read, so it is not judged."""
+    import mech_05_pi_header_mirrored as m
+    nets = [m.NETS.get(str(i + 1)) for i in range(40)]
+    p = _mate(tmp_path, mate_fp("J1", "Vendor:Row_1x40", 5, 5, nets,
+                                layer="B.Cu"))
+    assert not p["violations"]
+    assert "J1 (Row_1x40) on B.Cu matches" in _text(p)
+    assert "not judged" in _text(p)
+    assert "nothing_to_judge" in p
 
 
 def test_identical_unkeyed_connectors_are_judged(tmp_path):
