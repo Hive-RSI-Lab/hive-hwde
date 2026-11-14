@@ -1467,7 +1467,7 @@ def run_audit(netlist: Path, constraints_path: Path | None,
     power_undeclared is dropped, since with nothing declared every rail
     would fire."""
     parsed = parse_netlist(netlist)
-    if not parsed["components"]:
+    if not parsed["components"] and not parsed["nets"]:
         # an empty export is no clean pass (#1023)
         payload = checklib.report(
             SCRIPT, str(netlist), [], mode="audit",
