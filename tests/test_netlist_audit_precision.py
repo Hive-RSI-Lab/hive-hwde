@@ -10,6 +10,7 @@ quiet while the second still fires:
                       CPVDD, VDDA, HPVDD) the symbols type passive
   power_no_consumers  ultra-front /BL_K: backlight cathode switched by Q1
   power_undeclared    ultra-front /IR_VCC: an RC-filtered tap of +3V3
+  power_undeclared    haos-voice /power_in/BUCK_BOOT: a buck's bootstrap net
   diffpair_unpaired   ultra-front /FRONT_INT_N: an active-low interrupt
 """
 import json
@@ -210,6 +211,48 @@ def test_tap_of_an_undeclared_net_or_through_a_cap_still_fires(tmp_path):
     p2 = _audit(tmp_path, _ir("C9", "+3V3"), cons, tag="u2")
     for p in (p1, p2):
         assert _fired(p, "power_undeclared") == [("/IR_VCC", ("U2",))]
+
+
+# ------------------------------------------------------------ bootstrap net
+
+def _boot(cap_to, extra=()):
+    """haos-voice U102 (TPS56637): BOOT (7) through C113 to SW (6)."""
+    return {"/BUCK_BOOT": [("C113", "1", "passive"),
+                           ("U102", "7", "power_in", "BOOT"), *extra],
+            cap_to: [("C113", "2", "passive"), ("L101", "1", "passive"),
+                     ("U102", "6", "passive", "SW")],
+            "+9V": [("U102", "2", "power_in", "VIN"), ("R9", "1", "passive")],
+            "/OTHER": [("R9", "2", "passive")],
+            "GND": [("U102", "3", "power_in", "PGND")]}
+
+
+def test_bootstrap_net_rides_on_the_switch_node(tmp_path):
+    for i, (name, func) in enumerate((("BOOT", "SW"), ("BST", "LX"),
+                                      ("BS", "PH"))):
+        nets = _boot("/BUCK_SW")
+        nets["/BUCK_BOOT"][1] = ("U102", "7", "power_in", name)
+        nets["/BUCK_SW"][2] = ("U102", "6", "passive", func)
+        payload = _audit(tmp_path, nets, {"power": [
+            {"net": "+9V", "current_a": 1.0}]}, tag=f"b{i}")
+        assert _fired(payload, "power_undeclared") == [], name
+
+
+def test_boot_pin_not_on_its_own_switch_node_still_fires(tmp_path):
+    cons = {"power": [{"net": "+9V", "current_a": 1.0}]}
+    # the cap goes to a net without the part's switch pin
+    nets = _boot("/BUCK_SW")
+    nets["/BUCK_SW"] = nets["/BUCK_SW"][:2]
+    nets["/BUCK_SW2"] = [("U102", "6", "passive", "SW")]
+    p1 = _audit(tmp_path, nets, cons, tag="n1")
+    # something else hangs on the boot net
+    p2 = _audit(tmp_path, _boot("/BUCK_SW", [("R9", "3", "passive")]),
+                cons, tag="n2")
+    # a plain supply pin, not a boot pin, through a cap to SW
+    nets3 = _boot("/BUCK_SW")
+    nets3["/BUCK_BOOT"][1] = ("U102", "7", "power_in", "VCC")
+    p3 = _audit(tmp_path, nets3, cons, tag="n3")
+    for p in (p1, p2, p3):
+        assert _fired(p, "power_undeclared") == [("/BUCK_BOOT", ("U102",))]
 
 
 # ------------------------------------------------------------ active-low _N

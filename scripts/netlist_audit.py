@@ -32,7 +32,9 @@ schematic-level structural problems BEFORE board work starts:
    board_init with no net at all and nothing else reports them (row 68).
  - power_undeclared (warning): a net feeding power_in pins that is neither
    declared (power[] / voltages[]) nor ground-named (GND*/;*GND/VSS*/0V),
-   nor a tap of a declared rail through a 2-pin R/L/bead (an RC sub-rail).
+   nor a tap of a declared rail through a 2-pin R/L/bead (an RC sub-rail),
+   nor a regulator's bootstrap net (a BOOT/BS pin and one 2-pin cap to the
+   same part's switch pin: it rides on the switch node, no rail to declare).
  - dangling_net (warning): a single-pin net not named unconnected-* - the
    classic label-typo signature (label misspelled on one stub).
  - ground_island (warning): a ground-named net (not chassis/earth/shield)
@@ -909,6 +911,39 @@ def _filtered_from(net: str, members: list[dict],
     return sorted(out)
 
 
+# a regulator's bootstrap pin and its switch node, by name: the same shape
+# check_ratings covers by rule (bootstrap_net), so the two checks agree
+_BOOT_PIN_RE = re.compile(r"^(BS|BOOT)")
+_SWITCH_PIN_RE = re.compile(r"^(OUT|SW|LX|PH)")
+
+
+def _bootstrap_net(net: str, members: list[dict],
+                   comp_pins: dict[str, dict[str, str]],
+                   nets: dict[str, list]) -> bool:
+    """A buck's bootstrap net (TPS56637 BOOT): one BOOT/BS pin and one 2-pin
+    capacitor, whose other pin is on a net that holds the same part's
+    switch pin (SW/LX/PH/OUT). Its voltage is the switch node plus the
+    part's own drive, so it is no rail to declare."""
+    if len(members) != 2:
+        return False
+    boot = next((m for m in members
+                 if _base_type(m["pintype"]) == "power_in"
+                 and _BOOT_PIN_RE.match((m.get("pinfunction") or "").upper())),
+                None)
+    cap = next((m for m in members if m is not boot), None)
+    if boot is None or cap is None or not re.match(r"^C\d", cap["ref"] or ""):
+        return False
+    pins = comp_pins.get(cap["ref"], {})
+    if len(pins) != 2:
+        return False
+    other = next((n for p, n in pins.items() if p != cap["pin"]), None)
+    if other is None or other == net:
+        return False
+    return any(m["ref"] == boot["ref"] and m["pin"] != boot["pin"]
+               and _SWITCH_PIN_RE.match((m.get("pinfunction") or "").upper())
+               for m in nets.get(other, []))
+
+
 def _series_escapes(rail: str, members: list[dict],
                     comp_pins: dict[str, dict[str, str]]) -> list[str]:
     """2-pin members whose far pin leaves the rail through a non-ground,
@@ -1053,6 +1088,8 @@ def audit(parsed: dict, constraints: dict,
         if feeders and _filtered_from(name, nets[name], comp_pins,
                                       declared_all):
             continue  # a filtered tap of a declared rail is that rail
+        if feeders and _bootstrap_net(name, nets[name], comp_pins, nets):
+            continue  # rides on the part's own switch node
         if feeders:
             v("warning", "power_undeclared", name,
               sorted({m["ref"] for m in feeders}),
