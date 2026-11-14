@@ -43,4 +43,4 @@ what pcb-flow's checks do with the first revision. Written by
 
 ## Count
 
-15 defects: 11 caught, 1 caught_with_constraints, 2 missed, 1 not_static.
+15 defects: 12 caught, 2 missed, 1 not_static.

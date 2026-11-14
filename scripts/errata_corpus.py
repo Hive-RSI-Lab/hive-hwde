@@ -19,7 +19,8 @@ netlist_audit on the schematic, check_mate_pins and check_current on the
 board, check_straps on the board with the netlist kicad-cli exports from the
 schematic, check_connector_fit and check_silk on the board (no parts/),
 check_bom_sync on the board with --live (the package of each LCSC part
-comes from JLC's record, as nothing in the foreign tree holds it). A
+comes from JLC's record, as nothing in the foreign tree holds it), check_thermal on the board
+(the power ICs thermal_parts.yaml knows). A
 catch for another script is reported as not run.
 """
 from __future__ import annotations
@@ -142,7 +143,7 @@ RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
            "check_current": _check_current, "check_straps": _check_straps,
            "check_bom_sync": _check_bom_sync,
            "check_connector_fit": _check_connector_fit,
-           "check_silk": _check_silk}
+           "check_silk": _check_silk, "check_thermal": _check_thermal}
 
 
 def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
