@@ -20,8 +20,10 @@ board, check_straps on the board with the netlist kicad-cli exports from the
 schematic, check_connector_fit and check_silk on the board (no parts/),
 check_bom_sync on the board with --live (the package of each LCSC part
 comes from JLC's record, as nothing in the foreign tree holds it), check_thermal on the board
-(the power ICs thermal_parts.yaml knows). A
-catch for another script is reported as not run.
+(the power ICs thermal_parts.yaml knows), and dfm's shipped-CPL check on the
+CPL a revision published (its `cpl:`, the file the designer sent the
+assembler), with that CPL's LCSC models fetched live into the cache beside a
+copy of it. A catch for another script is reported as not run.
 """
 from __future__ import annotations
 
@@ -68,7 +70,8 @@ def repo_dir(cache: Path, b: dict) -> Path:
 
 def fetch(cache: Path, b: dict) -> None:
     dest = repo_dir(cache, b)
-    dirs = sorted({str(Path(b[r]["sch"]).parent) for r in ("rev_a", "rev_b")})
+    dirs = sorted({str(Path(b[r][k]).parent) for r in ("rev_a", "rev_b")
+                   for k in ("sch", "cpl") if b[r].get(k)})
     if not dest.exists():
         dest.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "clone", "-q", "--filter=blob:none", "--no-checkout",
@@ -137,13 +140,33 @@ def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
             "--netlist", str(net)]
 
 
+def _dfm(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    """dfm's shipped-CPL check on the CPL this revision published (`cpl:`).
+    dfm judges a foreign CPL only with its models kept beside it (else its
+    verdicts would hang on whatever this machine has cached), so the CPL is
+    copied into the run dir with an easyeda/ beside it that the check fills
+    live and later runs reuse. Only the placement group runs: the catch is a
+    CPL row, and the board's own copper rules are other checks' to judge."""
+    import shutil
+    src = b[rev].get("cpl")
+    if not src:
+        raise SystemExit(f"{b['id']} {rev}: a dfm catch needs the revision's cpl:")
+    stage = empty.parent / f"{rev}-cpl"
+    (stage / "easyeda").mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(repo / src, stage / "CPL.csv")
+    return ["dfm_check.py", "--pcb", str(repo / b[rev]["pcb"]),
+            "--cpl", str(stage / "CPL.csv"), "--no-polarity",
+            "--skip", "copper,drill,silk,castellation,zone_fill,netlist"]
+
+
 # script -> its argv on one revision (empty constraints: what hwde reads
 # before anyone has written one)
 RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
            "check_current": _check_current, "check_straps": _check_straps,
            "check_bom_sync": _check_bom_sync,
            "check_connector_fit": _check_connector_fit,
-           "check_silk": _check_silk, "check_thermal": _check_thermal}
+           "check_silk": _check_silk, "check_thermal": _check_thermal,
+           "dfm": _dfm}
 
 
 def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:

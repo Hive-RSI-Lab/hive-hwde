@@ -62,9 +62,11 @@ boards:
   commit: 3462f162f80e11c78705218441af37639d87bfdc
   licence: Apache-2.0
   rev_a: {name: v0.2, sch: pcb/fabricated-boards/v0.2/kicad/pcb.kicad_sch,
-          pcb: pcb/fabricated-boards/v0.2/kicad/pcb.kicad_pcb}
+          pcb: pcb/fabricated-boards/v0.2/kicad/pcb.kicad_pcb,
+          cpl: pcb/fabricated-boards/v0.2/positions.csv}
   rev_b: {name: mainboard-v0.3, sch: pcb/fabricated-boards/mainboard-v0.3/kicad/pcb.kicad_sch,
-          pcb: pcb/fabricated-boards/mainboard-v0.3/kicad/pcb.kicad_pcb}
+          pcb: pcb/fabricated-boards/mainboard-v0.3/kicad/pcb.kicad_pcb,
+          cpl: pcb/fabricated-boards/mainboard-v0.3/positions.csv}
   source: pcb/fabricated-boards/v0.2/errata.md
   defects:
   - id: oasis-1
@@ -88,13 +90,17 @@ boards:
     summary: MISTER1 connector placed 180 deg off at JLC assembly
     source_quote: "the part on the jlcpcb order is rotated 180 from what I have in my pcb layout"
     fault_class: DFA (CPL rotation)
-    verdict: missed
+    verdict: caught
+    catch: {script: dfm, kind: cpl_rotation, refs: [mister1]}
     note: >-
-      The corpus run reads the clone's KiCad files only, not the CPL. The
-      board did publish the CPL it sent JLC (v0.2/positions.csv): pinned as
-      oasis-v0-2/fab/CPL.csv, dfm checks it with no parts.json and finds
-      mister1 (a keyed JST-PH) 180 deg off (#880; bench oasis_cpl_dfm).
-    follow_up: none new - dfm's shipped-CPL check catches it on the pinned board (#880)
+      The board published the CPL it sent JLC (v0.2/positions.csv). dfm's
+      shipped-CPL check fits each part's LCSC model to the board's pads:
+      mister1 (a keyed JST-PH) is at 119 deg where the model needs 299, the
+      180 the designer had JLC fix. v0.3's CPL puts it on the bottom at a
+      rotation that fits, and the finding is gone. The same run also flags
+      PS1 and U4 on v0.2 (not in the errata) and, on v0.3, PS1, J2's offset
+      and Q1/Q3 (the board's own pin-swapped SOT-23, no LCSC fit); the
+      corpus judges only the named catch.
   - id: oasis-4
     summary: J1 power-input wire holes too big (SolderWire-2.5sqmm, 3.0 mm drill)
     source_quote: "power input connection/holes are too big"
