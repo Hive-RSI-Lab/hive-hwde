@@ -184,6 +184,18 @@ def test_correct_rotation_strips_library_prefix():
     assert (final, corr) == (180.0, 180.0) and pat == "^LED_0805"
 
 
+def test_easyeda_imported_sot_gets_no_kicad_offset():
+    """#971: pd-trigger's CPL went out with D2 (SOT-23) at 180 and Q1
+    (SOT-363) at 0 because ^SOT-23 / ^SOT-363 +180 - KiCad-library offsets -
+    matched these EasyEDA-imported names. Their pads already sit in the
+    LCSC model's frame, so the table must leave them alone."""
+    rules = bom_cpl.load_rotations(REFERENCE / "jlc_rotations.csv")
+    for fp, base in (("aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR", 0.0),
+                     ("aiee:SOT-363-6_L2.2-W1.3-P0.65-LS2.1-BL", 180.0)):
+        final, corr, _ = bom_cpl.correct_rotation(fp, base, rules)
+        assert (final, corr) == (base, 0.0), fp
+
+
 def test_rotation_wraps_mod_360():
     rules = [(__import__("re").compile("^X"), 270.0)]
     final, _, _ = bom_cpl.correct_rotation("XPART", 180.0, rules)
