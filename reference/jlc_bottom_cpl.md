@@ -7,7 +7,7 @@
 - bennymeg `Fabrication-Toolkit`, `process.py`: `rotation = (180.0 - rotation)` for a bottom part ("JLC expect 'Rotation' to be 'as viewed from above component', so bottom needs inverting, and ends up 180 degrees out as well"), then offsets are added. Read 2026-11-02.
 - The geometry fixes everything except which way the board is turned to look at it. Turned about its y axis, the rule follows (derivation in `cpl_verify.py`). Turned about its x axis, the rotation would be (-kicad + correction), which is 180 degrees different.
 
-**What settles it:** JLC's order preview, then a built board. Until one is recorded here, `dfm_check` raises `cpl_bottom_preview` for every board with bottom parts. It's a warning, so it asks for the check without failing the gate.
+**What settles it:** JLC's order preview, then a built board. Until one is recorded here, `dfm_check` raises `cpl_bottom_preview` for every board with bottom parts whose pin 1 depends on the reading. A part right either way round (an unpolarised two-pad part) is right under both readings, since they differ by exactly 180 degrees, so it isn't listed (oasis v0.2's C4, 2026-11-13). It's a warning, so it asks for the check without failing the gate.
 
 **Evidence so far:**
 - hw-lab twin-side's five polar or multi-pad bottom parts (U301, U303, U304, Y301, D301): the LCSC model read from below lands pin 1 on pad 1 only at the rotation this rule gives (`boards/twin-side/reports/cold-review-1.md`, R1). This shows the model fit and the rule agree. It doesn't show what JLC does.

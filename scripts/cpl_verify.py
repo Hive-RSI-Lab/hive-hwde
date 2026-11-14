@@ -35,6 +35,15 @@ per LCSC number) and fits it onto the board footprint:
             shared pad numbers or no turn that fits is a FAILURE, never a
             pass - `no_model` or `no_fit`. A model fetch that errored (network, HTTP status) is `fetch_failed`,
             never `no_model`: it says nothing about the part or its pin 1.
+            One exception: a two-pad part that is not polarised, keyed or a
+            switch is checked against the shape every LCSC two-pad model has
+            (two_pad_stand_in: its pads along x, centred on the origin; 508
+            of 508 cached models, 2026-11-13), so a CPL turned 90 deg or off
+            its pads still fails and one either way round passes, with
+            `basis: two-pad axis`. oasis v0.2's L3 (C844983, an IHLP-2020
+            EasyEDA has no model for) was a false failure for want of this.
+            Like the ball grid below, it waits while a fetch could still
+            answer.
             A 403/429 is EasyEDA's rate limit: later parts are not fetched
             (also `fetch_failed`) and the report's `rate_limited` says why.
   footprint A ball grid with no model (no LCSC number, or EasyEDA has none) is
@@ -71,8 +80,11 @@ Y-axis": (180 - rotation) % 360, correction added after) and bennymeg
 Fabrication-Toolkit (process.py, "JLC expect 'Rotation' to be 'as viewed from
 above component'": 180.0 - rotation, offsets added after). JLC's order preview
 is what settles it, so a passing bottom part still gets `bottom_preview` in the
-report and a dfm warning (cpl_bottom_preview). reference/jlc_bottom_cpl.md has
-the record; add what a preview or a built board shows there.
+report and a dfm warning (cpl_bottom_preview). The two readings differ by
+exactly 180 degrees, so a part that is right either way round (an unpolarised
+two-pad part: oasis v0.2's C4) is right under both and gets no warning.
+reference/jlc_bottom_cpl.md has the record; add what a preview or a built
+board shows there.
 
 The pin-1 silk mark: JLC places by the silkscreen when it disagrees with the
 CPL, and with no mark it can't read the polarity and confirms by email. So for
@@ -142,6 +154,7 @@ FOOTPRINT_BASIS_NOTE = (
     "orientation and it publishes no BGA rule, so this is not a pass: give the "
     "part an LCSC number, or confirm A1 in JLC's order preview against the "
     "part's tape spec before ordering (reference/jlc_bga_cpl.md)")
+TWO_PAD_BASIS = "two-pad axis (no LCSC model)"
 NO_SILK_MARK_NOTE = (
     "no pin-1 dot or chamfer found on the part's own silkscreen. JLC can't read "
     "the polarity with no mark and confirms by email, which holds the order: "
@@ -706,6 +719,48 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
     return row
 
 
+# ------------------------------------- two-pad part with no model (stand-in)
+
+def two_pad_stand_in(fp: Footprint):
+    """The model an unpolarised, unkeyed two-pad part would have: every
+    LCSC two-pad model on file draws its pads along x, centred on the origin
+    (508 of 508 cached, 2026-11-13), and either way round is the same part.
+    None for any other part: a diode's or a housing's pin 1 is not in the
+    shape."""
+    kp = [p for p in fp.pads if p.w > 0 and p.number]
+    if (len(kp) != 2 or kp[0].number == kp[1].number or is_polar(fp)
+            or is_keyed(fp) or is_switch(fp) or _ROW_FP.search(fp.name)):
+        return None
+    if fp.side != "top":
+        kp = [replace(p, y=-p.y) for p in kp]
+    a, b = kp
+    half = math.hypot(a.x - b.x, a.y - b.y) / 2
+    if half <= 0:
+        return None
+    pad = lambda n, x: easyeda.Pad(number=n, x=x, y=0.0, w=a.w, h=a.h,
+                                   shape="RECT")
+    return easyeda.Model(lcsc="", title="two-pad stand-in", package="",
+                         pads=[pad(a.number, -half), pad(b.number, half)])
+
+
+def _two_pad_row(fp: Footprint, code: str, cpl: dict, row: dict) -> dict:
+    """A `no_model` row with the verdict the two-pad stand-in gives."""
+    stand = two_pad_stand_in(fp)
+    if stand is None:
+        return row
+    got = check_part(fp, stand, cpl)
+    got.update(lcsc=code or None, model_package=None, basis=TWO_PAD_BASIS)
+    if got["verdict"] == "ok":
+        got["why"] = (f"no LCSC model: CPL rotation {cpl['rot']:g} lays the "
+                      f"part along its pads, as every LCSC two-pad model is drawn")
+    elif got["verdict"] == "wrong_rotation":
+        got["why"] = (f"CPL rotation {cpl['rot']:g} lays the part across its "
+                      f"pads; there is no LCSC model, and every LCSC two-pad "
+                      f"model is drawn along its pads, so it needs "
+                      f"{got['expected_rot'][0]:g}")
+    return got
+
+
 # ---------------------------------------- ball grid with no model (basis footprint)
 
 _BALL = re.compile(r"^([A-Z]+)(\d+)$")
@@ -913,6 +968,8 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
         elif row["verdict"] == "no_model":
             row = _footprint_row(fp, cpl[ref], row,
                                  footprint_basis(fp, code, fetch))
+            if row["verdict"] == "no_model" and (fetch or not code):
+                row = _two_pad_row(fp, code, cpl[ref], row)
         mark = silk_mark(fp)
         row["silk_mark"] = mark["state"]
         if mark["state"]:
@@ -921,7 +978,7 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
         rows.append(row)
     bad = [r for r in rows if r["verdict"] in FAIL_VERDICTS]
     below = [r["ref"] for r in rows if r.get("side") == "bottom"
-             and r["verdict"] not in FAIL_VERDICTS]
+             and r["verdict"] not in FAIL_VERDICTS and not _either_way(r)]
     by_convention = [r["ref"] for r in rows if r["verdict"] == FOOTPRINT_MATCH]
     no_mark = [r["ref"] for r in rows if r.get("silk_mark") == "none"]
     wrong_mark = [r["ref"] for r in rows if r.get("silk_mark") == "wrong"]
@@ -953,6 +1010,14 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
 FOOTPRINT_OK = ("ok", "wrong_rotation", "wrong_polarity", "wrong_offset")
 
 
+def _either_way(row: dict) -> bool:
+    """Every rotation the row accepts is also accepted turned 180: the part
+    is right under either bottom-side reading."""
+    want = row.get("expected_rot") or []
+    return bool(want) and all(any(_ang_eq(w + 180.0, x) for x in want)
+                              for w in want)
+
+
 def record_footprints(pcb: Path, rows: list[dict],
                       lcsc: dict[str, str]) -> str | None:
     """Each checked part's `footprint` fact into the workspace ledger
@@ -967,7 +1032,8 @@ def record_footprints(pcb: Path, rows: list[dict],
         code = lcsc.get(r["ref"], "")
         v = r.get("verdict")
         # footprint basis: there was no model for the pads to land on
-        st = ("verified" if v in FOOTPRINT_OK and r.get("basis") != "footprint" else
+        st = ("verified" if v in FOOTPRINT_OK
+              and r.get("basis") not in ("footprint", TWO_PAD_BASIS) else
               "failed" if v == "no_fit" else "unknown")
         facts.append({
             "subject": r["ref"], "kind": "footprint", "status": st,
