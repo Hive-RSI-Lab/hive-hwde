@@ -3,9 +3,12 @@
 One concern: does each power rail have the reservoir it needs? For every rail in
 constraints.json["power"], gather the caps associated with it (the same
 decoupling.json metadata check_decoupling uses) and sanity-check the inventory:
- - a rail with no recorded association falls back to the caps the board
-   puts straight across it and ground (a rail with no IC on it has no IC pin
-   to record its bulk cap against); those are listed as `caps_from_board`;
+ - the caps the board puts straight across the rail and ground join the
+   recorded ones: decoupling.json records a cap against an IC pin, so a bulk
+   cap at the rail's source or connector, with no IC pin beside it, is on the
+   board and not in the file (a rail with no IC on it has none recorded at
+   all). Those it adds are listed as `caps_from_board`; a footprint KiCad
+   marks `dnp` ships empty and is not one;
  - a rail with NO decoupling at all is an error (nothing holds the rail up
    during a transient);
  - a rail with caps but NO bulk reservoir (nothing >= 1 uF) is a warning (only
@@ -55,12 +58,13 @@ def rail_caps(rail: str, assocs: list[dict]) -> list[dict]:
 def board_caps(bg: geom.BoardGeom, rail: str) -> list[dict]:
     """Caps the board itself puts straight across `rail` and a ground net, in
     the association shape. decoupling.json only records caps placed against an
-    IC pin, so a rail with no IC on it (a header feeding an LED, its bulk cap
-    beside the header) has none recorded although the cap is there."""
+    IC pin, so a rail's bulk cap beside its connector or regulator output (or
+    every cap of a rail with no IC on it: a header feeding an LED) is on the
+    board and not in the file. A `dnp` footprint ships empty and is skipped."""
     out = []
     # a geometry without footprints (a test stub of nets only) has none
     for ref, fp in sorted((getattr(bg, "footprints", None) or {}).items()):
-        if not re.match(r"^C\d+$", ref):
+        if not re.match(r"^C\d+$", ref) or "dnp" in (fp.get("attrs") or ()):
             continue
         nets = {p.net for p in bg.pads_of(ref=ref) if p.net}
         if len(nets) != 2 or rail not in nets:
@@ -81,8 +85,9 @@ def cap_farads(bg: geom.BoardGeom, assoc: dict) -> float | None:
 
 def check_rail(bg: geom.BoardGeom, rail: str, current_a, assocs: list[dict]):
     caps = rail_caps(rail, assocs)
-    from_board = [] if caps else board_caps(bg, rail)
-    caps = caps or from_board
+    recorded = {a.get("cap") for a in caps}
+    from_board = [c for c in board_caps(bg, rail) if c["cap"] not in recorded]
+    caps = caps + from_board
     parsed = [(a.get("cap"), cap_farads(bg, a)) for a in caps]
     refs = sorted({c for c, _ in parsed if c})
     unread = sorted({c for c, f in parsed if c and f is None})
