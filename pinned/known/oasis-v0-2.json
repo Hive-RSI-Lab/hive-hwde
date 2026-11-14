@@ -3027,18 +3027,6 @@
    "reason": "measured against the footprint's exposed pad, paste and vias (IPC-7093 coverage)"
   },
   {
-   "gate": "verify",
-   "check": "check_straps",
-   "net": null,
-   "refs": [
-    "U1"
-   ],
-   "pos": null,
-   "kind": "no_netlist",
-   "verdict": "false",
-   "reason": "the score doesn't export the schematic netlist check_straps needs, so it can't judge the straps (hwde's gap)"
-  },
-  {
    "gate": "dfm",
    "check": "dfm",
    "net": null,
@@ -4012,6 +4000,21 @@
    "pos": null,
    "verdict": "false",
    "reason": "a rate-limited run can't ask EasyEDA for L3's model (C844983; every other part's model is pinned in fab/easyeda, and EasyEDA has none for this one): the check couldn't run, not a board fault"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "kind": "reset_pull_offboard",
+   "net": "Net-(J3-Pin_5)",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    108.75,
+    155.4
+   ],
+   "verdict": "real",
+   "reason": "GPIO6 (MTCK) is pulled up by the C3 from reset and reaches the experiment header J3.5 with nothing else holding it: anything wired to that header sees it high from power-on until firmware drives it (the minuet v3 erratum's fault; nothing is plugged in on the pinned board) (hwde #885: verify_all exports the schematic netlist; judged against the v0.2 schematic (J3 'unused pins accessible for experimentation'))"
   }
  ]
 }

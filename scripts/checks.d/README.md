@@ -15,7 +15,8 @@ optional:                             # appended only when that input exists
   parts: [--parts, "{parts}"]
 ```
 
-- Inputs are `constraints`, `decoupling` and `parts`; `--pcb` and `--out` are
+- Inputs are `constraints`, `decoupling`, `parts` and `netlist` (the board's
+  netlist, exported from its schematic when none sits beside it); `--pcb` and `--out` are
   always passed. A placeholder in `args` must name an input in `needs`, and
   one under `optional.<key>` only `<key>`.
 - `verify_all.load_checks` refuses the whole suite on a bad fragment: an

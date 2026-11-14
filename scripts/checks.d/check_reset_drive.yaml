@@ -1,7 +1,10 @@
-# check_reset_drive: every FET gate and part enable an MCU pin drives sits
-# at its off level from power-on until firmware drives the pin, and no pin
-# the chip glitches during power-up drives one (FW-08, FW-09). Reads the
-# board's own <board>.net beside it, through check_straps' resolver.
+# check_reset_drive: every FET gate and part enable an MCU pin drives sits at
+# its off level from power-on until firmware drives the pin, and no pin the
+# chip glitches during power-up drives one (FW-08, FW-09). Reads the board's
+# own <board>.net beside it (or the one verify_all exports from its
+# schematic), through check_straps' resolver.
 name: check_reset_drive
 needs: []
 args: []
+optional:
+  netlist: [--netlist, "{netlist}"]

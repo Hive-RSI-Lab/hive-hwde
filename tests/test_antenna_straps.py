@@ -248,13 +248,15 @@ def test_pin_names_normalise():
     assert check_straps.pin_name("GPIO12", "14") == "IO12"
 
 
-def test_no_netlist_without_an_mcu_passes(tmp_path):
+def test_a_known_mcu_without_a_netlist_says_so(tmp_path):
+    """blinky2's STM32F103 has a reset_states row (#885): with no netlist
+    beside the board the check says it couldn't judge, not pass."""
     pcb = tmp_path / "b.kicad_pcb"
     pcb.write_text((REPO / "tests" / "golden" / "blinky2" /
                     "blinky2.kicad_pcb").read_text(encoding="utf-8"),
                    encoding="utf-8")
     payload, _ = check_straps.run(["--pcb", str(pcb)])
-    assert payload["status"] == "pass"
+    assert [v["kind"] for v in payload["violations"]] == ["no_netlist"]
 
 
 def test_both_checks_join_verify_all():
@@ -288,6 +290,24 @@ def test_c3_gpio6_bare_on_a_connector_warns(tmp_path):
     assert v["net"] == "GPIO6" and v["pin"] == "IO6"
     assert "J4.5" in v["msg"] and "high" in v["msg"]
     assert "strap_level" not in k
+
+
+def test_c3_gpio5_bare_on_a_connector_is_quiet(tmp_path):
+    """MTDI (GPIO5) and MTMS (GPIO4) are "1" in the C3 IO MUX reset column:
+    input, no pull. Only MTCK (GPIO6, "1*") is pulled up, so GPIO5 on
+    minuet's J4.6 is no reset_pull_offboard (it was, before #885)."""
+    c = {"U4": "ESP32-C3-WROOM-02-N4", "R9": "10k", "J4": "Conn_02x08"}
+    nets = {
+        "+3.3V": [("U4", "1", "3V3_1"), ("R9", "2", "")],
+        "GND": [("U4", "19", "GND_19")],
+        "BOOT": [("U4", "8", "GPIO9_8"), ("R9", "1", "")],
+        "GPIO5": [("U4", "4", "GPIO5_4"), ("J4", "6", "Pin_6_6")],
+        "GPIO4": [("U4", "3", "GPIO4_3"), ("J4", "7", "Pin_7_7")],
+    }
+    pcb = _netlist(tmp_path, c, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    assert "reset_pull_offboard" not in _by_kind(payload)
 
 
 def test_c3_gpio6_with_its_own_pull_is_quiet(tmp_path):
@@ -386,3 +406,61 @@ def test_codec_master_clock_pin_still_flags_a_strap(tmp_path):
     input row, so a strap on it stays flagged."""
     k = _codec_on_strap(tmp_path, "ES8388", "1", "SCLK_1")
     assert "strap_unknown" in k
+
+
+# ------------------------------------- switches named by their job (#885)
+
+def _c3_boot(tmp_path, ref, value):
+    comps = {"U1": "ESP32-C3-WROOM-02-N4", ref: value}
+    nets = {"+3V3": [("U1", "1", "3V3_1")], "GND": [("U1", "19", "GND_19"),
+                                                     (ref, "2", "2")],
+            "/EN": [("U1", "2", "EN_2")],
+            "Net-(U1-IO9)": [("U1", "8", "IO9_8"), (ref, "1", "1")]}
+    pcb = _netlist(tmp_path, comps, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    return _by_kind(payload)
+
+
+def test_a_boot_button_named_boot1_is_a_switch(tmp_path):
+    """oasis v0.2's BOOT button is ref boot1, value SW_Push: open at reset,
+    not a part of unknown drive on GPIO9."""
+    assert "strap_unknown" not in _c3_boot(tmp_path, "boot1", "SW_Push")
+
+
+def test_planted_unknown_part_on_io9_still_flags(tmp_path):
+    """Planted fault: the same net with a part of unknown reset state on it
+    is still strap_unknown; only switch values are let through."""
+    assert "strap_unknown" in _c3_boot(tmp_path, "boot1", "74LVC1G125")
+
+
+# ------------------------------------------- STM32F1 (blinky2, #885)
+
+def _f103(tmp_path, boot0_to):
+    """blinky2's STM32F103: BOOT0 through R1 10k to boot0_to, SWDIO and
+    SWCLK out to the debug header J1."""
+    comps = {"U1": "STM32F103C8T6", "R1": "10k", "J1": "Conn_01x04"}
+    nets = {"+3V3": [("U1", "24", "VDD_24")] + (
+                [("R1", "2", "")] if boot0_to == "+3V3" else []),
+            "GND": [("U1", "23", "VSS_23")] + (
+                [("R1", "2", "")] if boot0_to == "GND" else []),
+            "/NRST": [("U1", "7", "NRST_7")],
+            "/BOOT0": [("U1", "44", "BOOT0_44"), ("R1", "1", "")],
+            "/SWDIO": [("U1", "34", "PA13_34"), ("J1", "2", "Pin_2")],
+            "/SWCLK": [("U1", "37", "PA14_37"), ("J1", "3", "Pin_3")]}
+    pcb = _netlist(tmp_path, comps, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    return payload
+
+
+def test_f103_boot0_pulled_down_with_swd_header_passes(tmp_path):
+    p = _f103(tmp_path, "GND")
+    assert p["violations"] == [], p["violations"]
+    assert p["checked"][0]["mcus_unknown"] == []
+
+
+def test_planted_f103_boot0_pulled_up_fails(tmp_path):
+    """Planted fault: BOOT0 to 3V3 boots the ROM loader, not the flash."""
+    (v,) = _by_kind(_f103(tmp_path, "+3V3"))["strap_level"]
+    assert v["strap"] == "BOOT0" and v["severity"] == "error"

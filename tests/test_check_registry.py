@@ -178,7 +178,7 @@ def test_fragment_args_render(tmp_path):
 
 @pytest.mark.parametrize("text,why", [
     ("name: check_other\n", "must equal the file stem"),
-    ("name: check_dummy\nneeds: [netlist]\n", "unknown inputs"),
+    ("name: check_dummy\nneeds: [schematic_pdf]\n", "unknown inputs"),
     ("name: check_dummy\nflags: []\n", "unknown keys"),
     ("name: check_dummy\nargs: [--parts, '{parts}']\n", "placeholders"),
     ("name: check_dummy\nneeds: [parts]\n"
