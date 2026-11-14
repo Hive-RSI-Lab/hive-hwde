@@ -9,7 +9,9 @@ class, routelib.dsn_apply_net_rules, the board's hole rules the export
 drops, _dsn_hole_rules, and each pre-routed wire chain as one path,
 routelib.dsn_merge_wires, as split wires overflow Freerouting's stack;
 routelib.DEFAULT_LADDER; deterministic flags, per-rung process timeout, score
-logging) -> import the best rung's SES -> refill (imported tracks stale every
+logging) -> import the best rung's SES (Freerouting's pin neckdowns in a
+courtyard neck zone set to the neck width: it lays them a hair under the
+pad's width, _snap_neckdowns, #998) -> refill (imported tracks stale every
 pour they cross - S11-verified: 33 clearance violations before refill, 0
 after) -> final `kicad-cli pcb drc --schematic-parity --all-track-errors`.
 
@@ -424,6 +426,50 @@ def _narrow_new_tracks(staged: Path, widths: dict[str, float],
     return out
 
 
+NECKDOWN_TOL_MM = 0.005   # #998: Freerouting's pin neckdown runs this far
+#                           under the pad's width (0.2498 for a 0.25 pad)
+
+
+def _snap_neckdowns(staged: Path, before: set) -> list[str]:
+    """Widen Freerouting's pin neckdowns to their neck width (#998).
+
+    Freerouting takes one width per net, but it necks a trace down where
+    it meets a pin narrower than the trace (its own neckdown), so a
+    fine-pitch power pad does get out. It lays that stub a hair under the
+    pin's width, though, and a courtyard neck rule (necklib, rules_gen's
+    aiee_pwr_neck) sized to the pad then fails DRC by 0.2 um. A new track
+    wholly in its net's neck zone and under the neck width by no more than
+    NECKDOWN_TOL_MM is set to the neck width. Returns the uuids it widened.
+    """
+    necks = necklib.read_necks(staged)
+    if not necks:
+        return []
+    import route_critical as rc
+    want = {}
+    for t in geom.BoardGeom.from_file(staged).tracks_of():
+        if t.uuid in before or not t.uuid or t.net not in necks:
+            continue
+        nw = necklib.neck_width(necks, t.net, t.layer, t.shape)
+        if nw is not None and nw - NECKDOWN_TOL_MM <= t.width < nw - 1e-6:
+            want[t.uuid] = nw
+    if not want:
+        return []
+    # A text edit, not route_edit's set_width: that skips a change under
+    # its 1 um position tolerance, and this one is 0.2 um.
+    done = []
+
+    def widen(m):
+        nw = want.get(m.group(1))
+        if nw is None:
+            return m.group(0)
+        done.append(m.group(1))
+        return rc._SEG_FIELD_RES["width"].sub(f"(width {nw:g})", m.group(0),
+                                              count=1)
+    text = staged.read_text()
+    staged.write_text(rc._SEG_BLOCK_RE.sub(widen, text))
+    return done
+
+
 def _seg_len(block: str) -> float:
     import route_critical as rc
     try:
@@ -650,6 +696,7 @@ def run(argv: list[str] | None = None):
     # DRC (unrouted nets, then errors), and the best board is kept.
     pristine = work / ("preimport_" + staged.name)
     shutil.copy2(staged, pristine)
+    uuids_before = {t.uuid for t in bg.tracks_of() if t.uuid}
     graded = []
     for key, i, ses, facts in sorted(candidates, key=lambda c: c[0]):
         _ses_restore(ses, grown)
@@ -694,6 +741,8 @@ def run(argv: list[str] | None = None):
         dd = routelib.run_worker(bp, {
             "verb": "dedup_copper", "board": str(trial),
             "out": str(trial)}, work, timeout=300)
+        # 4c. Freerouting's pin neckdowns a hair under a neck rule (#998)
+        dd["neckdowns_snapped"] = len(_snap_neckdowns(trial, uuids_before))
         if args.tries <= 1:
             imported, dedup_facts = imp, dd
             best_i, best_facts, fr_ok = i, facts, True
@@ -805,6 +854,7 @@ def run(argv: list[str] | None = None):
             "krt_finish": finish_facts,
             "maze_finish": maze_facts,
             "ses_echo_dups_removed": dedup_facts.get("removed", 0),
+            "neckdowns_snapped": dedup_facts.get("neckdowns_snapped", 0),
             "work_dir": str(work),
         },
     }

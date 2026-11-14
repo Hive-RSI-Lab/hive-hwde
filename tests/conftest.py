@@ -75,6 +75,7 @@ _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
     "tests/test_zone_patch.py::test_live_drop_and_rebuild_the_patches_on_a_copy_of_core": _TOOLS,
     "tests/test_zone_patch.py::test_live_via_array_on_a_copy_of_core": _TOOLS,
+    "tests/test_necks.py::test_live_freerouting_neckdown_passes_the_neck_rule": _TOOLS,
     "tests/test_fr_fixed_overlap.py::test_live_route_along_a_fixed_stub_finishes_and_keeps_the_stub": _TOOLS,
     "tests/test_isolation_rules.py::test_live_drc_and_check_isolation_agree_on_the_same_copper": _TOOLS,
     "tests/test_isolation_rules.py::test_live_a_domains_own_nets_keep_their_ordinary_spacing": _TOOLS,
