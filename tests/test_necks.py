@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import sys
 import types
+
+import pytest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -147,3 +149,59 @@ def test_narrow_tracks_keep_a_neck_inside_its_zone(tmp_path):
     assert sorted(route_auto._narrow_new_tracks(pcb, floors, set())) \
         == ["in", "out", "thin"]
     assert widths["+3V3"] == 0.25
+
+
+# ------------------------------------- route_auto (Freerouting's neckdown, #998)
+
+def test_snap_neckdowns_widens_a_hair_thin_stub_in_the_zone(tmp_path):
+    body = (_fine_pitch("U1", 10, 15) + _pad("U2", 10, 5, "+3V3", size=1.5)
+            + _seg(10, 15, 10, 14.0, 0.2498, "F.Cu", "+3V3", "f1")
+            + _seg(10, 14.0, 10, 5, 1.0, "F.Cu", "+3V3", "a2")
+            + _seg(10, 15, 10, 15.6, 0.2, "F.Cu", "+3V3", "b3")
+            + _seg(10, 17, 10, 19, 0.2498, "F.Cu", "+3V3", "c4")
+            + _seg(10, 15, 10, 14.0, 0.2498, "F.Cu", "+3V3", "d5"))
+    pcb = _board(tmp_path, body, dru=NECK_DRU)
+    # only the new near-neck stub inside the zone: not a real under-width
+    # track, not one outside the zone, not one on the board before
+    assert route_auto._snap_neckdowns(pcb, {"d5"}) == ["f1"]
+    widths = {t.uuid: t.width
+              for t in route_auto.geom.BoardGeom.from_file(pcb).tracks_of()}
+    assert widths == {"f1": 0.25, "a2": 1.0, "b3": 0.2, "c4": 0.2498,
+                      "d5": 0.2498}
+    # the planted fault: without the neck rule nothing is widened
+    plain = _board(_sub(tmp_path, "n"), body, dru=NO_NECK)
+    assert route_auto._snap_neckdowns(plain, set()) == []
+
+
+@pytest.mark.parametrize("snap", [True, False], ids=["snap", "without"])
+def test_live_freerouting_neckdown_passes_the_neck_rule(tmp_path, snap,
+                                                        monkeypatch):
+    """Freerouting gets +3V3 at its 1 mm floor and necks it down at the
+    0.5 mm-pitch pin by itself, 0.2 um under the pad: the neck rule fails it
+    until the stub is snapped to the neck width (#998)."""
+    import env
+    import kc
+    cli = env.find_kicad_cli()
+    if cli is None or env.find_freerouting_jar() is None \
+            or env.find_java() is None:
+        pytest.skip("needs kicad-cli, java and Freerouting")
+    if not snap:   # the planted fault: the neckdown stays as Freerouting laid it
+        monkeypatch.setattr(route_auto, "_snap_neckdowns", lambda s, b: [])
+    pcb = _neck_board(tmp_path, NECK_DRU)
+    try:
+        payload, _ = route_auto.run([
+            "--pcb", str(pcb), "--work-dir", str(tmp_path / "work"),
+            "--max-rungs", "1", "--timeout-s", "300",
+            "--no-krt-finish", "--no-maze-finish"])
+    except Exception as e:  # noqa: BLE001
+        if any(k in str(e) for k in ("wxEntryStart", "X Display")):
+            pytest.skip("route_swig couldn't start wx on this machine's Xvfb")
+        raise
+    assert payload["facts"]["unrouted_nets"] == [], payload["facts"]
+    drc = kc.run_drc(cli, pcb, all_track_errors=True)
+    thin = [v for v in drc["violations"] if v.get("check") == "track_width"]
+    if snap:
+        assert payload["facts"]["neckdowns_snapped"] >= 1
+        assert thin == [], thin
+    else:
+        assert thin, "Freerouting's neckdown no longer runs under the pad"
