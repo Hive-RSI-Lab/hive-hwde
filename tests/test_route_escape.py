@@ -20,6 +20,7 @@ SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import bgalib  # noqa: E402
+import cluster_violations  # noqa: E402
 import env  # noqa: E402
 import geom  # noqa: E402
 import route_escape as re_  # noqa: E402
@@ -507,6 +508,114 @@ def test_vip_conflicts_floor_via_grazing_a_stub(tmp_path):
                                          extra=_via(18, 13, "/S0_0", "vip")))
     (b2,) = bgalib.find_bgas(bg2)
     assert re_.vip_conflicts(bg2, b2, {"vip"}, 0.5, 0.125) == set()
+
+
+
+# ---- #979: a starved thermal names the pad, never the track ---------------
+
+CAP = ('  (footprint "t:C1" (layer "B.Cu") (at 18.4 13.4)\n'
+       '    (property "Reference" "C1" (at 0 0 0) (layer "B.SilkS"))\n'
+       '    (pad "2" smd rect (at 0 0) (size 0.3 0.3) (layers "B.Cu")\n'
+       '      (net "GND") (uuid "c1-2"))\n  )\n')
+STARVED = "Pad 2 [GND] of C1 on B.Cu"
+UID = "00000000-0000-4000-8000-%012d"
+
+
+def _starved_drc(staged, cut="/S0_0", also=None):
+    """A DRC that finds C1's GND pad starved while a via of net `cut` (or,
+    cut=None, always) is on the board: one spoke of two left."""
+    def drc():
+        bg = geom.BoardGeom.from_file(staged)
+        vs = []
+        if cut is None or any(v.net == cut for v in bg.vias_of()):
+            vs.append({"check": "starved_thermal", "severity": "error",
+                       "items": [{"msg": "Zone [GND] on B.Cu, priority 0",
+                                  "pos": [1, 1]},
+                                 {"msg": STARVED, "pos": [18.4, 13.4]}]})
+        return {"violations": vs + (also or [])}
+    return drc
+
+
+def test_escape_rips_the_net_that_starved_a_thermal_and_keeps_the_rest(
+        tmp_path):
+    """#979's planted fault: an escape via of /S0_0 beside a 2-spoke GND pad
+    under the field cuts a spoke; DRC names only GND. That one net is
+    ripped and the rest of the escape stays (it was all thrown away)."""
+    cli = env.find_kicad_cli()
+    if cli is None or env.find_kicad_python(cli) is None:
+        pytest.skip("the rip edits the board through KiCad's python")
+    # gap-site vias clear of every ball (KiCad keeps real uuids only)
+    extra = (CAP + _via(18.4, 13.95, "/S0_0", UID % 1)
+             + _via(20.0, 15.0, "/S2_2", UID % 2)
+             + ('  (segment (start 18.4 13.4) (end 17.5 13.4) (width 0.1) '
+                f'(layer "F.Cu") (net "/S0_1") (uuid "{UID % 3}"))\n'))
+    pcb = board(tmp_path, extra=extra)
+    (b,) = bgalib.find_bgas(geom.BoardGeom.from_file(pcb))
+    after, delta, rounds = re_.grade_and_rip(
+        pcb, set(), {"violations": []}, [b], _starved_drc(pcb))
+    assert not delta["new"]
+    assert [r["nets"] for r in rounds] == [["/S0_0"]]
+    assert rounds[0]["starving_thermals"] == ["/S0_0"]
+    assert rounds[0]["fields"] == {"/S0_0": ["U1"]}
+    bg = geom.BoardGeom.from_file(pcb)
+    assert {v.net for v in bg.vias_of()} == {"/S2_2"}
+    assert {t.net for t in bg.tracks_of()} == {"/S0_1"}
+    assert re_.unexplained_starving({"violations": []}, after, delta, pcb,
+                                    set()) == {}
+
+
+def test_a_starved_thermal_no_new_copper_explains_keeps_the_escape(
+        tmp_path):
+    """#979: C1's pad starves with no new copper next to it (the cap nudge
+    or the refill cut it). Nothing is ripped; the pad is reported and the
+    escape kept. With any other new error left it is thrown away."""
+    pcb = board(tmp_path, extra=CAP + _via(20.0, 15.0, "/S2_2", UID % 2))
+    (b,) = bgalib.find_bgas(geom.BoardGeom.from_file(pcb))
+    none = {"violations": []}
+    after, delta, rounds = re_.grade_and_rip(
+        pcb, set(), none, [b], _starved_drc(pcb, cut=None))
+    assert rounds == [] and delta["new"] == {"starved_thermal": 1}
+    assert re_.unexplained_starving(none, after, delta, pcb, set()) == {
+        STARVED: (18.4, 13.4)}
+    # the pad was starved before the run: not this escape's
+    assert re_.unexplained_starving(after, after, delta, pcb, set()) == {}
+    short = {"check": "shorting_items", "severity": "error", "items": []}
+    after, delta, _ = re_.grade_and_rip(
+        pcb, set(), none, [b], _starved_drc(pcb, cut=None, also=[short]))
+    assert re_.unexplained_starving(none, after, delta, pcb, set()) == {}
+
+def test_live_escape_kept_when_a_far_thermal_starves(tmp_path, monkeypatch):
+    """#979 through run(): the refill starves a GND pad far from any escape
+    copper. The escape is kept and swapped in, and the pad is reported as
+    an escape_starved_thermal error, not a CheckError that drops it all."""
+    if env.find_kicad_cli() is None or env.find_krt() is None:
+        pytest.skip("needs kicad-cli and KiCadRoutingTools")
+    far = CAP.replace("18.4 13.4", "36 36").replace("C1", "C9")
+    pcb = board(tmp_path, extra=far)
+    msg = STARVED.replace("C1", "C9")
+    real = re_.grade_and_rip
+
+    def starving(staged, old_uuids, before, bgas, drc):
+        def drc2():
+            rep = drc()
+            rep["violations"].append(
+                {"check": "starved_thermal", "severity": "error",
+                 "items": [{"msg": "Zone [GND] on B.Cu", "pos": [1, 1]},
+                           {"msg": msg, "pos": [36, 36]}]})
+            return rep
+        return real(staged, old_uuids, before, bgas, drc2)
+    monkeypatch.setattr(re_, "grade_and_rip", starving)
+    out = tmp_path / "r.json"
+    re_.main(["--pcb", str(pcb), "--out-report", str(out)])
+    rep = json.loads(out.read_text())
+    f = rep["facts"]
+    assert f["board_updated"] and f["bgas"][0]["kept_nets"] == 36
+    (v,) = [v for v in rep["violations"]
+            if v.get("kind") == "escape_starved_thermal"]
+    assert v["severity"] == "error" and msg in v["msg"]
+    # the plane fixer gives the spokes back, not a human review
+    assert cluster_violations.cluster([v], 5.0)[0]["fixer"] == "plane"
+    assert geom.BoardGeom.from_file(pcb).vias_of()
 
 
 def test_live_escape_toward_partner(tmp_path):

@@ -27,8 +27,13 @@ Per BGA (lib/bgalib.find_bgas: geometric grid detection, not the name):
      the field). Moves are reported per ref;
   5. kicad-cli DRC against the board's real rules; the nets whose new
      copper is in a new error are ripped (route_critical's grading), up to
-     ESCAPE_RIP_ROUNDS times. The original board is replaced only when no
-     new DRC error type remains.
+     ESCAPE_RIP_ROUNDS times. A starved_thermal names only the pad and the
+     zone, so the nets with new copper next to the starved pad are ripped
+     (rc.nets_starving_thermals, #979). The original board is replaced only
+     when no new DRC error type remains, or when the only one left is a
+     starved thermal no new copper is next to (a nudged cap, the refill):
+     the escape is kept and each such pad is an escape_starved_thermal
+     error.
 
 Diff pairs (#529): every pair of constraints.json (route_critical.diff_specs:
 explicit diff_pairs plus pairs discovered on high_speed names) with both
@@ -373,6 +378,86 @@ def error_fields(before: dict, after: dict, nets: set[str],
     for net in nets:
         out.setdefault(net, None)
     return out
+
+
+def starved_pads(report: dict) -> dict[str, tuple]:
+    """'Pad 2 [GND] of C330 on B.Cu' -> its position, for every pad of a
+    starved_thermal ERROR in a DRC report (the error's other item is the
+    zone)."""
+    out: dict[str, tuple] = {}
+    for v in report.get("violations", []):
+        if v.get("check") != "starved_thermal" or v.get("severity") != "error":
+            continue
+        for item in v.get("items", []):
+            msg = item.get("msg", "")
+            if msg.startswith("Pad ") and item.get("pos"):
+                out[msg] = tuple(item["pos"])
+    return out
+
+
+def starved_fields(before: dict, after: dict, nets: set[str],
+                   bgas: list) -> dict[str, set[str] | None]:
+    """net -> refs of the ball fields holding a newly starved pad, for nets
+    rc.nets_starving_thermals named (the error names only the pad and the
+    zone, so the field is the pad's, not the track's), or None when no
+    field holds one (rip the net everywhere)."""
+    old = starved_pads(before)
+    spots = [Point(q) for m, q in starved_pads(after).items() if m not in old]
+    regions = {b.ref: field_region(b) for b in bgas}
+    refs = {r for r, g in regions.items() if any(g.contains(q) for q in spots)}
+    return {n: set(refs) if refs else None for n in nets}
+
+
+def grade_and_rip(staged: Path, old_uuids: set[str], before: dict,
+                  bgas: list, drc) -> tuple[dict, dict, list[dict]]:
+    """DRC the staged escape (`drc()`: refill and grade) and rip, up to
+    ESCAPE_RIP_ROUNDS times, the nets whose new copper is in a new error:
+    named by the error's items, or for a starved_thermal (which names only
+    the pad and the zone) by rc.nets_starving_thermals, the new copper next
+    to the starved pad (#979: haos-voice U301's under-field decouplers threw
+    the whole escape away). Returns (after, delta, rounds)."""
+    rounds: list[dict] = []
+    for _ in range(ESCAPE_RIP_ROUNDS):
+        after = drc()
+        delta = rc.drc_delta(before, after)
+        if not delta["new"]:
+            break
+        mine = nets_with_new_copper(geom.BoardGeom.from_file(staged), old_uuids)
+        bad = rc.nets_in_new_errors(before, after, mine)
+        where = error_fields(before, after, bad, bgas) if bad else {}
+        starving = rc.nets_starving_thermals(before, after, mine, staged,
+                                             old_uuids) - bad
+        if starving:
+            where.update(starved_fields(before, after, starving, bgas))
+        if not where:
+            break
+        rounds.append({"nets": sorted(where), "new_errors": delta["new"],
+                       **({"starving_thermals": sorted(starving)}
+                          if starving else {}),
+                       "fields": {n: sorted(f) if f else "all"
+                                  for n, f in sorted(where.items())},
+                       "items_removed": rip_in_fields(staged, old_uuids, where,
+                                                      bgas)})
+    else:
+        after = drc()
+        delta = rc.drc_delta(before, after)
+    delta["rip_rounds"] = rounds
+    return after, delta, rounds
+
+
+def unexplained_starving(before: dict, after: dict, delta: dict,
+                         staged: Path, old_uuids: set[str]) -> dict:
+    """The newly starved pads when a starved_thermal is the only new error
+    left and no new copper is next to any of them (a nudged cap's pad, or
+    the refill, cut the spoke: #979): msg -> position. Empty otherwise, and
+    the escape is thrown away as for any other new error."""
+    if set(delta["new"]) != {"starved_thermal"}:
+        return {}
+    mine = nets_with_new_copper(geom.BoardGeom.from_file(staged), old_uuids)
+    if rc.nets_starving_thermals(before, after, mine, staged, old_uuids):
+        return {}
+    old = starved_pads(before)
+    return {m: q for m, q in starved_pads(after).items() if m not in old}
 
 
 def rip_in_fields(staged: Path, old_uuids: set[str],
@@ -855,30 +940,14 @@ def run(argv: list[str] | None = None):
         moved = nudge_caps(ctx, clr)
 
     # grade against the board's real rules; rip what broke them
-    rounds = []
-    for _ in range(ESCAPE_RIP_ROUNDS):
+    def drc():
         if bg0.zones_of():
             kc.run_drc(cli, staged, refill=True, save_board=True)
-        after = kc.run_drc(cli, staged, all_track_errors=True)
-        delta = rc.drc_delta(before, after)
-        if not delta["new"]:
-            break
-        mine = nets_with_new_copper(geom.BoardGeom.from_file(staged), old_uuids)
-        bad = rc.nets_in_new_errors(before, after, mine)
-        if not bad:
-            break
-        where = error_fields(before, after, bad, [p["bga"] for p in plans])
-        rounds.append({"nets": sorted(bad), "new_errors": delta["new"],
-                       "fields": {n: sorted(f) if f else "all"
-                                  for n, f in sorted(where.items())},
-                       "items_removed": rip_in_fields(staged, old_uuids, where,
-                                                      [p["bga"] for p in plans])})
-    else:
-        if bg0.zones_of():
-            kc.run_drc(cli, staged, refill=True, save_board=True)
-        after = kc.run_drc(cli, staged, all_track_errors=True)
-        delta = rc.drc_delta(before, after)
-    delta["rip_rounds"] = rounds
+        return kc.run_drc(cli, staged, all_track_errors=True)
+
+    after, delta, rounds = grade_and_rip(staged, old_uuids, before,
+                                         [p["bga"] for p in plans], drc)
+    starved = unexplained_starving(before, after, delta, staged, old_uuids)
 
     bg1 = geom.BoardGeom.from_file(staged)
     kept_nets = nets_with_new_copper(bg1, old_uuids)
@@ -912,7 +981,18 @@ def run(argv: list[str] | None = None):
                 f"{len(r['ripped_by_drc'])}); left for route_critical / "
                 "route_auto", SCRIPT, kind="bga_escape_incomplete",
                 nets=left[:40]))
-    if delta["new"]:
+    moved_refs = {m.get("ref") for m in moved}
+    for msg, pos in sorted(starved.items()):
+        ref = msg.split(" of ", 1)[1].split()[0]
+        layer = msg.rsplit(" on ", 1)[1]
+        why = ("the cap nudge moved it" if ref in moved_refs else
+               "no new escape copper is next to it; the zone refill cut it")
+        violations.append(violation(
+            SCRIPT, "error", pos, layer, None, [ref],
+            f"{msg}: starved thermal after the escape ({why}); the escape is "
+            "kept, give the pad its spokes back", SCRIPT,
+            kind="escape_starved_thermal"))
+    if delta["new"] and not starved:
         raise CheckError(
             "escape left new DRC errors after ripping (original board "
             f"untouched): {delta['new']}; work dir kept at {work}")
