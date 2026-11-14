@@ -464,4 +464,4 @@ boards:
       #1033's pin-state table has no SAM4L row: its datasheet (42023H 3.4.1)
       sets no external pull-up on SWDIO or SWCLK, so this is a debug-probe
       convention, not a datasheet pin state.
-    follow_up: "an SWD/JTAG header convention rule: pull-ups on SWDIO and SWCLK"
+    follow_up: "an SWD/JTAG header convention rule: pull-ups on SWDIO and SWCLK (#1044)"

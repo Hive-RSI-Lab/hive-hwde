@@ -114,7 +114,7 @@ what pcb-flow's checks do with the first revision. Written by
 
 | defect | class | pcb-flow on rev A | follow-up |
 |---|---|---|---|
-| ambient-1: no pull-ups on SWDIO and SWDCLK | SCH (datasheet pin state) | missed | an SWD/JTAG header convention rule: pull-ups on SWDIO and SWCLK |
+| ambient-1: no pull-ups on SWDIO and SWDCLK | SCH (datasheet pin state) | missed | an SWD/JTAG header convention rule: pull-ups on SWDIO and SWCLK (#1044) |
 
 ## Count
 
