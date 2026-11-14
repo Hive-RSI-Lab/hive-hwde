@@ -500,6 +500,15 @@ def _err_counts(report: dict) -> dict[str, int]:
     return out
 
 
+def _oom_error(facts: dict, what: str, work: Path) -> CheckError:
+    heap = facts.get("heap_mb")
+    cap = f"its {heap} MB heap" if heap else "Java's default heap"
+    return CheckError(
+        f"Freerouting ran out of {cap} on {what}; give the job more memory "
+        "(a bigger heavy budget) or set HWDE_FR_HEAP_MB, see routelib "
+        f"FR_HEAP_SHARE; logs in {work} (board untouched)")
+
+
 def route_probe(pcb: Path, *, passes: int = 4, timeout_s: int = 180,
                 work_dir: Path | None = None) -> dict:
     """Capped-effort routability probe. Never modifies the board.
@@ -531,6 +540,8 @@ def route_probe(pcb: Path, *, passes: int = 4, timeout_s: int = 180,
     facts = routelib.run_freerouting(
         java, jar, dsn, ses, rung={"mp": passes}, timeout=timeout_s,
         log_file=work / "probe.log")
+    if facts.get("oom"):
+        raise _oom_error(facts, "the probe", work)
     facts["completion"] = routelib.completion_fraction(facts)
     facts["dsn_wires_merged"] = merged
     return facts
@@ -639,6 +650,13 @@ def run(argv: list[str] | None = None):
                  "kill_reason": facts.get("kill_reason"),
                  "ses_written": facts.get("ses_written")}
         rungs.append(entry)
+        if facts.get("oom"):
+            # Out of its heap cap (#897): a later rung asks more of the same
+            # DSN, so it would run out too. Keep what earlier rungs routed.
+            entry["oom"] = True
+            if not candidates:
+                raise _oom_error(facts, f"rung {i}", work)
+            break
         if facts.get("ses_written") and facts.get("unrouted") is not None:
             candidates.append(((facts["unrouted"],
                                 -(facts.get("final_score") or 0.0)), i, ses,
@@ -679,6 +697,9 @@ def run(argv: list[str] | None = None):
                           "unrouted": facts.get("unrouted"),
                           "final_score": facts.get("final_score"),
                           "timed_out": facts.get("timed_out")})
+            if facts.get("oom"):
+                tries[-1]["oom"] = True
+                break
             if facts.get("ses_written") and facts.get("unrouted") is not None:
                 candidates.append(((facts["unrouted"],
                                     -(facts.get("final_score") or 0.0)),

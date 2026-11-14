@@ -135,3 +135,39 @@ def test_planted_the_test_limit_still_fails_stuck_or_idle(p, work):
         with time_limit(0.5, "the_test", read_pressure=lambda: p):
             _work(3, work == "sleep")
     assert time.monotonic() - t0 < 1.5   # at its base, not stretched to 2 s
+
+
+# --- memory budget (#897) -----------------------------------------------------
+
+def _cgroup_tree(tmp_path, limits, mem_total_kb=32 * 2**20):
+    """A fake /sys/fs/cgroup + /proc: `limits` maps a cgroup path ("" = the
+    root) to {file: value}; this process sits in the deepest one."""
+    root, proc = tmp_path / "cg", tmp_path / "proc"
+    for rel, files in limits.items():
+        d = root / rel
+        d.mkdir(parents=True, exist_ok=True)
+        for name, v in files.items():
+            (d / name).write_text(f"{v}\n")
+    leaf = max(limits, key=len)
+    (proc / "self").mkdir(parents=True)
+    (proc / "self" / "cgroup").write_text(f"0::/{leaf}\n")
+    (proc / "meminfo").write_text(f"MemTotal:       {mem_total_kb} kB\n")
+    return root, proc
+
+
+def test_memory_budget_is_the_tightest_cgroup_limit(tmp_path):
+    gb = 2**30
+    root, proc = _cgroup_tree(tmp_path, {
+        "": {},
+        "user.slice": {"memory.max": 20 * gb, "memory.high": "max"},
+        "user.slice/heavy": {"memory.max": "max", "memory.high": 3 * gb},
+        "user.slice/heavy/job": {"memory.max": "max"}})
+    assert loadlib.memory_budget_mb(root, proc) == 3 * 1024
+
+
+def test_memory_budget_with_no_limits_is_the_machine_ram(tmp_path):
+    root, proc = _cgroup_tree(tmp_path, {"": {}, "a": {"memory.max": "max"}},
+                              mem_total_kb=8 * 2**20)
+    assert loadlib.memory_budget_mb(root, proc) == 8 * 1024
+    # nothing readable at all: no budget, not a guess
+    assert loadlib.memory_budget_mb(tmp_path / "none", tmp_path / "none") is None

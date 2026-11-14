@@ -60,6 +60,38 @@ FR_OVERLAY = Path(__file__).resolve().parent / "freerouting_2_2_4"
 FR_OVERLAY_JAR = "freerouting-2.2.4.jar"
 FR_MAIN_CLASS = "app.freerouting.Freerouting"
 
+# Freerouting's JVM heap (#897). With no -Xmx Java takes a quarter of the
+# machine's RAM, so several routes at once outgrow a shared machine and get
+# killed for memory. The cap is a share of the job's own memory budget
+# (loadlib.memory_budget_mb: the tightest cgroup limit, else RAM), kept
+# between a floor a small board needs and a ceiling no board here has needed.
+# HWDE_FR_HEAP_MB sets it outright; 0 leaves Java's default. A JVM that runs
+# out exits at once (ExitOnOutOfMemoryError) instead of thrashing in GC, and
+# run_freerouting reports it as "oom".
+FR_HEAP_SHARE = 0.5     # the rest is the JVM's own overhead and our process
+FR_HEAP_MIN_MB = 512
+FR_HEAP_MAX_MB = 4096
+FR_OOM_EXIT = "-XX:+ExitOnOutOfMemoryError"
+_OOM_RE = re.compile(r"java\.lang\.OutOfMemoryError")
+
+
+def fr_heap_mb(budget_mb: int | None = None) -> int | None:
+    """Freerouting's -Xmx in MB, or None for no cap (see FR_HEAP_SHARE)."""
+    env = os.environ.get("HWDE_FR_HEAP_MB", "").strip()
+    if env:
+        try:
+            mb = int(env)
+        except ValueError:
+            raise CheckError(f"HWDE_FR_HEAP_MB={env!r} is not a whole number "
+                             "of MB (0 = no cap)") from None
+        return mb if mb > 0 else None
+    if budget_mb is None:
+        budget_mb = loadlib.memory_budget_mb()
+    if budget_mb is None:
+        return FR_HEAP_MAX_MB
+    return int(max(FR_HEAP_MIN_MB,
+                   min(FR_HEAP_MAX_MB, budget_mb * FR_HEAP_SHARE)))
+
 # Escalation ladder for route_auto: each rung re-runs Freerouting on the same
 # DSN with more effort. mp = max passes; oit = optimizer improvement threshold
 # (percent; lower = keep optimizing longer); us = board update strategy.
@@ -161,7 +193,9 @@ def build_fr_cmd(java: Path, jar: Path, dsn: Path, ses: Path,
         launch = ["-cp", os.pathsep.join((str(FR_OVERLAY), str(jar))), FR_MAIN_CLASS]
     else:
         launch = ["-jar", str(jar)]
-    cmd = [str(java)] + launch + FR_BASE_FLAGS
+    heap = fr_heap_mb()
+    jvm = ([f"-Xmx{heap}m"] if heap else []) + [FR_OOM_EXIT]
+    cmd = [str(java)] + jvm + launch + FR_BASE_FLAGS
     cmd += ["-mp", str(rung.get("mp", 20))]
     if rung.get("oit") is not None:
         cmd += ["-oit", str(rung["oit"])]
@@ -232,6 +266,10 @@ def run_freerouting(java: Path, jar: Path, dsn: Path, ses: Path, *,
     if log_file is not None:
         log_file.write_text(out, encoding="utf-8")
     facts = parse_fr_log(out)
+    heap = next((a[4:-1] for a in cmd if a.startswith("-Xmx")), None)
+    facts["oom"] = (not timed_out and rc != 0
+                    and bool(_OOM_RE.search(out)))
+    facts["heap_mb"] = int(heap) if heap and heap.isdigit() else None
     facts.update({"rc": rc, "timed_out": timed_out,
                   "ses_written": ses.is_file(), "cmd": cmd,
                   "kill_reason": kill_reason})
