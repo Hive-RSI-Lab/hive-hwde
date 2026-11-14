@@ -218,6 +218,30 @@ What moved where:
   pin's ledger had judged two such findings real (+5VA, +3V3E); the board
   holds 10 uF caps across both rails, so they are judged false now, a new
   score baseline.
+- `scripts/check_fw.py` exits 2 only where fw is needed and missing: on a
+  board with an ESP32 (a part whose value, footprint or symbol names one).
+  A board with none, or one that no target in `targets.json` names, passes
+  with `nothing_to_judge`. It finds fw as `hive-fw` or `fw`, in
+  `$HIVE_MODULES` or the modules folder it is installed in
+  (`tests/test_check_fw.py`).
+- `scripts/first_spin.py` exits 0 with `nothing_to_judge`, not 2, while a
+  workspace has no `reports/first-spin/` review yet. The schematic and
+  board reviewers' `reports/review-*.json`, if there, are still classed and
+  judged, with `not_judged` saying the first-spin review is missing. An
+  explicit `--dir` that is missing or empty, or a missing workspace, still
+  exits 2 (`tests/test_first_spin.py`).
+- `scripts/check_irdrop.py` solves a net of more than 50k unknowns with CG
+  and a smoothed-aggregation multigrid preconditioner on the grid's 2x2 cell
+  blocks, in place of the sparse LU. The LU's fill grew past linear: a
+  795k-cell net took 4.5 GB and exited 2 with SUPERLU_MALLOC under a 2.5 GB
+  address-space limit. Smaller systems keep the LU, and a CG that stalls
+  falls back to it. Each net's `grid.solver` says which ran. The grid keeps
+  node ids for its in-copper cells only (a dense int64 id per frame cell was
+  300 MB a layer on a thin net), the rasterizer tests a block of rows at a
+  time, and current density is summed per node; `check_kelvin` uses the same
+  numbering. On a board with that net the whole check went from a 4.5 GB
+  peak to 0.75 GB with the same report, and runs in a 1.5 GB cgroup
+  (`tests/test_layout_sim.py`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps

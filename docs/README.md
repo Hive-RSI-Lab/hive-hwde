@@ -120,9 +120,12 @@ page covers how an agent runs it inside the Hive.
   input-only GPIO 34-39 nothing drives or pulls, and an I2C line with no
   pull-up. Its `targets[].needs` are what
   a netlist can't settle (antenna keep-out, address straps); weigh each.
-  Exit 0 pass, 1 problems, 2 when fw (one with `constraints`) isn't found:
-  it looks at `--fw`, `$HWDE_FW`, then hive-fw in `$HIVE_MODULES`. A check
-  sandbox sees neither, so it is an agent's check, not a per-PR one.
+  Exit 0 pass, 1 problems, 2 when an ESP32 board's fw (one with
+  `constraints`) isn't found: it looks at `--fw`, `$HWDE_FW`, then the fw
+  module's `bin/fw` (named hive-fw or fw) in `$HIVE_MODULES` or beside this
+  module. A board with no ESP32 and no `--target`, or one that no target
+  names, passes with `nothing_to_judge` and needs no fw. A check sandbox
+  sees no fw, so on an ESP32 board it is an agent's check, not a per-PR one.
 - Start from `pcb-flow task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.

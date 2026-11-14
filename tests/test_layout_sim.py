@@ -130,6 +130,12 @@ def test_strip_resistance_matches_analytic(tmp_path_factory):
     assert facts["grid"]["refine"] == "doubled"
     assert len(facts["resistance_pair_mohm"]) == 2
     assert facts["richardson_delta"] < 0.02
+    # 16k cells take the sparse LU, the doubled 64k grid the multigrid CG
+    assert facts["grid"]["solver_pair"]["method"] == "direct"
+    solver = facts["grid"]["solver"]
+    assert solver["method"] == "multigrid_cg"
+    assert solver["unknowns"] > check_irdrop.DIRECT_MAX_UNKNOWNS
+    assert solver["relres"] <= check_irdrop.CG_RTOL
 
 
 def test_l_corner_trefethen(tmp_path_factory):
@@ -192,6 +198,114 @@ def test_two_layer_via_coupled_parallel_sheets(tmp_path_factory):
     assert f2["vias"]["used"] == 6
     ratio = f2["resistance_mohm"] / f1["resistance_mohm"]
     assert ratio == pytest.approx(0.5, abs=0.06)
+
+
+# a U on F.Cu, a bar on B.Cu across its arms, two vias, sinks on both layers
+U_BODY = (
+    _zone("P", "F.Cu", [(0, 0), (10, 0), (10, 6), (7, 6), (7, 2), (3, 2),
+                        (3, 6), (0, 6)])
+    + _zone("P", "B.Cu", [(0, 4), (10, 4), (10, 6), (0, 6)])
+    + _via(1.5, 5.0, "P") + _via(8.5, 5.0, "P")
+    + _fp("J1", 1.5, 0.5, [("1", 0, 0, 2.0, 0.6, "F.Cu", "P")])
+    + _fp("J2", 5.0, 5.0, [("1", 0, 0, 1.0, 1.0, "B.Cu", "P")])
+    + _fp("J3", 8.5, 1.0, [("1", 0, 0, 1.0, 1.0, "F.Cu", "P")]))
+U_ENTRY = {"net": "P", "current_a": 1.0, "source_ref": "J1",
+           "sinks": [{"ref": "J2", "current_a": 0.6},
+                     {"ref": "J3", "current_a": 0.4}]}
+
+
+def _u_solve(bg, cell=0.1):
+    return check_irdrop.solve_grid(bg, dict(U_ENTRY), "P", ["F.Cu", "B.Cu"],
+                                   cell)
+
+
+def test_multigrid_cg_matches_sparse_lu(tmp_path_factory, monkeypatch):
+    # The same two-layer, via-coupled net solved both ways: the multigrid
+    # CG (forced, with a low coarse size so it runs several levels) must
+    # give the sparse LU's numbers.
+    bg = _board(tmp_path_factory, "u_net", U_BODY, w=12, h=8)
+    direct = _u_solve(bg)
+    assert direct["solver"]["method"] == "direct"
+    monkeypatch.setattr(check_irdrop, "DIRECT_MAX_UNKNOWNS", 0)
+    monkeypatch.setattr(check_irdrop, "MG_COARSE_UNKNOWNS", 200)
+    mg = _u_solve(bg)
+    assert mg["solver"]["method"] == "multigrid_cg"
+    assert mg["solver"]["levels"] >= 3
+    assert mg["solver"]["iterations"] < 60
+    assert mg["solver"]["relres"] <= check_irdrop.CG_RTOL
+    assert mg["vias_used"] == direct["vias_used"] == 2
+    for k in ("resistance_ohm", "worst_drop_v", "jmax"):
+        assert mg[k] == pytest.approx(direct[k], rel=1e-6), k
+    assert mg["worst_sink"]["ref"] == direct["worst_sink"]["ref"]
+    assert mg["necks"] == direct["necks"]
+    # deterministic: a second multigrid solve is bit-identical
+    assert _u_solve(bg)["resistance_ohm"] == mg["resistance_ohm"]
+
+
+def test_multigrid_falls_back_to_lu_when_cg_stalls(tmp_path_factory,
+                                                   monkeypatch):
+    bg = _board(tmp_path_factory, "u_net_stall", U_BODY, w=12, h=8)
+    direct = _u_solve(bg)
+    monkeypatch.setattr(check_irdrop, "DIRECT_MAX_UNKNOWNS", 0)
+    monkeypatch.setattr(check_irdrop, "CG_MAXITER", 1)
+    out = _u_solve(bg)
+    assert out["solver"]["method"] == "direct"
+    assert "CG stopped after 1 iterations" in out["solver"]["note"]
+    assert out["resistance_ohm"] == direct["resistance_ohm"]
+
+
+def test_sparse_numbering_matches_dense_ids():
+    # Node ids come from each layer's sorted cell keys, not from a dense id
+    # array over the frame. Ids, edges and their order must be the dense
+    # numbering's: the matrix, its solve and the neck order depend on them.
+    rng = np.random.default_rng(7)
+    grid = object.__new__(check_irdrop.NetGrid)
+    grid.layers, grid.ny, grid.nx = ["F.Cu", "In1.Cu", "B.Cu"], 23, 17
+    grid.mask = {l: rng.random((23, 17)) < p
+                 for l, p in zip(grid.layers, (0.6, 0.0, 0.9))}
+    grid.mask["B.Cu"][3, -1] = grid.mask["B.Cu"][4, 0] = True  # no wrap edge
+    grid._number()
+    n = 0
+    for l in grid.layers:
+        m = grid.mask[l]
+        ids = np.full(m.shape, -1, dtype=np.int64)
+        ids[m] = n + np.arange(int(m.sum()))
+        n += int(m.sum())
+        (a, b, ka, kb), (c, d, kc, kd) = grid.layer_edges(l)
+        h = m[:, :-1] & m[:, 1:]
+        hi, hj = np.nonzero(h)
+        assert a.tolist() == ids[:, :-1][h].tolist()
+        assert b.tolist() == ids[:, 1:][h].tolist()
+        assert ka.tolist() == (hi * grid.nx + hj).tolist()
+        assert kb.tolist() == (ka + 1).tolist()
+        v = m[:-1, :] & m[1:, :]
+        vi, vj = np.nonzero(v)
+        assert c.tolist() == ids[:-1, :][v].tolist()
+        assert d.tolist() == ids[1:, :][v].tolist()
+        assert kc.tolist() == (vi * grid.nx + vj).tolist()
+        assert kd.tolist() == (kc + grid.nx).tolist()
+        ii, jj = np.nonzero(m)
+        assert grid.node_ids(l, ii, jj).tolist() == ids[ii, jj].tolist()
+    assert grid.n_nodes == n
+    lay, rows, cols = grid.node_coords()
+    assert len(lay) == n
+    for k, l in enumerate(grid.layers):
+        ii, jj = np.nonzero(grid.mask[l])
+        assert rows[lay == k].tolist() == ii.tolist()
+        assert cols[lay == k].tolist() == jj.tolist()
+
+
+def test_raster_in_row_blocks_matches_one_block(tmp_path_factory,
+                                                monkeypatch):
+    # The raster tests cell centres a few rows at a time so a large frame
+    # never holds all its test points; the mask must not depend on it.
+    bg = _board(tmp_path_factory, "u_net_raster", U_BODY, w=12, h=8)
+    whole = check_irdrop.NetGrid(bg, "P", ["F.Cu", "B.Cu"], 0.1)
+    monkeypatch.setattr(check_irdrop, "RASTER_POINTS", 7)  # one row a block
+    rows = check_irdrop.NetGrid(bg, "P", ["F.Cu", "B.Cu"], 0.1)
+    for l in ("F.Cu", "B.Cu"):
+        assert whole.mask[l].any()
+        assert np.array_equal(whole.mask[l], rows.mask[l]), l
 
 
 def test_limits_violations_and_cli_exit_codes(tmp_path):

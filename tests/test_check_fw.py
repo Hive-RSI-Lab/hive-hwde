@@ -32,10 +32,13 @@ PINS = [  # fw pins' rows: (gpio, firmware name, net)
     (18, "PDAQ_PIN_ADC_SCLK", "ADC_SCLK")]
 
 
-def netlist(path: Path, nets: dict) -> Path:
+VALUES = {"U1": "ESP32-WROVER-E-N8R8"}
+
+
+def netlist(path: Path, nets: dict, values: dict = VALUES) -> Path:
     comps = sorted({r for ms in nets.values() for r, _ in ms})
     out = ["(export (version \"E\")", " (components"]
-    out += [f"  (comp (ref \"{r}\") (value \"x\"))" for r in comps]
+    out += [f"  (comp (ref \"{r}\") (value \"{values.get(r, 'x')}\"))" for r in comps]
     out += [" )", " (nets"]
     for i, (name, ms) in enumerate(nets.items(), 1):
         nodes = " ".join(f"(node (ref \"{r}\") (pin \"{p}\") (pintype \"passive\"))" for r, p in ms)
@@ -172,8 +175,71 @@ def test_fw_without_constraints_is_exit_2(world, capsys):
     assert "fw_unavailable" in capsys.readouterr().out
 
 
-def test_board_no_target_names_is_exit_2(world, capsys):
+def test_esp32_board_no_target_names_has_nothing_to_judge(world):
+    """The ESP32 is there but no firmware target names the board: not a
+    checker error (exit 2), and not a pass either."""
     (world["fw"] / "targets.json").write_text("{}", encoding="utf-8")
-    rc = check_fw.main(["--board", str(world["board"]), "--fw", str(world["fw"] / "bin" / "fw")])
+    rc, rep = run(world)
+    assert rc == 0
+    assert rep["violations"] == [] and rep["esp32"] == ["U1"]
+    assert "U1" in rep["nothing_to_judge"] and "give --target" in rep["nothing_to_judge"]
+    assert not (world["fw"] / "calls").exists()
+
+
+def test_board_without_an_esp32_needs_no_fw(world, monkeypatch, tmp_path):
+    """The reported case: a board with no ESP32 on it exited 2 because no fw
+    was installed. It has no firmware for fw to check."""
+    netlist(world["kicad"] / "demo.net", NETS, values={"U1": "AM6254"})
+    monkeypatch.setattr(check_fw, "find_fw", lambda given: None)
+    out = tmp_path / "out.json"
+    rc = check_fw.main(["--board", str(world["board"]), "--out", str(out)])
+    rep = json.loads(out.read_text(encoding="utf-8"))
+    assert rc == 0 and rep["status"] == "pass"
+    assert rep["esp32"] == [] and "no ESP32" in rep["nothing_to_judge"]
+
+
+@pytest.mark.parametrize("field,text", [
+    ("value", "ESP32-S3-WROOM-1-N8"),
+    ("footprint", "RF_Module:ESP32-WROOM-32"),
+    ("libsource", ("RF_Module", "ESP32-C3-MINI-1")),
+    ("value", "esp32-wrover-e"),
+])
+def test_an_esp32_is_found_by_value_footprint_or_symbol(field, text):
+    comp = {"value": "MCU", "footprint": "Package_QFP:LQFP-48", **{field: text}}
+    parsed = {"components": {"U3": comp, "R1": {"value": "10k", "footprint": "R_0402"}}}
+    assert check_fw.esp32_refs(parsed) == ["U3"]
+
+
+def test_esp32_board_without_fw_is_still_exit_2(world, monkeypatch, capsys):
+    monkeypatch.setattr(check_fw, "find_fw", lambda given: None)
+    rc = check_fw.main(["--board", str(world["board"])])
     assert rc == 2
-    assert "give --target" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "fw_unavailable" in out and "U1" in out
+
+
+@pytest.mark.parametrize("name", ["hive-fw", "fw"])
+def test_fw_is_found_in_a_modules_folder_under_either_name(tmp_path, monkeypatch, name):
+    """H0 installs the module as hive-fw, other Hives as fw."""
+    stub = tmp_path / "mods" / name / "bin" / "fw"
+    stub.parent.mkdir(parents=True)
+    stub.write_text("#!/bin/sh\n", encoding="utf-8")
+    stub.chmod(0o755)
+    monkeypatch.delenv("HWDE_FW", raising=False)
+    monkeypatch.setenv("HIVE_MODULES", str(tmp_path / "mods"))
+    assert check_fw.find_fw(None) == stub.resolve()
+
+
+def test_fw_is_found_beside_this_module(tmp_path, monkeypatch):
+    """No $HIVE_MODULES: fw installed in the same folder as hwde."""
+    mods = tmp_path / "mods"
+    scripts = mods / "pcb-flow" / "scripts"
+    scripts.mkdir(parents=True)
+    stub = mods / "fw" / "bin" / "fw"
+    stub.parent.mkdir(parents=True)
+    stub.write_text("#!/bin/sh\n", encoding="utf-8")
+    stub.chmod(0o755)
+    monkeypatch.delenv("HWDE_FW", raising=False)
+    monkeypatch.delenv("HIVE_MODULES", raising=False)
+    monkeypatch.setattr(check_fw, "HERE", scripts)
+    assert check_fw.find_fw(None) == stub.resolve()
