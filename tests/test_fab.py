@@ -702,6 +702,70 @@ def test_dfm_run_derives_capability_key_from_board():
     assert rep2["copper_oz_source"] == "cli"
 
 
+def _copper_line(rep) -> list[str]:
+    return [x for x in rep.get("not_judged", [])
+            if x.startswith("copper weight")]
+
+
+@pytest.mark.parametrize("thick, oz, line", [
+    ("0.07", 2.0, None),
+    ("0.105", 1.0, "the stackup gives 3 oz, which the capability table has "
+                   "no 2-layer rules for, so the 1 oz floors were used"),
+    (None, 1.0, "no thickness in a (stackup) block, so the 1 oz floors "
+                "were used"),
+])
+def test_dfm_copper_weight_fallback_is_named_not_passed(tmp_path, thick, oz,
+                                                         line):
+    """#892: a board judged at the 1 oz floors because its own weight
+    couldn't be keyed says so, and says why: no stackup thickness, or one
+    the capability table has no rules for (a 3 oz board is not 'no
+    thickness'). A keyed 2 oz board carries no such line."""
+    text = PD_PCB.read_text(encoding="utf-8")
+    assert "(thickness 0.07)" in text
+    if thick is None:
+        text = text.replace("(stackup", "(xstackup")
+    else:
+        text = text.replace("(thickness 0.07)", f"(thickness {thick})")
+    pcb = tmp_path / "pd-trigger.kicad_pcb"
+    pcb.write_text(text, encoding="utf-8")
+    rep = dfm_check.run(pcb, fab_dir=PD_GERBERS, polarity=False,
+                        skip=("copper", "drill", "silk"))
+    assert rep["copper_oz"] == oz
+    assert rep["capability_key"] == f"2layer_{oz:g}oz"
+    assert _copper_line(rep) == ([] if line is None
+                                 else [f"copper weight: {line}"])
+    assert ("copper_oz_stackup" in rep) == (thick == "0.105")
+    if thick == "0.105":
+        assert rep["copper_oz_stackup"] == 3.0
+
+
+def test_dfm_copper_weight_pinned_on_the_cli_is_not_a_fallback():
+    rep = dfm_check.run(PD_PCB, fab_dir=PD_GERBERS, copper_oz=1.0,
+                        polarity=False, skip=("copper", "drill", "silk"))
+    assert _copper_line(rep) == []
+
+
+def test_dfm_not_judged_names_polarity_gaps_and_copper_together(tmp_path):
+    """#892: run() builds not_judged from the polarity facts and the copper
+    fallback; a part only in the schematic, and no part compared, are both
+    named beside the 1 oz line rather than passing as a clean polarity."""
+    pcb = tmp_path / "pd-trigger.kicad_pcb"
+    pcb.write_text(PD_PCB.read_text(encoding="utf-8")
+                   .replace("(stackup", "(xstackup"), encoding="utf-8")
+    net = tmp_path / "x.net"
+    net.write_text('(export (version "E") (nets (net (code "1") '
+                   '(name "/X") (node (ref "Z9") (pin "1")))))\n',
+                   encoding="utf-8")
+    rep = dfm_check.run(pcb, fab_dir=PD_GERBERS, netlist=net,
+                        skip=("copper", "drill", "silk"))
+    assert rep["polarity"]["status"] == "checked"
+    left = rep["not_judged"]
+    assert "polarity: in the schematic, no connected pad on the board: Z9" \
+        in left
+    assert "polarity: no part could be compared" in left
+    assert left[-1].startswith("copper weight: no thickness")
+
+
 # ==================================== T6 P9-2: unclosable Edge.Cuts outline
 
 def test_dfm_open_outline_is_error(tmp_path):
