@@ -24,7 +24,7 @@ what pcb-flow's checks do with the first revision. Written by
 |---|---|---|---|
 | oasis-1: Q1/Q3 SI2328DS on Q_NMOS_GDS + stock SOT-23-3, so gate and source are swapped | LIB (symbol pin map vs package) | caught on rev A, gone on rev B (`netlist_audit` sot23_pinout) | v0.3 keeps the GDS symbol and moves to lib:SOT-23-3-pinswapped-mosfet, so the rule is quiet there. |
 | oasis-2: Rfbb1 BOM part an 0402 resistor (C844504) on an 0603 footprint | DFA (BOM part vs footprint package) | caught on rev A, gone on rev B (`check_bom_sync` bom_package_mismatch) | check_bom_sync --live reads each LCSC number off the board and JLC's package for it; on a pcb-flow fab package stock_check makes the same comparison against BOM.csv's footprint. v0.3 buys C844759, an 0603. |
-| oasis-3: MISTER1 connector placed 180 deg off at JLC assembly | DFA (CPL rotation) | caught on rev A, gone on rev B (`dfm` cpl_rotation) | The board published the CPL it sent JLC (v0.2/positions.csv). dfm's shipped-CPL check fits each part's LCSC model to the board's pads: mister1 (a keyed JST-PH) is at 119 deg where the model needs 299, the 180 the designer had JLC fix. v0.3's CPL puts it on the bottom at a rotation that fits, and the finding is gone. The same run also flags PS1 and U4 on v0.2 (not in the errata) and, on v0.3, PS1, J2's offset and Q1/Q3 (the board's own pin-swapped SOT-23, no LCSC fit); the corpus judges only the named catch. |
+| oasis-3: MISTER1 connector placed 180 deg off at JLC assembly | DFA (CPL rotation) | caught on rev A, gone on rev B (`dfm` cpl_rotation) | The board published the CPL it sent JLC (v0.2/positions.csv). dfm's shipped-CPL check fits each part's LCSC model to the board's pads: mister1 (a keyed JST-PH) is at 119 deg where the model needs 299, the 180 the designer had JLC fix. v0.3's CPL puts it on the bottom at a rotation that fits, and the finding is gone. The same run flags more, judged by hand: PS1 (LDD-700LS) and U4 (SHT30) on v0.2 and PS1 on v0.3 are real, 90 deg off (the LCSC model's pin rows run along x, KiCad's along y, and the Fabrication-Toolkit CPL adds no offset; JLC's own placement review most likely fixed them, as the boards work). J2's 1.48 mm offset on v0.3 is real too: the footprint origin sits on the shield pad, not the body. Q1/Q3's no_fit on v0.3 is false: the board's lib:SOT-23-3-pinswapped-mosfet renumbers the pads, so a fit by pad number fails where one by geometry holds (sent to cpl_verify's owner). |
 | oasis-4: J1 power-input wire holes too big (SolderWire-2.5sqmm, 3.0 mm drill) | DFA (THT hole vs lead) | caught on rev A, gone on rev B (`check_connector_fit` tht_hole_loose) | J1 is a solder-wire footprint with no part to hold it to, so check_connector_fit sizes the wire from the copper feeding the pads: +18V's only feed is a pour's four 0.5 mm thermal spokes, about 5.4 A at a 20 degC rise (IPC-2221), a 0.75 mm^2 wire with a 1.25 mm conductor, which leaves 1.75 mm in the 3.0 mm hole. v0.3 drops the solder-wire pads for a header, and the finding is gone. |
 
 ## minuet: v3 -> v4
@@ -41,6 +41,81 @@ what pcb-flow's checks do with the first revision. Written by
 | minuet-6: fan motor connector J8 has no A/B/C phase labels on silk | DFA (connector pin labels) | caught on rev A, gone on rev B (`check_silk` pin_labels_missing) | J8's three pins carry /fan/A, /fan/B and /fan/C; check_silk reads a connector whose nets name three motor phases (A/B/C or U/V/W, bare or after PH/OUT/MOTOR) and looks for silk within 5 mm of its pads that names each one. On J8 only its refdes and two capacitors' are there; v4 labels the phases and the finding is gone. Two-pin power inputs are not judged: which pin is + is a polarity mark, not a pin label. |
 | minuet-7: IR receiver U1's 3D model raised 17 mm where the built standoff is 16 mm | MECH (3D model height) | missed | a stated mounting height (constraints or a mech block) for raised THT parts (#980) |
 
+## glasgow: revD0 -> revD1
+
+[https://github.com/GlasgowEmbedded/glasgow](https://github.com/GlasgowEmbedded/glasgow) at `70cb38c9b034`, 0BSD; errata `https://github.com/GlasgowEmbedded/glasgow/issues/1184`.
+
+| defect | class | pcb-flow on rev A | follow-up |
+|---|---|---|---|
+| glasgow-1: U24/U25 nRESET left floating | SCH (datasheet pin state) | missed | a datasheet pin-state table read against each pin's net (#1033) |
+| glasgow-2: U3 TMP112 and U21 DAC43204 answer on the same I2C address | SCH (I2C address map) | missed | an I2C address map per bus, with each strap's supply domain (#1034) |
+| glasgow-3: U25 ADDR strap tied to the wrong power domain | SCH (strap supply domain) | missed | an I2C address map per bus, with each strap's supply domain (#1034) |
+| glasgow-4: U4 FUSB302 SCL and SDA swapped on the schematic | SCH (bus pin map) | caught on rev A, gone on rev B (`netlist_audit` pin_net_swap) | netlist_audit's pin_net_swap reads U4's SCL pin on /SDA and its SDA pin on /SCL; revD1 swaps them back and the finding is gone. |
+| glasgow-5: STM32G031 MCU_nRST held near 1.2 V by an unprogrammed FX2/FPGA | ANA (pull vs pin leakage) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
+| glasgow-6: FX2 U8B and U2 can both drive MCU_nRST | SCH (driver contention) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
+| glasgow-7: R9 100k pull-up loses to the unconfigured FPGA's 150 uA pull-down, so nALERT sits asserted | ANA (pull vs pin leakage) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
+| glasgow-8: INTB/DRDY lines on U6 pins that cannot take an interrupt | FW-HW (pin function) | missed | MCU pin function against the net's role (timer, PWM, EXTI) (#1032) |
+| glasgow-9: ADC AICOM pin left off GND though single-ended mode is referenced to it | SCH (datasheet pin state) | missed | a datasheet pin-state table read against each pin's net (#1033) |
+| glasgow-10: BUSY/CSSPIN on RD instead of a FLAG pin | FW-HW (pin function) | missed | MCU pin function against the net's role (timer, PWM, EXTI) (#1032) |
+
+## echoplayer: r1-rev1 -> r1-rev1.1
+
+[https://github.com/amachronic/echoplayer](https://github.com/amachronic/echoplayer) at `50f31a141c4c`, CERN-OHL-S-2.0; errata `r1-rev1/docs/errata.md`.
+
+| defect | class | pcb-flow on rev A | follow-up |
+|---|---|---|---|
+| echoplayer-1: USB3320C ID pin grounded on a device-only board, so the core starts as a host | SCH (datasheet pin state) | missed | a datasheet pin-state table read against each pin's net (#1033) |
+| echoplayer-2: HP/LO 3.5 mm jacks wired against the standard headphone pinout | LIB (standard connector pinout) | missed | off-board and standard connector pinouts, with the mate stated (#1027) |
+| echoplayer-3: ESD diodes D1-D4 load the SDMMC lines past the bus's capacitance limit | SI (bus capacitive load) | missed | a per-bus capacitive load budget, ESD arrays included (#1031) |
+
+## bedlift: v0.2 -> v1
+
+[https://github.com/j9brown/bed-lift](https://github.com/j9brown/bed-lift) at `6b5053345233`, MIT; errata `hardware/v0.2/design-and-errata.md`.
+
+| defect | class | pcb-flow on rev A | follow-up |
+|---|---|---|---|
+| bedlift-1: lift actuator connectors J8/J9 pins 2 and 3 swapped, reversing the hall sensors' supply | SCH (off-board connector pinout) | missed | off-board and standard connector pinouts, with the mate stated (#1027) |
+| bedlift-2: DRV8434S nSCS tied to GND, but the part needs a falling edge to start each SPI frame | SCH (datasheet pin state) | missed | a datasheet pin-state table read against each pin's net (#1033) |
+| bedlift-3: DRV8434S STEP not on a hardware-timer pin, so stall detection sees jitter | FW-HW (pin function) | missed | MCU pin function against the net's role (timer, PWM, EXTI) (#1032) |
+| bedlift-4: DRV8434S VREF wired straight to DVDD, 5 V where 3.3 V is recommended | SCH (datasheet pin range) | missed | a datasheet pin-state table read against each pin's net (#1033) |
+| bedlift-5: LIFT1 IN2 on an MCU pin with no timer channel, so the motor cannot be driven by PWM | FW-HW (pin function) | missed | MCU pin function against the net's role (timer, PWM, EXTI) (#1032) |
+| bedlift-6: actuator hall sensors powered at 3.3 V where they are meant for 5 V | SCH (off-board part supply) | missed | off-board and standard connector pinouts, with the mate stated (#1027) |
+
+## pdlc: v1 -> v2
+
+[https://github.com/brown-studios/pdlc](https://github.com/brown-studios/pdlc) at `423481719bae`, MIT; errata `hardware/v1/design-and-errata.md`.
+
+| defect | class | pcb-flow on rev A | follow-up |
+|---|---|---|---|
+| pdlc-1: the driver does not wait for power-good before driving the panel | PI (power-good sequencing) | missed | a power-good pin that gates nothing; a switched load against the converter's limit (#1030) |
+| pdlc-2: no current limit on the panel drive, so large panels drain the output capacitor | PI (load current limit) | missed | a power-good pin that gates nothing; a switched load against the converter's limit (#1030) |
+| pdlc-3: the EN input is too sensitive when left floating | SCH (input pull strength) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
+
+## megabuzz: revA -> revA1
+
+[https://github.com/andykarpov/karabas-megabuzz](https://github.com/andykarpov/karabas-megabuzz) at `b3a026f15f44`, MIT; errata `ERRATA.en.md`.
+
+| defect | class | pcb-flow on rev A | follow-up |
+|---|---|---|---|
+| megabuzz-1: OPL3 at 5 V drives the FPGA's 3.3 V inputs through dropping resistors only | SCH (I/O supply domain) | missed | driver supply against receiver bank voltage without parts.json (#1029) |
+
+## sizif: rev.C -> rev.C1
+
+[https://github.com/UzixLS/zx-sizif-512](https://github.com/UzixLS/zx-sizif-512) at `d9b1f4d71383`, MIT; errata `pcb/rev.C/ERRATA.txt`.
+
+| defect | class | pcb-flow on rev A | follow-up |
+|---|---|---|---|
+| sizif-1: JTAG header pinout differs from the Altera standard | SCH (standard connector pinout) | missed | off-board and standard connector pinouts, with the mate stated (#1027) |
+| sizif-2: J3 header's silkscreen is wrong | DFA (silk labels) | missed | check_silk reading a header's labels against its pins' nets (#1028) |
+
+## ambient: rev_c -> rev_d
+
+[https://github.com/lab11/signpost](https://github.com/lab11/signpost) at `f8f9efe01185`, Apache-2.0; errata `modules/ambient/rev_c/errata.txt`.
+
+| defect | class | pcb-flow on rev A | follow-up |
+|---|---|---|---|
+| ambient-1: no pull-ups on SWDIO and SWDCLK | SCH (datasheet pin state) | missed | a datasheet pin-state table read against each pin's net (#1033) |
+
 ## Count
 
-15 defects: 13 caught, 1 missed, 1 not_static.
+41 defects: 14 caught, 26 missed, 1 not_static.

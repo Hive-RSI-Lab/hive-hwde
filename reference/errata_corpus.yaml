@@ -97,10 +97,15 @@ boards:
       shipped-CPL check fits each part's LCSC model to the board's pads:
       mister1 (a keyed JST-PH) is at 119 deg where the model needs 299, the
       180 the designer had JLC fix. v0.3's CPL puts it on the bottom at a
-      rotation that fits, and the finding is gone. The same run also flags
-      PS1 and U4 on v0.2 (not in the errata) and, on v0.3, PS1, J2's offset
-      and Q1/Q3 (the board's own pin-swapped SOT-23, no LCSC fit); the
-      corpus judges only the named catch.
+      rotation that fits, and the finding is gone. The same run flags more,
+      judged by hand: PS1 (LDD-700LS) and U4 (SHT30) on v0.2 and PS1 on v0.3
+      are real, 90 deg off (the LCSC model's pin rows run along x, KiCad's
+      along y, and the Fabrication-Toolkit CPL adds no offset; JLC's own
+      placement review most likely fixed them, as the boards work). J2's
+      1.48 mm offset on v0.3 is real too: the footprint origin sits on the
+      shield pad, not the body. Q1/Q3's no_fit on v0.3 is false: the board's
+      lib:SOT-23-3-pinswapped-mosfet renumbers the pads, so a fit by pad
+      number fails where one by geometry holds (sent to cpl_verify's owner).
   - id: oasis-4
     summary: J1 power-input wire holes too big (SolderWire-2.5sqmm, 3.0 mm drill)
     source_quote: "power input connection/holes are too big"
@@ -205,3 +210,232 @@ boards:
       model against the build (a 16 mm printed standoff, the leads' reach),
       which no file of the board records.
     follow_up: a stated mounting height (constraints or a mech block) for raised THT parts (#980)
+- id: glasgow
+  url: https://github.com/GlasgowEmbedded/glasgow
+  commit: 70cb38c9b03471acd2eabb76c82308891bec2ca5
+  licence: 0BSD
+  rev_a: {name: revD0, sch: hardware/boards/glasgow/revD0/glasgow.kicad_sch,
+          pcb: hardware/boards/glasgow/revD0/glasgow.kicad_pcb}
+  rev_b: {name: revD1, sch: hardware/boards/glasgow/revD1/glasgow.kicad_sch,
+          pcb: hardware/boards/glasgow/revD1/glasgow.kicad_pcb}
+  source: https://github.com/GlasgowEmbedded/glasgow/issues/1184
+  defects:
+  - id: glasgow-1
+    summary: U24/U25 nRESET left floating
+    source_quote: "U24/U25 pin nRESET cannot be left floating"
+    fault_class: SCH (datasheet pin state)
+    verdict: missed
+    follow_up: "a datasheet pin-state table read against each pin's net (#1033)"
+  - id: glasgow-2
+    summary: U3 TMP112 and U21 DAC43204 answer on the same I2C address
+    source_quote: "U3 TMP112 address conflicts with U21 DAC43204"
+    fault_class: SCH (I2C address map)
+    verdict: missed
+    follow_up: "an I2C address map per bus, with each strap's supply domain (#1034)"
+  - id: glasgow-3
+    summary: U25 ADDR strap tied to the wrong power domain
+    source_quote: "U25 pin ADDR connected to wrong power domain"
+    fault_class: SCH (strap supply domain)
+    verdict: missed
+    follow_up: "an I2C address map per bus, with each strap's supply domain (#1034)"
+  - id: glasgow-4
+    summary: U4 FUSB302 SCL and SDA swapped on the schematic
+    source_quote: "U4 FUSB302 address `0100011` does not scan on the bus (fix: swap SCL/SDA on schematic for revD1"
+    fault_class: SCH (bus pin map)
+    verdict: caught
+    catch: {script: netlist_audit, kind: pin_net_swap, refs: [U4]}
+    note: >-
+      netlist_audit's pin_net_swap reads U4's SCL pin on /SDA and its SDA pin
+      on /SCL; revD1 swaps them back and the finding is gone.
+  - id: glasgow-5
+    summary: STM32G031 MCU_nRST held near 1.2 V by an unprogrammed FX2/FPGA
+    source_quote: "U6 STM32G031 has MCU_nRST input held at approx. +1.2V with unprogrammed FX2/FPGA"
+    fault_class: ANA (pull vs pin leakage)
+    verdict: missed
+    follow_up: "pull strength against pin leakage and driver contention on a DC-solved net (#1026)"
+  - id: glasgow-6
+    summary: FX2 U8B and U2 can both drive MCU_nRST
+    source_quote: "U8B and U2 can contend on MCU_nRST"
+    fault_class: SCH (driver contention)
+    verdict: missed
+    follow_up: "pull strength against pin leakage and driver contention on a DC-solved net (#1026)"
+  - id: glasgow-7
+    summary: R9 100k pull-up loses to the unconfigured FPGA's 150 uA pull-down, so nALERT sits asserted
+    source_quote: "value of R9 is too small; when unconfigured, FPGA U8B has an active pull-down of 150 uA (datasheet table 3.7, IPD), which is much bigger than the 33 uA required to drop all 3.3 V on the 100k resistor"
+    fault_class: ANA (pull vs pin leakage)
+    verdict: missed
+    follow_up: "pull strength against pin leakage and driver contention on a DC-solved net (#1026)"
+  - id: glasgow-8
+    summary: INTB/DRDY lines on U6 pins that cannot take an interrupt
+    source_quote: "move INTB/DRDY connections to U6 to interrupt-capable pins"
+    fault_class: FW-HW (pin function)
+    verdict: missed
+    follow_up: "MCU pin function against the net's role (timer, PWM, EXTI) (#1032)"
+  - id: glasgow-9
+    summary: ADC AICOM pin left off GND though single-ended mode is referenced to it
+    source_quote: "AICOM should be connected to GND (§7.3.2.2.1) since SE mode is referenced to AICOM"
+    fault_class: SCH (datasheet pin state)
+    verdict: missed
+    follow_up: "a datasheet pin-state table read against each pin's net (#1033)"
+  - id: glasgow-10
+    summary: BUSY/CSSPIN on RD instead of a FLAG pin
+    source_quote: "connect BUSY/CSSPIN to one of FLAG{A,C,D} (instead of RD) via R40 and populate R40"
+    fault_class: FW-HW (pin function)
+    verdict: missed
+    follow_up: "MCU pin function against the net's role (timer, PWM, EXTI) (#1032)"
+- id: echoplayer
+  url: https://github.com/amachronic/echoplayer
+  commit: 50f31a141c4c171ea014890c1445da6ae1125143
+  licence: CERN-OHL-S-2.0
+  rev_a: {name: r1-rev1, sch: r1-rev1/echo-r1-rev1.kicad_sch, pcb: r1-rev1/echo-r1-rev1.kicad_pcb}
+  rev_b: {name: r1-rev1.1, sch: r1-rev1.1/echo-r1-rev1.1.kicad_sch, pcb: r1-rev1.1/echo-r1-rev1.1.kicad_pcb}
+  source: r1-rev1/docs/errata.md
+  defects:
+  - id: echoplayer-1
+    summary: USB3320C ID pin grounded on a device-only board, so the core starts as a host
+    source_quote: "the ID pin is connected to ground, which causes the DWC2 USB core to go into host mode"
+    fault_class: SCH (datasheet pin state)
+    verdict: missed
+    note: rev1.1 ties U8's ID to 3V3, as the USB3320C datasheet allows for a board that does not use it.
+    follow_up: "a datasheet pin-state table read against each pin's net (#1033)"
+  - id: echoplayer-2
+    summary: HP/LO 3.5 mm jacks wired against the standard headphone pinout
+    source_quote: "Due to a mistake in the pin assignment for the 3.5mm jack footprint, both jacks are incorrectly wired and will not work with standard headphones."
+    fault_class: LIB (standard connector pinout)
+    verdict: missed
+    follow_up: "off-board and standard connector pinouts, with the mate stated (#1027)"
+  - id: echoplayer-3
+    summary: ESD diodes D1-D4 load the SDMMC lines past the bus's capacitance limit
+    source_quote: "Diodes D1-D4 should be left unpopulated since they add too much capacitance and cause the SDMMC bus to fail at higher speeds."
+    fault_class: SI (bus capacitive load)
+    verdict: missed
+    follow_up: "a per-bus capacitive load budget, ESD arrays included (#1031)"
+- id: bedlift
+  url: https://github.com/j9brown/bed-lift
+  commit: 6b50533452337175c8b3f47198b3920d8391fd2b
+  licence: MIT
+  rev_a: {name: v0.2, sch: hardware/v0.2/bed-lift.kicad_sch, pcb: hardware/v0.2/bed-lift.kicad_pcb}
+  rev_b: {name: v1, sch: hardware/v1/bed-lift.kicad_sch, pcb: hardware/v1/bed-lift.kicad_pcb}
+  source: hardware/v0.2/design-and-errata.md
+  defects:
+  - id: bedlift-1
+    summary: lift actuator connectors J8/J9 pins 2 and 3 swapped, reversing the hall sensors' supply
+    source_quote: "The lift actuator connector pins 2 and 3 are swapped which reverses the polarity of the power supply to the hall sensors."
+    fault_class: SCH (off-board connector pinout)
+    verdict: missed
+    note: v0.2 has pin 2 on VHALL and pin 3 on GND; v1 has pin 2 on GND and pin 3 on +5V. Only the actuator's own pinout says which is right.
+    follow_up: "off-board and standard connector pinouts, with the mate stated (#1027)"
+  - id: bedlift-2
+    summary: DRV8434S nSCS tied to GND, but the part needs a falling edge to start each SPI frame
+    source_quote: "nSCS was tied to ground because it was believed no chip select was needed due to the absence of other devices on the SPI bus."
+    fault_class: SCH (datasheet pin state)
+    verdict: missed
+    follow_up: "a datasheet pin-state table read against each pin's net (#1033)"
+  - id: bedlift-3
+    summary: DRV8434S STEP not on a hardware-timer pin, so stall detection sees jitter
+    source_quote: "The STEP pulses must be generated by a hardware timer instead."
+    fault_class: FW-HW (pin function)
+    verdict: missed
+    follow_up: "MCU pin function against the net's role (timer, PWM, EXTI) (#1032)"
+  - id: bedlift-4
+    summary: DRV8434S VREF wired straight to DVDD, 5 V where 3.3 V is recommended
+    source_quote: "The DRV8434S VREF pin is directly connected to DVDD without a voltage divider which results it in receiving 5 V instead of the recommended 3.3 V."
+    fault_class: SCH (datasheet pin range)
+    verdict: missed
+    follow_up: "a datasheet pin-state table read against each pin's net (#1033)"
+  - id: bedlift-5
+    summary: LIFT1 IN2 on an MCU pin with no timer channel, so the motor cannot be driven by PWM
+    source_quote: "Unfortunately, one of the motor driver inputs must be relocated to use the timer function."
+    fault_class: FW-HW (pin function)
+    verdict: missed
+    follow_up: "MCU pin function against the net's role (timer, PWM, EXTI) (#1032)"
+  - id: bedlift-6
+    summary: actuator hall sensors powered at 3.3 V where they are meant for 5 V
+    source_quote: "They are intended to be driven at 5 V and while they seem to tolerate 3.3 V most of the time, sometimes they produce inconsistent pulses or no pulses at all."
+    fault_class: SCH (off-board part supply)
+    verdict: missed
+    follow_up: "off-board and standard connector pinouts, with the mate stated (#1027)"
+- id: pdlc
+  url: https://github.com/brown-studios/pdlc
+  commit: 423481719baefe24c1663eb4cf88b208b6401eb4
+  licence: MIT
+  rev_a: {name: v1, sch: hardware/v1/pdlc.kicad_sch, pcb: hardware/v1/pdlc.kicad_pcb}
+  rev_b: {name: v2, sch: hardware/v2/pdlc.kicad_sch, pcb: hardware/v2/pdlc.kicad_pcb}
+  source: hardware/v1/design-and-errata.md
+  defects:
+  - id: pdlc-1
+    summary: the driver does not wait for power-good before driving the panel
+    source_quote: "The driver does not wait for the power-good signal to be asserted before driving the panel which results in hiccups."
+    fault_class: PI (power-good sequencing)
+    verdict: missed
+    note: v1's PGOOD net has two members and gates no driver enable.
+    follow_up: "a power-good pin that gates nothing; a switched load against the converter's limit (#1030)"
+  - id: pdlc-2
+    summary: no current limit on the panel drive, so large panels drain the output capacitor
+    source_quote: "The driver does not limit the current to the panel so it exceeds the available charge in the output capacitor when driving larger panels and hiccups."
+    fault_class: PI (load current limit)
+    verdict: missed
+    follow_up: "a power-good pin that gates nothing; a switched load against the converter's limit (#1030)"
+  - id: pdlc-3
+    summary: the EN input is too sensitive when left floating
+    source_quote: "The `EN` input is much too sensitive when left floating."
+    fault_class: SCH (input pull strength)
+    verdict: missed
+    follow_up: "pull strength against pin leakage and driver contention on a DC-solved net (#1026)"
+- id: megabuzz
+  url: https://github.com/andykarpov/karabas-megabuzz
+  commit: b3a026f15f440507760da5281632fed66bef03fe
+  licence: MIT
+  rev_a: {name: revA, sch: pcb/revA/karabas-megabuzz.kicad_sch, pcb: pcb/revA/karabas-megabuzz.kicad_pcb}
+  rev_b: {name: revA1, sch: pcb/revA1/karabas-megabuzz.kicad_sch, pcb: pcb/revA1/karabas-megabuzz.kicad_pcb}
+  source: ERRATA.en.md
+  defects:
+  - id: megabuzz-1
+    summary: OPL3 at 5 V drives the FPGA's 3.3 V inputs through dropping resistors only
+    source_quote: "5 V signals from the OPL3 to the FPGA currently go by a simplified circuit through dropping resistors."
+    fault_class: SCH (I/O supply domain)
+    verdict: missed
+    note: >-
+      The errata's /RST items are fixed in the revA files at this commit, and
+      the revA1 items have no next revision here, so only this one is judged.
+    follow_up: "driver supply against receiver bank voltage without parts.json (#1029)"
+- id: sizif
+  url: https://github.com/UzixLS/zx-sizif-512
+  commit: d9b1f4d7138359cc4a0e54e57f7025f2e0c5747c
+  licence: MIT
+  rev_a: {name: rev.C, sch: pcb/rev.C/sizif512.sch, pcb: pcb/rev.C/sizif512.kicad_pcb}
+  rev_b: {name: rev.C1, sch: pcb/rev.C1/sizif512.sch, pcb: pcb/rev.C1/sizif512.kicad_pcb}
+  source: pcb/rev.C/ERRATA.txt
+  defects:
+  - id: sizif-1
+    summary: JTAG header pinout differs from the Altera standard
+    source_quote: "JTAG pinout differs from Altera standard"
+    fault_class: SCH (standard connector pinout)
+    verdict: missed
+    note: >-
+      A KiCad 5 legacy schematic: kicad-cli exports an empty netlist from it,
+      so no schematic check reads this board (#1023).
+    follow_up: "off-board and standard connector pinouts, with the mate stated (#1027)"
+  - id: sizif-2
+    summary: J3 header's silkscreen is wrong
+    source_quote: "Incorrect silkscreen for J3 header"
+    fault_class: DFA (silk labels)
+    verdict: missed
+    follow_up: "check_silk reading a header's labels against its pins' nets (#1028)"
+- id: ambient
+  url: https://github.com/lab11/signpost
+  commit: f8f9efe01185763a943f949eddcd1a2ed87dd32c
+  licence: Apache-2.0
+  rev_a: {name: rev_c, sch: modules/ambient/rev_c/ambient.sch, pcb: modules/ambient/rev_c/ambient.kicad_pcb}
+  rev_b: {name: rev_d, sch: modules/ambient/rev_d/ambient.sch, pcb: modules/ambient/rev_d/ambient.kicad_pcb}
+  source: modules/ambient/rev_c/errata.txt
+  defects:
+  - id: ambient-1
+    summary: no pull-ups on SWDIO and SWDCLK
+    source_quote: "Need pull up resistors for SWDIO and SWDCLK lines"
+    fault_class: SCH (datasheet pin state)
+    verdict: missed
+    note: >-
+      A KiCad 5 legacy schematic (#1023). The errata's other line, "Random
+      trace on pin32?", is a question with no stated fix, so it is not judged.
+    follow_up: "a datasheet pin-state table read against each pin's net (#1033)"
