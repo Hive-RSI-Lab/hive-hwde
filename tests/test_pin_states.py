@@ -111,6 +111,34 @@ def test_io_expander_reset_tied_or_pulled_up_is_quiet(pull):
     assert _audit(comps, nets)[0] == []
 
 
+
+def _expanders(addr_net, vccp="VDD_P"):
+    """glasgow's two 16-bit expanders: I2C side on +3V3, P-ports on +5V5,
+    U24 ADDR on GND, U25 ADDR on `addr_net`."""
+    comps = {"U24": "PCA6416APW", "U25": "PCA6416APW"}
+    nets = {"+3V3": [], "+5V5": [], "GND": []}
+    for u in ("U24", "U25"):
+        nets["+3V3"] += [_m(u, "2", "VDD_I2C", "power_in"),
+                         _m(u, "3", "~{RESET}", "input")]
+        nets["+5V5"].append(_m(u, "24", vccp, "power_in"))
+        nets["GND"].append(_m(u, "12", "VSS", "power_in"))
+    nets["GND"].append(_m("U24", "21", "ADDR", "input"))
+    nets.setdefault(addr_net, []).append(_m("U25", "21", "ADDR", "input"))
+    return comps, nets
+
+
+@pytest.mark.parametrize("vccp", ["VDD_P", "VCCP"])
+def test_io_expander_addr_on_the_lower_rail_is_the_planted_fault(vccp):
+    hits, _ = _audit(*_expanders("+3V3", vccp))
+    assert [(h["refs"], h["pin"], h["net"]) for h in hits] == [
+        (["U25"], "ADDR", "+3V3")]
+    assert "not VDD_P's '+5V5'" in hits[0]["msg"]
+
+
+@pytest.mark.parametrize("net", ["+5V5", "GND"])
+def test_io_expander_addr_on_vccp_or_ground_is_quiet(net):
+    assert _audit(*_expanders(net))[0] == []
+
 def _adc(far, value):
     """NAFE71388 U7 with AICOM through R34 (`value`) to net `far`."""
     comps = {"U7": "NAFE71388", "R34": value, "C51": "1n", "J3": "Conn"}

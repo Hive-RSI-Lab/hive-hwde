@@ -1,0 +1,143 @@
+# What an MCU pin can do, for netlist_audit.py's pin-function rules (#1032):
+# which timer channels each GPIO brings out, which pins are input-only; and
+# the loads whose inputs need one of those functions.
+#
+# mcus: match is a regex tried against the part's Value first and only then
+# its symbol name (a C051 is often drawn with a C031 symbol), case-insensitive.
+# Pins are named as the netlist's pinfunction gives them, upper-cased, cut at
+# the first '-' or '/' (PA14-BOOT0 is PA14, RDY0/SLRD is RDY0).
+#   timers      GPIO: the TIMn_CHx / TIMn_CHxN outputs its alternate
+#               functions bring out (CHxN is channel x's complement, so it
+#               shares channel x)
+#   input_only  pins the part can only read
+#   source      where the table comes from: the document, its revision, the table
+#
+# loads: parts whose inputs need an MCU function.
+#   pwm_group   the inputs that take PWM; every such input of every load of
+#               this row driven from one MCU must fit on distinct channels
+#               of a single timer, so they share one counter: one PWM
+#               frequency and aligned edges
+#   when        the rule holds only with this pin in one of these states
+#               (pin_states.yaml's state words)
+#   aliases     other names a symbol uses for those pins
+#
+# chip_select: a memory or peripheral chip-select input (~CS, nCS, CS#,
+# SCS) joined, directly or over a 0 ohm link, to an input_only MCU pin:
+# the MCU can watch that select but never drive it.
+#
+# Seeded from the errata corpus's pin-function defects (#1032): bedlift-5
+# (a motor driver input off its timer) and glasgow-10 (a flash select on
+# the FX2's input-only RDY0). glasgow-8 and bedlift-3 are firmware choices
+# no datasheet fixes (every STM32G0 GPIO takes an EXTI line; the DRV8434S
+# accepts steps over SPI), so the corpus marks them not_static.
+
+mcus:
+  - mpn: STM32C031
+    match: '^STM32C031'
+    verified: true   # read 2026-11-14 from the XML at that commit
+    source: >-
+      STMicroelectronics STM32_open_pin_data (the STM32CubeMX pin database
+      behind the DS13836 alternate-function tables), commit 7d1f1514ed55,
+      mcu/STM32C031K(4-6)Tx.xml
+    timers:
+      PA0: [TIM16_CH1, TIM1_CH1]
+      PA1: [TIM17_CH1, TIM1_CH2]
+      PA2: [TIM16_CH1N, TIM1_CH3]
+      PA3: [TIM1_CH1N, TIM1_CH4]
+      PA4: [TIM14_CH1, TIM17_CH1N, TIM1_CH2N]
+      PA5: [TIM1_CH1, TIM1_CH3N]
+      PA6: [TIM16_CH1, TIM3_CH1]
+      PA7: [TIM14_CH1, TIM17_CH1, TIM1_CH1N, TIM3_CH2]
+      PA8: [TIM14_CH1, TIM1_CH1, TIM1_CH2N, TIM1_CH3N, TIM3_CH3, TIM3_CH4]
+      PA9: [TIM1_CH2]
+      PA10: [TIM1_CH3]
+      PA11: [TIM1_CH4]
+      PA14: [TIM1_CH1]
+      PA15: [TIM1_CH1]
+      PB0: [TIM1_CH2N, TIM3_CH3]
+      PB1: [TIM14_CH1, TIM1_CH2N, TIM1_CH3N, TIM3_CH4]
+      PB3: [TIM1_CH2, TIM3_CH2]
+      PB4: [TIM3_CH1]
+      PB5: [TIM3_CH2, TIM3_CH3]
+      PB6: [TIM16_CH1N, TIM1_CH2, TIM1_CH3, TIM3_CH1, TIM3_CH2, TIM3_CH3]
+      PB7: [TIM16_CH1, TIM17_CH1N, TIM1_CH4, TIM3_CH1, TIM3_CH4]
+      PB8: [TIM16_CH1, TIM3_CH1]
+      PB9: [TIM17_CH1, TIM3_CH2]
+      PC6: [TIM3_CH1]
+      PC14: [TIM17_CH1, TIM3_CH2]
+      PC15: [TIM3_CH3]
+      PF2: [TIM1_CH4]
+
+  - mpn: STM32C051
+    match: '^STM32C051'
+    verified: true   # read 2026-11-14 from the XML at that commit
+    source: >-
+      STMicroelectronics STM32_open_pin_data, commit 7d1f1514ed55,
+      mcu/STM32C051C8Tx.xml
+    timers:
+      PA0: [TIM16_CH1, TIM1_CH1, TIM2_CH1]
+      PA1: [TIM17_CH1, TIM1_CH2, TIM2_CH2]
+      PA2: [TIM16_CH1N, TIM1_CH3, TIM2_CH3]
+      PA3: [TIM1_CH1N, TIM1_CH4, TIM2_CH4]
+      PA4: [TIM14_CH1, TIM17_CH1N, TIM1_CH2N]
+      PA5: [TIM1_CH1, TIM1_CH3N, TIM2_CH1]
+      PA6: [TIM16_CH1, TIM3_CH1]
+      PA7: [TIM14_CH1, TIM17_CH1, TIM1_CH1N, TIM3_CH2]
+      PA8: [TIM14_CH1, TIM1_CH1, TIM1_CH2N, TIM1_CH3N, TIM3_CH3, TIM3_CH4]
+      PA9: [TIM1_CH2]
+      PA10: [TIM1_CH3]
+      PA11: [TIM1_CH4]
+      PA14: [TIM1_CH1]
+      PA15: [TIM1_CH1, TIM2_CH1]
+      PB0: [TIM1_CH2N, TIM3_CH3]
+      PB1: [TIM14_CH1, TIM1_CH2N, TIM1_CH3N, TIM3_CH4]
+      PB3: [TIM1_CH2, TIM2_CH2, TIM3_CH2]
+      PB4: [TIM3_CH1]
+      PB5: [TIM3_CH2, TIM3_CH3]
+      PB6: [TIM16_CH1N, TIM1_CH2, TIM1_CH3, TIM3_CH1, TIM3_CH2, TIM3_CH3]
+      PB7: [TIM16_CH1, TIM17_CH1N, TIM1_CH1, TIM1_CH4, TIM3_CH1, TIM3_CH4]
+      PB8: [TIM16_CH1, TIM3_CH1]
+      PB9: [TIM17_CH1, TIM3_CH2]
+      PB10: [TIM2_CH3]
+      PB11: [TIM2_CH4]
+      PB13: [TIM1_CH1N]
+      PB14: [TIM1_CH2N]
+      PB15: [TIM1_CH3N]
+      PC6: [TIM2_CH3, TIM3_CH1]
+      PC7: [TIM2_CH4, TIM3_CH2]
+      PC14: [TIM17_CH1, TIM3_CH2]
+      PC15: [TIM1_CH2, TIM3_CH3]
+      PD0: [TIM16_CH1]
+      PD1: [TIM17_CH1]
+      PD2: [TIM1_CH1N]
+      PD3: [TIM1_CH2N]
+      PF0: [TIM14_CH1]
+      PF2: [TIM1_CH4]
+
+  - mpn: CY7C68013A / CY7C68014A (FX2LP)
+    match: '^CY7C6801[3-6]A'
+    verified: true   # Cypress 38-08032 Rev. *K read 2026-11-14
+    source: >-
+      Cypress CY7C68013A/14A/15A/16A datasheet 38-08032 Rev. *K, Table 4-1
+      FX2LP Pin Descriptions: RDY0 or SLRD, RDY1 or SLWR are type Input
+      ("SLRD is the input-only read strobe", "SLWR is the input-only
+      write strobe"); CTL0-2/FLAGA-C are O/Z
+    input_only: [RDY0, RDY1, RDY2, RDY3, RDY4, RDY5]
+
+loads:
+  - mpn: DRV8874
+    match: '^DRV8874'
+    verified: true   # TI SLVSF66A (revised December 2019) read 2026-11-14
+    aliases: {EN/IN1: IN1, PH/IN2: IN2}
+    when: {pin: PMODE, states: [rail, pulled_up]}
+    pwm_group: [IN1, IN2]
+    severity: warning
+    why: >-
+      with PMODE high the bridge is latched into PWM (IN/IN) mode, where
+      speed comes from a PWM on IN1 or IN2, so every such input of the
+      board's motor drivers wants its own channel of one timer: one counter
+      gives them one PWM frequency and aligned edges
+    source: >-
+      TI DRV8874 SLVSF66A, section 5 pin table (PMODE: "H-bridge control
+      input mode"), 7.3.2 Table 2 PMODE Functions ("PMODE = Logic High:
+      PWM") and 7.3.2.2 Table 4 PWM Control Mode (IN1/IN2 truth table)
