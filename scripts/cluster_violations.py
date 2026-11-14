@@ -96,6 +96,7 @@ FIXER_HINTS = {
     "mating_model_reversed": "library",
     # S11 routing pipeline
     "critical_route_failed": "router", "critical_missing_net": "schematic",
+    "power_width_blocked": "router",
     "zone_unfilled": "plane", "stitch_impossible": "router",
     "plane_split": "plane", "plane_split_unrepairable": "plane",
     "cleanup_regression": "router",
