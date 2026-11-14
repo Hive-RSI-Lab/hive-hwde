@@ -10,7 +10,9 @@ disagreement instead of being invisible to a board-file-only checker.
 Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
 <layers>layer_<oz>oz):
 
-  copper   min_trace_width, min_clearance (gap between distinct copper
+  copper   min_trace_width (pour copper too: a neck of a zone narrower
+           than the floor over 2 floors or more, dfm_pour_width, #890),
+           min_clearance (gap between distinct copper
            islands - gerbers carry no nets, so "touching = one conductor",
            which is exactly what the fab's own DFM engine sees),
            min_copper_to_edge. The checks measure the gerbers alone; each
@@ -156,6 +158,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import yaml  # noqa: E402
+import shapely  # noqa: E402
 from shapely.geometry import Point  # noqa: E402
 from shapely.ops import nearest_points, unary_union  # noqa: E402
 from shapely.strtree import STRtree  # noqa: E402
@@ -298,6 +301,66 @@ def check_trace_width(fab, rules, vios: list) -> None:
                     f"trace width {w:.4f} mm below JLC minimum {lo} mm "
                     f"on {name}", SOURCE, kind="dfm_trace_width",
                     width_mm=checklib.rnd(w), min_mm=lo))
+
+
+# A thin piece of pour at least this many trace floors long is a neck the
+# fab cannot etch (#890); a shorter one is the chip off a corner that the
+# floor's round tool leaves at every convex vertex.
+POUR_NECK_FLOORS = 2.0
+
+
+def _thin_pours(lg, lo: float) -> list:
+    """[(piece, width)]: the copper that touches a pour and is narrower than
+    lo: what an opening at lo (shrink then grow by lo / 2) takes off, kept
+    when it runs POUR_NECK_FLOORS * lo or more. Its width is the widest
+    circle that fits it, so the neck is that narrow or narrower."""
+    if not lg.pours:
+        return []
+    pours = unary_union(lg.pours)
+    r = lo / 2.0 - GEOM_TOL_MM
+    out = []
+    for comp in lg.components():
+        if not comp.intersects(pours):
+            continue
+        kept = comp.buffer(-r).buffer(r).buffer(GEOM_TOL_MM)
+        thin = comp.difference(kept)
+        for piece in getattr(thin, "geoms", [thin]):
+            if piece.is_empty or not piece.intersects(pours):
+                continue
+            rect = piece.minimum_rotated_rectangle
+            xy = list(rect.exterior.coords) if rect.geom_type == "Polygon" \
+                else list(rect.coords)
+            run = max((Point(a).distance(Point(b))
+                       for a, b in zip(xy, xy[1:])), default=0.0)
+            if run < POUR_NECK_FLOORS * lo:
+                continue
+            circle = shapely.maximum_inscribed_circle(piece, 1e-4)
+            width = 2.0 * circle.length
+            if _below(width, lo):
+                out.append((piece, width, circle.coords[0]))
+    return out
+
+
+def check_pour_width(fab, rules, vios: list) -> None:
+    """Zone copper held to the trace floor (#890): a pour drawn or shaved
+    narrower than min_trace_width_mm (zcoupon's pair zone at 0.1043 mm
+    against 0.127) passes DRC, since the fill keeps its own clearance, and
+    the gerber's trace widths never see it."""
+    lo = rules.get("min_trace_width_mm")
+    if lo is None:
+        return
+    for name in fab.copper_layer_names():
+        lg = fab.copper(name)
+        if lg is None:
+            continue
+        for piece, w, at in _thin_pours(lg, lo):
+            pos = (checklib.rnd(at[0]), checklib.rnd(at[1]))
+            vios.append(checklib.violation(
+                CHECK, "error", pos, name, None, [],
+                f"pour copper {w:.4f} mm wide, below JLC minimum trace "
+                f"width {lo} mm on {name}, over {piece.length / 2:.2f} mm",
+                SOURCE, kind="dfm_pour_width", width_mm=checklib.rnd(w),
+                min_mm=lo, ends=[list(pos)]))
 
 
 def _pairs_within(polys, limit):
@@ -723,7 +786,8 @@ def name_gaps(bg, vios: list) -> None:
     layers: dict = {}
     for v in vios:
         kind = v.get("kind")
-        if kind not in ("dfm_clearance", "dfm_copper_to_edge") or not v.get("ends"):
+        if kind not in ("dfm_clearance", "dfm_copper_to_edge",
+                        "dfm_pour_width") or not v.get("ends"):
             continue
         layer = v["layer"]
         if layer not in layers:
@@ -1983,6 +2047,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         check_outline(fab, vios)
         if "copper" not in skip:
             check_trace_width(fab, rules, vios)
+            check_pour_width(fab, rules, vios)
             check_clearance(fab, rules, vios)
             check_copper_to_edge(fab, rules, vios,
                                  castellation.edge_copper(bg))

@@ -29,6 +29,14 @@ Per pair (from constraints.json["diff_pairs"], else auto-discovered by name):
    reported as zdiff_ohm; when the spec carries impedance_ohm, a miss beyond
    impedance_tol_pct (default 10, JLC's standard tolerance) warns and beyond
    twice that is an error.
+ - ZONE PAIRS (#890): a pair drawn as two zones and no tracks (hw-lab
+   zcoupon) is sampled along the edge P shows N: the ray across the gap
+   gives the edge gap and, carried on, each strip's width at the same spot.
+   Each layer both fill reports its widths, gap and Zdiff (judged against
+   impedance_ohm as above); a side narrower than its partner by more than
+   max_width_imbalance_pct (default 10) over ZONE_IMBALANCE_MM is a
+   diffpair_width_imbalance error. Skew, uncoupled length, vias and phase
+   stay with tracks.
 
 Why not raw length? Adding a meander to the SHORTER trace (the corpus
 diffpair-skew mutant does exactly this) barely moves the length skew but is a
@@ -75,8 +83,8 @@ import statistics
 import sys
 from pathlib import Path
 
-from shapely.geometry import LineString, box
-from shapely.ops import unary_union
+from shapely.geometry import LineString, Point, box
+from shapely.ops import nearest_points, unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
@@ -443,6 +451,12 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
     # A pair with an unrouted half cannot be coupling-checked (an empty geometry
     # makes distance() NaN); report it as not-routed and judge nothing yet.
     tracks_p, tracks_n = bg.tracks_of(p), bg.tracks_of(n)
+    if not tracks_p and not tracks_n:
+        fp, fn = zone_fills(bg, p), zone_fills(bg, n)
+        if set(fp) & set(fn):            # drawn as two zones (#890)
+            nom = float(spec.get("gap_mm") or 0.2)
+            return zone_pair(bg, spec, p, n, fp, fn,
+                             max(factor * nom, nom + 0.5))
     if not tracks_p or not tracks_n:
         return [], {"pair": [p, n], "routed": False,
                     "length_p_mm": checklib.rnd(sum(t.length for t in tracks_p)),
@@ -691,6 +705,149 @@ def layer_impedance(bg, p, n, coupling_max) -> dict:
                 row.update(zdiff_ohm=checklib.rnd(z), model=model)
         out[lay] = row
     return out
+
+
+# ------------------------------------------------------------ zone pairs (#890)
+
+ZONE_IMBALANCE_PCT = 10.0     # a zone pair's sides may differ by this much
+ZONE_IMBALANCE_MM = 1.0       # over a stretch at least this long
+ZONE_RAY_MM = 5.0             # a cross-section this wide is a pour, not a strip
+
+
+def zone_fills(bg, net) -> dict:
+    """{layer: filled copper} of the net's zones, layers with a fill only."""
+    out = {}
+    for lay in bg.copper_layers:
+        g = bg.zone_fill(net, lay) if bg.zones_of(net, lay) else None
+        if g is not None and not g.is_empty:
+            out[lay] = g
+    return out
+
+
+def _across(poly, at, d) -> float | None:
+    """How far the ray from boundary point `at` along unit vector d runs
+    inside poly before it leaves it: the strip's width there. None when the
+    ray leaves at once (the far edge) or never (a pour)."""
+    ray = LineString([at, (at[0] + d[0] * ZONE_RAY_MM,
+                           at[1] + d[1] * ZONE_RAY_MM)])
+    hit = ray.intersection(poly)
+    first = [g for g in getattr(hit, "geoms", [hit])
+             if g.geom_type == "LineString" and g.length > 1e-6
+             and g.distance(Point(at)) < 1e-4]
+    if not first or first[0].length >= ZONE_RAY_MM - 1e-3:
+        return None
+    return first[0].length
+
+
+def zone_pair_samples(gp, gn, coupling_max, step=SAMPLE_MM) -> list[tuple]:
+    """[(point, width_p, width_n, gap)] every step along the edge of P that
+    faces N within coupling_max. The ray from N's nearest point across the
+    gap gives the edge gap; carried on, the width of each strip at the same
+    spot, so the two sides are compared where they couple."""
+    out = []
+    for poly in getattr(gp, "geoms", [gp]):
+        for ring in [poly.exterior, *poly.interiors]:
+            k = int(ring.length / step)
+            for i in range(k):
+                q = ring.interpolate(i * step)
+                g = gn.distance(q)
+                if not 1e-6 < g <= coupling_max:
+                    continue
+                r = nearest_points(q, gn)[1]
+                d = ((q.x - r.x) / g, (q.y - r.y) / g)
+                wp = _across(gp, (q.x, q.y), d)
+                wn = _across(gn, (r.x, r.y), (-d[0], -d[1])) if wp else None
+                if wn:
+                    out.append((q, wp, wn, g))
+    return out
+
+
+def _imbalanced_stretch(samples, tol_pct, step=SAMPLE_MM):
+    """The longest run of consecutive samples whose sides differ by more
+    than tol_pct of their mean width: (length_mm, worst sample) or None."""
+    best, run = None, []
+    for s in samples + [None]:
+        bad = s is not None and \
+            abs(s[1] - s[2]) > tol_pct / 100.0 * (s[1] + s[2]) / 2
+        if bad:
+            run.append(s)
+            continue
+        if run and (best is None or len(run) > len(best)):
+            best = run
+        run = []
+    if not best:
+        return None
+    worst = max(best, key=lambda s: abs(s[1] - s[2]))
+    return len(best) * step, worst
+
+
+def zone_pair(bg, spec, p, n, fp, fn, coupling_max) -> tuple[list, dict]:
+    """A pair drawn as two zones (hw-lab zcoupon): width and gap sampled
+    along the coupled run on each layer both nets fill, Zdiff as drawn per
+    layer, and a side narrower than its partner over ZONE_IMBALANCE_MM.
+    Length skew, uncoupled length, vias and phase are for tracks."""
+    violations: list[dict] = []
+    common = dict(pair=[p, n], drawn_as="zones")
+    target = None if is_sense(spec) else spec.get("impedance_ohm")
+    tol = float(spec.get("impedance_tol_pct", IMPEDANCE_TOL_PCT))
+    imb_pct = float(spec.get("max_width_imbalance_pct", ZONE_IMBALANCE_PCT))
+    layers: dict[str, dict] = {}
+    for lay in sorted(set(fp) & set(fn)):
+        smp = zone_pair_samples(fp[lay], fn[lay], coupling_max)
+        coupled = len(smp) * SAMPLE_MM
+        if coupled < LAYER_MIN_COUPLED_MM:
+            continue
+        wp = statistics.median(s[1] for s in smp)
+        wn = statistics.median(s[2] for s in smp)
+        gap = statistics.median(s[3] for s in smp)
+        row = {"width_p_mm": checklib.rnd(wp), "width_n_mm": checklib.rnd(wn),
+               "min_width_p_mm": checklib.rnd(min(s[1] for s in smp)),
+               "min_width_n_mm": checklib.rnd(min(s[2] for s in smp)),
+               "gap_mm": checklib.rnd(gap), "coupled_mm": checklib.rnd(coupled)}
+        w = (wp + wn) / 2
+        try:
+            z, model = layer_zdiff(bg, lay, w, gap)
+        except (ValueError, RuntimeError, ZeroDivisionError):
+            z, model = None, ""
+        if z is not None:
+            row.update(zdiff_ohm=checklib.rnd(z), model=model)
+        layers[lay] = row
+        at = smp[len(smp) // 2][0]
+        if target and z is not None:
+            miss = (z - float(target)) / float(target) * 100
+            if abs(miss) > tol:
+                violations.append(violation(
+                    SCRIPT, "error" if abs(miss) > 2 * tol else "warning",
+                    (at.x, at.y), lay, p, [],
+                    f"diff pair {p}/{n} (zones) is {z:.1f} ohm as drawn on "
+                    f"{lay} (width {w:.4f} mm, gap {gap:.4f} mm); target "
+                    f"{float(target):g} ohm +/-{tol:g}%", SCRIPT,
+                    **{**common, "kind": "diffpair_impedance",
+                       "target_ohm": float(target),
+                       "miss_pct": checklib.rnd(miss), **row}))
+        st = _imbalanced_stretch(smp, imb_pct)
+        if st and st[0] >= ZONE_IMBALANCE_MM:
+            length, (q, a, b, _) = st
+            thin = p if a < b else n
+            violations.append(violation(
+                SCRIPT, "error", (q.x, q.y), lay, thin, [],
+                f"diff pair {p}/{n} (zones): {thin} is {min(a, b):.4f} mm "
+                f"against {max(a, b):.4f} mm for {length:.1f} mm on {lay}; "
+                f"limit {imb_pct:g}% apart", SCRIPT,
+                **{**common, "kind": "diffpair_width_imbalance",
+                   "width_p_mm": checklib.rnd(a), "width_n_mm": checklib.rnd(b),
+                   "stretch_mm": checklib.rnd(length),
+                   "limit_pct": imb_pct}))
+    if not layers:
+        return [], {"pair": [p, n], "routed": False, "drawn_as": "zones",
+                    "note": "zone pair not coupled on any layer; "
+                            "coupling not evaluated"}
+    main = max(layers, key=lambda l: layers[l]["coupled_mm"])
+    return violations, {
+        "pair": [p, n], "kind": "sense" if is_sense(spec) else "diff",
+        "drawn_as": "zones", "signal_layer": main, "layers": layers,
+        "not_judged": "skew, uncoupled length, vias and phase: the pair is "
+                      "drawn as zones"}
 
 
 DEFAULT_ER = 4.5              # FR4 fallback when no reference dielectric exists
