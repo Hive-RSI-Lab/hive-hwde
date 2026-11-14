@@ -266,7 +266,9 @@ def start_xvfb() -> tuple[subprocess.Popen, str]:
         raise CheckError("Xvfb not on PATH (the SWIG and Freerouting steps "
                          "need a display)")
     n = _free_display()
-    proc = subprocess.Popen(["Xvfb", f":{n}", "-nolisten", "tcp"],
+    # -noreset: the workers come and go, and a server that resets when the
+    # last one leaves fails the next one's connect during the reset (#898)
+    proc = subprocess.Popen(["Xvfb", f":{n}", "-nolisten", "tcp", "-noreset"],
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(50):
         if Path(f"/tmp/.X11-unix/X{n}").exists():
