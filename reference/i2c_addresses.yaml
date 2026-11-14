@@ -1,0 +1,59 @@
+# I2C target addresses and their strap pins, for netlist_audit.py's
+# i2c_address_collision rule (#1034): every device on one SCL net must
+# answer at its own 7-bit address.
+#
+# match: a regex tried against the part's Value, then its symbol name
+# (case-insensitive). Pins are named as the netlist's pinfunction gives
+# them, upper-cased, overbar dropped, cut at the first '/' (A0/SDI is A0).
+#   pin        the address strap pin
+#   supply     the part's own supply pin, for the `supply` strap
+#   addresses  7-bit address per strap, by where the pin goes:
+#                ground  a ground net (or a pull-down)
+#                supply  the net of the part's own `supply` pin
+#                high    any rail or pull-up (when the part has only L/H);
+#                        a part with no `high` reads any other rail as
+#                        `supply`
+#                sda / scl  the device's own SDA / SCL net
+#   A strap the rule can't read (open, driven, on a net it can't place)
+#   leaves the device out: it never guesses an address.
+#   source     the datasheet, its revision, the table
+# verified: true means the source was re-read for this row.
+#
+# Seeded from the errata corpus's I2C address defects (#1034): glasgow-2
+# (TMP112 and DAC43204 both strapped to 0x48). glasgow-3 (a PCA6416A ADDR
+# tied to 3.3 V while the part's VDD_P is 5 V, so it reads low and lands
+# on its twin's 0x20) is pin_states.yaml's rail_pin rule.
+
+devices:
+  - mpn: TMP112 (SOT563, DRL)
+    match: '^TMP112(?:[ABN]|.*DRL)'
+    verified: true   # TI SBOS473L (revised July 2024) read 2026-11-14
+    pin: ADD0
+    supply: V+
+    addresses: {ground: 0x48, supply: 0x49, sda: 0x4A, scl: 0x4B}
+    source: >-
+      TI SBOS473L Table 7-4 Address and Alert Variant Device Target
+      Address, SOT563-6 rows (TMP112A/B/D/N): ADD0 to GND 48h, V+ 49h,
+      SDA 4Ah, SCL 4Bh. The X2SON TMP112D answers at 40h-43h and is not
+      matched here
+
+  - mpn: DAC43204 / DAC53204 / DAC63204
+    match: '^DAC[456]3204'
+    verified: true   # TI SLASEX3A (revised December 2021) read 2026-11-14
+    pin: A0
+    supply: VDD
+    addresses: {ground: 0x48, supply: 0x49, sda: 0x4A, scl: 0x4B}
+    source: >-
+      TI SLASEX3A 7.5.2 Table 7-15 Address Byte (AD6-AD3 = 1001) and
+      Table 7-16 Address Format: A0 to AGND 000, VDD 001, SDA 010, SCL 011
+
+  - mpn: TCA6416A / PCA6416A
+    match: '^[TP]CA6416A'
+    verified: true   # TI SCPS194F (revised January 2023) read 2026-11-14
+    pin: ADDR
+    addresses: {ground: 0x20, high: 0x21}
+    source: >-
+      TI SCPS194F Table 8-3 Address Reference: ADDR L 20h, H 21h (pin
+      table: "Address input. Connect directly to VCCP or ground"). The
+      NXP PCA6416A datasheet gives the same two addresses but was not
+      re-read here

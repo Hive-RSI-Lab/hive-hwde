@@ -82,6 +82,17 @@ schematic-level structural problems BEFORE board work starts:
    the wrong way. Each pin's net is read as open / ground / rail /
    own_supply / pulled_up / pulled_down / driven / external (0 ohm is a
    tie); the row's severity (error unless it says warning).
+   A row's rail_pin makes `rail` mean the part's own rail pin's net: an
+   expander's ADDR on 3.3 V while its VDD_P is 5 V reads low.
+ - mcu_pwm_timer (warning): the PWM inputs of reference/mcu_pins.yaml
+   loads (a DRV8874 in PWM mode) driven from one MCU whose pins can't all
+   take distinct channels of a single timer (#1032, bedlift-5).
+ - mcu_input_only_drive (warning): a chip-select input (~CS, nCS, CS#)
+   joined, directly or over 0 ohm, to an MCU pin mcu_pins.yaml lists as
+   input-only (#1032, glasgow-10: flash select on the FX2's RDY0).
+ - i2c_address_collision (error): two devices on one SCL net whose
+   address straps (reference/i2c_addresses.yaml) give the same 7-bit
+   address (#1034, glasgow-2). A strap it can't read leaves that device out.
  - metadata_mismatch (error): a decoupling association that contradicts the
    netlist (cap/ic missing, IC pin not on the stated rail, cap not spanning
    rail+gnd); value drift cap-vs-netlist is a warning.
@@ -125,6 +136,8 @@ SCRIPT = "netlist_audit"
 SOURCE = "audit.netlist"
 PIN_REQUIREMENTS = HERE.parent / "reference" / "pin_requirements.yaml"
 PIN_STATES = HERE.parent / "reference" / "pin_states.yaml"
+MCU_PINS = HERE.parent / "reference" / "mcu_pins.yaml"
+I2C_ADDRESSES = HERE.parent / "reference" / "i2c_addresses.yaml"
 
 # Strong differential suffix families (subset of check_diffpair.SUFFIX_PAIRS:
 # the bare +/- and P/N tokens are too ambiguous for unpaired-net warnings).
@@ -543,9 +556,231 @@ def _pin_states(nets: dict, comps: dict,
                           and volts > float(rule["max_v"]) + 1e-6):
                         problem = (f"sits at {volts:g} V, above its "
                                    f"{float(rule['max_v']):g} V limit")
+                    elif (rule.get("rail_pin") and "rail" in st
+                          and "ground" not in st):
+                        want = sorted({n for _, n in by_pin.get(
+                            rule["rail_pin"].upper(), [])})
+                        if want and name not in want:
+                            problem = (f"is on a rail, not {rule['rail_pin']}"
+                                       f"'s '{want[0]}'")
                     if problem:
                         yield (rule, spec, ref, pnum, name, st, volts, why,
                                problem)
+
+
+def _load_yaml(path: Path, what: str) -> dict:
+    import yaml  # noqa: PLC0415
+    try:
+        return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError) as exc:
+        raise checklib.CheckError(f"{what} {path}: {exc}") from exc
+
+
+def load_mcu_pins(path: Path = MCU_PINS) -> dict:
+    """reference/mcu_pins.yaml (its header says the form)."""
+    return _load_yaml(path, "mcu pins")
+
+
+def load_i2c_addresses(path: Path = I2C_ADDRESSES) -> list[dict]:
+    """reference/i2c_addresses.yaml's devices (its header says the form)."""
+    return _load_yaml(path, "i2c addresses").get("devices") or []
+
+
+def _pin_base(func: str | None) -> str:
+    """A pin's first name: PA14-BOOT0 is PA14, RDY0/SLRD is RDY0."""
+    return re.split(r"[-/]", _norm_pin(func))[0]
+
+
+def _mcu_row(comp: dict, rows: list[dict]) -> dict | None:
+    """The mcu_pins.yaml row for COMP, by its Value first: a C051 drawn
+    with a C031 symbol is a C051."""
+    for field in ((comp.get("value") or ""),
+                  (comp.get("libsource") or ("", ""))[1]):
+        for row in rows:
+            if re.search(row["match"], field, re.I):
+                return row
+    return None
+
+
+def _pin_funcs(ref: str, nets: dict, comp_pins: dict[str, dict[str, str]]
+               ) -> dict[str, tuple[str, str]]:
+    """REF's pins as {pinfunction: (pin number, net)}."""
+    out = {}
+    for pnum, name in comp_pins.get(ref, {}).items():
+        func = next((m.get("pinfunction") for m in nets.get(name, [])
+                     if m["ref"] == ref and m["pin"] == pnum), "")
+        out[func or ""] = (pnum, name)
+    return out
+
+
+def _zero_ohm_reach(net: str, nets: dict, comps: dict,
+                    comp_pins: dict[str, dict[str, str]]) -> list[str]:
+    """NET and the nets one 0 ohm 2-pin resistor away."""
+    out = [net]
+    for m in nets.get(net, []):
+        if _part_kind(m["ref"]) != "R":
+            continue
+        pins = comp_pins.get(m["ref"], {})
+        if (len(pins) == 2 and engcalc.parse_value(
+                comps.get(m["ref"], {}).get("value")) == 0):
+            far = next((n for p, n in pins.items() if p != m["pin"]), None)
+            if far and far not in out:
+                out.append(far)
+    return out
+
+
+_TIM_RE = re.compile(r"^(TIM\d+)_CH(\d)N?$")
+
+
+def _one_timer(inputs: list[tuple[str, list[str]]]) -> str | None:
+    """A timer with a distinct channel for every input (CHx and CHxN share
+    channel x), or None. INPUTS: (label, [TIMn_CHx...])."""
+    opts = []
+    for _, funcs in inputs:
+        o: dict[str, set[int]] = {}
+        for f in funcs:
+            m = _TIM_RE.match(f.upper())
+            if m:
+                o.setdefault(m.group(1), set()).add(int(m.group(2)))
+        opts.append(o)
+    timers = set.intersection(*(set(o) for o in opts)) if opts else set()
+    for tim in sorted(timers, key=lambda t: int(t[3:])):
+        match: dict[int, int] = {}
+
+        def place(i, seen, tim=tim, match=match):
+            for ch in opts[i][tim]:
+                if ch in seen:
+                    continue
+                seen.add(ch)
+                if ch not in match or place(match[ch], seen):
+                    match[ch] = i
+                    return True
+            return False
+        if all(place(i, set()) for i in range(len(opts))):
+            return tim
+    return None
+
+
+def _mcu_pwm_groups(nets: dict, comps: dict,
+                    comp_pins: dict[str, dict[str, str]], rails: dict,
+                    table: dict) -> tuple[list[tuple], int]:
+    """([(row, mcu_ref, mcu_row, inputs)], groups checked): each group of
+    PWM inputs (one load row's inputs fed from one MCU) that no single
+    timer can drive, each input (load_ref, load_pin, mcu_pin,
+    [TIMn_CHx...])."""
+    mcus = table.get("mcus") or []
+    found: list[tuple] = []
+    checked = 0
+    for row in table.get("loads") or []:
+        aliases = {_norm_pin(k): v.upper()
+                   for k, v in (row.get("aliases") or {}).items()}
+        want = {p.upper() for p in row.get("pwm_group") or ()}
+        when = row.get("when") or {}
+        groups: dict[str, list] = {}
+        for ref in sorted(comps):
+            if not _spec_matches(row, comps[ref]):
+                continue
+            funcs = {aliases.get(_norm_pin(f), _norm_pin(f)): pn
+                     for f, pn in _pin_funcs(ref, nets, comp_pins).items()}
+            if when:
+                at = funcs.get(when["pin"].upper())
+                if not at:
+                    continue
+                st, _, _ = _net_states(at[1], ref, at[0], nets, comps,
+                                       comp_pins, rails, {})
+                if not st & set(when.get("states") or ()):
+                    continue
+            for pin in sorted(want & set(funcs)):
+                for net in _zero_ohm_reach(funcs[pin][1], nets, comps,
+                                           comp_pins):
+                    for m in nets.get(net, []):
+                        mrow = (_mcu_row(comps.get(m["ref"], {}), mcus)
+                                if m["ref"] != ref else None)
+                        if not mrow or "timers" not in mrow:
+                            continue
+                        mp = _pin_base(m.get("pinfunction"))
+                        groups.setdefault(m["ref"], [mrow, []])[1].append(
+                            (ref, pin, mp, list(
+                                (mrow["timers"] or {}).get(mp) or [])))
+        for mref, (mrow, inputs) in sorted(groups.items()):
+            checked += 1
+            if len(inputs) < 2 and all(i[3] for i in inputs):
+                continue
+            if _one_timer([(i[2], i[3]) for i in inputs]) is None:
+                found.append((row, mref, mrow, inputs))
+    return found, checked
+
+
+_CS_RE = re.compile(r"^(N|X)?(CS|SS|SCS|CE)[#N]?$")
+
+
+def _input_only_selects(nets: dict, comps: dict,
+                        comp_pins: dict[str, dict[str, str]], table: dict):
+    """Yield (mcu_row, mcu_ref, mcu_pin, pin_net, sel_ref, sel_pin, sel_net)
+    per chip-select input wired (directly or over a 0 ohm link) to a pin
+    the MCU can only read."""
+    for row in table.get("mcus") or []:
+        only = {p.upper() for p in row.get("input_only") or ()}
+        if not only:
+            continue
+        for ref in sorted(comps):
+            if _mcu_row(comps[ref], table.get("mcus") or []) is not row:
+                continue
+            for func, (pnum, net) in sorted(
+                    _pin_funcs(ref, nets, comp_pins).items()):
+                if _pin_base(func) not in only:
+                    continue
+                for reach in _zero_ohm_reach(net, nets, comps, comp_pins):
+                    for m in nets.get(reach, []):
+                        if (m["ref"] != ref and _part_kind(m["ref"]) is None
+                                and _CS_RE.match(_pin_base(
+                                    m.get("pinfunction")))
+                                and _base_type(m.get("pintype"))
+                                in ("input", "passive")):
+                            yield (row, ref, _pin_base(func), net, m["ref"],
+                                   _norm_pin(m.get("pinfunction")), reach)
+
+
+def _i2c_buses(nets: dict, comps: dict,
+               comp_pins: dict[str, dict[str, str]], rails: dict,
+               devices: list[dict]) -> dict[str, list[tuple]]:
+    """{SCL net: [(address, ref, row, strap)]} for every device in
+    i2c_addresses.yaml whose strap reads plainly."""
+    buses: dict[str, list[tuple]] = {}
+    for row in devices:
+        for ref in sorted(comps):
+            if not _spec_matches(row, comps[ref]):
+                continue
+            funcs: dict[str, tuple[str, str]] = {}
+            for f, pn in _pin_funcs(ref, nets, comp_pins).items():
+                funcs.setdefault(_pin_base(f), pn)
+            scl, sda = funcs.get("SCL"), funcs.get("SDA")
+            strap = funcs.get(row["pin"].upper())
+            if not scl or not strap:
+                continue
+            sup = funcs.get((row.get("supply") or "").upper())
+            snet = strap[1]
+            adr = row["addresses"]
+            where = None
+            if snet == scl[1]:
+                where = "scl"
+            elif sda and snet == sda[1]:
+                where = "sda"
+            else:
+                st, _, _ = _net_states(snet, ref, strap[0], nets, comps,
+                                       comp_pins, rails, {})
+                if st & {"ground", "pulled_down"} and not st & {
+                        "rail", "pulled_up", "driven"}:
+                    where = "ground"
+                elif sup and snet == sup[1] and "supply" in adr:
+                    where = "supply"
+                elif st & {"rail", "pulled_up"} and not st & {
+                        "ground", "pulled_down", "driven"}:
+                    where = "high" if "high" in adr else "supply"
+            if where in adr:
+                buses.setdefault(scl[1], []).append(
+                    (int(adr[where]), ref, row, where))
+    return buses
 
 
 def _rail_volts(constraints: dict, nets: dict) -> dict[str, float]:
@@ -1137,7 +1372,9 @@ def audit(parsed: dict, constraints: dict,
           decoupling: dict | None,
           pin_requirements: list[dict] | None = None,
           board_only_refs: set[str] | None = None,
-          pin_states: list[dict] | None = None
+          pin_states: list[dict] | None = None,
+          mcu_pins: dict | None = None,
+          i2c_addresses: list[dict] | None = None
           ) -> tuple[list[dict], dict]:
     nets = parsed["nets"]
     comps = parsed["components"]
@@ -1608,6 +1845,72 @@ def audit(parsed: dict, constraints: dict,
           pin=rule["pin"], pin_number=pnum, states=sorted(st),
           volts=volts, part=spec["mpn"])
 
+    # 16. an MCU pin asked for what it can't do (reference/mcu_pins.yaml,
+    # #1032; errata corpus: bedlift v0.2 spread its two DRV8874s' PWM
+    # inputs over pins no one timer reaches, glasgow revC3 put the flash
+    # chip select on the FX2's input-only RDY0)
+    mp_table = load_mcu_pins() if mcu_pins is None else mcu_pins
+    pwm_found, pwm_checked = _mcu_pwm_groups(nets, comps, comp_pins,
+                                             ps_rails, mp_table)
+    for row, mref, mrow, inputs in pwm_found:
+        pins = "; ".join(
+            f"{lr} {lp} on {mp} ({'/'.join(fs) if fs else 'no timer'})"
+            for lr, lp, mp, fs in inputs)
+        v(row.get("severity", "warning"), "mcu_pwm_timer", None,
+          sorted({i[0] for i in inputs} | {mref}),
+          f"{mref} ({comps[mref].get('value')}) drives the PWM inputs of "
+          f"{row['mpn']} {', '.join(sorted({i[0] for i in inputs}))} from "
+          f"pins no single timer gives each a channel: {pins}. "
+          f"{' '.join(row['why'].split())} "
+          f"[{' '.join(row['source'].split()).split(',')[0]}; "
+          f"{' '.join(mrow['source'].split()).split('(')[0].strip()}]"
+          + ("" if row.get("verified") and mrow.get("verified")
+             else " (not yet re-read)"),
+          mcu=mref, part=row["mpn"],
+          inputs=[{"ref": lr, "pin": lp, "mcu_pin": mp, "timers": fs}
+                  for lr, lp, mp, fs in inputs])
+    io_checked = 0
+    for row in mp_table.get("mcus") or []:
+        if row.get("input_only"):
+            io_checked += sum(1 for r in comps
+                              if _mcu_row(comps[r], mp_table.get("mcus")
+                                          or []) is row)
+    for (mrow, mref, mpin, mnet, sref, spin,
+         snet) in _input_only_selects(nets, comps, comp_pins, mp_table):
+        via = "" if snet == mnet else f" over a 0 ohm link from '{mnet}'"
+        v("warning", "mcu_input_only_drive", snet, [mref, sref],
+          f"{sref} ({comps[sref].get('value')}) chip select {spin} on "
+          f"'{snet}' is wired to {mref} ({comps[mref].get('value')}) "
+          f"{mpin}{via}, a pin the MCU can only read: it can watch that "
+          f"select but never drive it "
+          f"[{' '.join(mrow['source'].split()).split(',')[0]}]"
+          + ("" if mrow.get("verified") else " (not yet re-read)"),
+          mcu=mref, mcu_pin=mpin, part=mrow["mpn"])
+
+    # 17. two I2C devices on one bus strapped to one address
+    # (reference/i2c_addresses.yaml, #1034; errata corpus: glasgow revC2
+    # strapped its TMP112 and DAC43204 both to 0x48)
+    i2c_rows = load_i2c_addresses() if i2c_addresses is None \
+        else i2c_addresses
+    buses = _i2c_buses(nets, comps, comp_pins, ps_rails, i2c_rows)
+    for scl, devs in sorted(buses.items()):
+        by_adr: dict[int, list[tuple]] = {}
+        for d in devs:
+            by_adr.setdefault(d[0], []).append(d)
+        for adr, same in sorted(by_adr.items()):
+            if len(same) < 2:
+                continue
+            who = ", ".join(f"{r} ({comps[r].get('value')}, "
+                            f"{row['pin']} to {where})"
+                            for _, r, row, where in same)
+            v("error", "i2c_address_collision", scl,
+              sorted(d[1] for d in same),
+              f"I2C bus '{scl}': {who} all answer at 0x{adr:02X} "
+              f"[{'; '.join(sorted({' '.join(d[2]['source'].split()).split(' Table')[0] for d in same}))}]"
+              + ("" if all(d[2].get("verified") for d in same)
+                 else " (not yet re-read)"),
+              address=f"0x{adr:02X}")
+
     facts = {
         "nets": len(nets),
         "components": len(comps),
@@ -1624,6 +1927,10 @@ def audit(parsed: dict, constraints: dict,
         "polarized_caps_checked": pol_checked,
         "min_gain_loops_checked": loops_checked,
         "pin_state_parts_checked": pin_states_checked,
+        "mcu_pwm_groups_checked": pwm_checked,
+        "mcu_input_only_parts_checked": io_checked,
+        "i2c_buses_checked": len(buses),
+        "i2c_devices_placed": sum(len(d) for d in buses.values()),
     }
     return violations, facts
 

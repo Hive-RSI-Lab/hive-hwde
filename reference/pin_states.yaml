@@ -24,6 +24,8 @@
 #   allow     states the pin may be in: at least one must hold
 #   forbid    states it must not be in
 #   max_v     the most the net may sit at, when its volts are known
+#   rail_pin  when the pin is on a rail, it must be the same net as this
+#             pin of the same part (an address strap read against VCCP)
 #   severity  error (default) | warning
 #   why       one line for the finding
 #   source    the datasheet, its revision, the section or table
@@ -67,7 +69,7 @@ parts:
   - mpn: TCA6416A / PCA6416A
     match: '^[TP]CA6416A'
     verified: true   # TI SCPS194F (rev. January 2023), NXP PCA6416A Rev. 2 (10 January 2013) read 2026-11-14
-    aliases: {NRESET: RESET}
+    aliases: {NRESET: RESET, VCCP: VDD_P}
     pins:
       - pin: RESET
         forbid: [open]
@@ -79,6 +81,19 @@ parts:
           Table 3 Pin description, RESET: "Active LOW reset input. Connect
           to VDD(I2C-bus) through a pull-up resistor if no active connection
           is used."
+      - pin: ADDR
+        allow: [ground, rail]
+        rail_pin: VDD_P
+        why: >-
+          ADDR reads high only above 0.7 x VCCP, so a high strap must be
+          the P-port supply itself: a lower rail (3.3 V against a 5 V
+          VCCP) reads low and the part answers at 20h, where a twin
+          strapped low already sits
+        source: >-
+          TI SCPS194F section 5 pin table, ADDR: "Address input. Connect
+          directly to VCCP or ground." 6.3 Recommended Operating
+          Conditions: VIH for ADDR 0.7 x VCCP. (Checked against TI only;
+          the NXP PCA6416A ADDR wording was not re-read.)
 
   - mpn: NAFE71388
     match: '^NAFE7138'
