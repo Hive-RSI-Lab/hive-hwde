@@ -12,3 +12,39 @@ mutants:
     expect:
       kind: rating_over_voltage
       ref: C7
+  tvs-clamped-net-over-rating:
+    board: blinky2
+    script: mutations/tvs_clamped_net_over_rating.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault + board edits: D1 becomes a TVS from +5V onto /LED_A whose
+      extraction has only free-text VRWM/VBR/VC rows (#867); read as a clamp
+      at its VBR top it bounds /LED_A to about 1..5.7 V; C7, moved onto
+      /LED_A and extracted as a 1 V input, is over its rating at that bound
+    expect:
+      kind: rating_over_voltage
+      ref: C7
+  cathode-clamp-over-power:
+    board: blinky2
+    script: mutations/cathode_clamp_over_power.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault: D1 is extracted as a 3.3 V zener with its cathode on
+      /LED_A (no stated voltage) and its anode on GND (#868), so it bounds
+      /LED_A to 0..3.3 V; parts.json gives it a 10 mW Pd, and its 470 R feed
+      from /LED can force about 35 mW through it, over that rating
+    expect:
+      kind: rating_over_current
+      ref: D1
+  driven-net-over-rating:
+    board: blinky2
+    script: mutations/driven_net_over_rating.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault + board edits: U1 is extracted with its supplies on
+      +3V3/GND and pin 15 a push-pull output, so /LED (no stated voltage)
+      lies on U1's 0..3.3 V rail (#869); C7, moved onto /LED and extracted
+      as a 1 V input, is over its rating at that bound
+    expect:
+      kind: rating_over_voltage
+      ref: C7

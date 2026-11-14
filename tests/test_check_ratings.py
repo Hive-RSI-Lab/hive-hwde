@@ -3171,3 +3171,131 @@ def test_a_clamp_its_feed_could_burn_is_flagged(tmp_path):
     p = _gate(tmp_path, 8, pd="0.5mW")
     assert any(v["kind"] == "rating_over_current" and v["refs"] == ["D1"]
                for v in p["violations"])
+
+
+# --- #867-869: TVS and abs-level clamps, K-side bounds, driver rails --------
+
+def _tvs(vbr="8.89 to 9.83", mpn="SMF8.0A"):
+    """A TVS as the extractor writes it: free-text rows, no pin_ratings."""
+    return {"mpn": mpn, "pinout": [
+        {"pin": "1", "name": "K", "type": "passive"},
+        {"pin": "2", "name": "A", "type": "passive"}],
+        "abs_max": [
+            {"param": "VRWM reverse standoff voltage", "value": 8, "unit": "V"},
+            {"param": "VBR breakdown voltage at IT = 1 mA, min to max",
+             "value": vbr, "unit": "V"},
+            {"param": "VC maximum clamping voltage at IPP", "value": 13.6,
+             "unit": "V"}]}
+
+
+def _tvs_gate(tmp_path, ext):
+    fps = [("Q1", "C20", {"1": "/G", "2": "+12V"}),
+           ("D1", "C21", {"1": "+12V", "2": "/G"}),
+           ("R1", "C22", {"1": "+12V", "2": "/G"}, "x", "100k"),
+           ("R2", "C22", {"1": "/G", "2": "/PD"}, "x", "100k")]
+    return _run(_ws(tmp_path, fps, {"C20": PFET, "C21": ext}))
+
+
+def _q1(p):
+    return [v for v in p["violations"] if v["refs"] == ["Q1"]]
+
+
+def test_a_tvs_free_text_breakdown_is_a_clamp(tmp_path):
+    # VBR top 9.83 V: gate in 2.17..12 V, Vgs -9.83..0 inside +-10
+    assert not _q1(_tvs_gate(tmp_path, _tvs()))
+    assert cr.clamp_row({"pads": {"1": "a", "2": "b"}}, _tvs()) == ("1", 9.83)
+
+
+def test_a_tvs_too_loose_for_the_gate_is_caught(tmp_path):
+    p = _tvs_gate(tmp_path, _tvs("13.3 to 14.7", "SMF12A"))
+    assert [v["kind"] for v in _q1(p)] == ["rating_reverse_polarity"]
+
+
+def test_tvs_clamp_falls_back_to_vc_then_abs_row():
+    pads = {"pads": {"1": "a", "2": "b"}}
+    ext = _tvs()
+    ext["abs_max"] = [r for r in ext["abs_max"] if "VBR" not in r["param"]]
+    assert cr.clamp_row(pads, ext) == ("1", 13.6)
+    abs_only = {"mpn": "BZT52C5V1", "pinout": ext["pinout"], "pin_ratings": [
+        {"pins": ["K"], "kind": "voltage", "level": "abs_max", "max": 5.4,
+         "ref": "A", "source": "test p.1"}]}
+    assert cr.clamp_row(pads, abs_only) == ("1", 5.4)
+
+
+def test_a_plain_or_bidirectional_diode_is_not_a_clamp():
+    pads = {"pads": {"1": "a", "2": "b"}}
+    plain = {"mpn": "1N4148W", "pinout": _tvs()["pinout"], "pin_ratings": [
+        {"pins": ["K"], "kind": "voltage", "level": "abs_max", "max": 75,
+         "ref": "A", "source": "test p.1 VR"}]}
+    assert cr.clamp_row(pads, plain) is None
+    assert cr.clamp_row(pads, _tvs(mpn="SMAJ8.0CA")) is None
+    assert cr.clamp_row(pads, _tvs(), {"mpn": "X", "attributes": [
+        {"name": "Type", "value": "TVS"},
+        {"name": "Polarity", "value": "Bidirectional"}]}) is None
+
+
+SINK = {"mpn": "TESTSINK", "pinout": [
+    {"pin": "1", "name": "VIN", "type": "input"},
+    {"pin": "2", "name": "GND", "type": "ground"}]}
+
+
+def _sink(vmax):
+    return {**SINK, "abs_max": [{"param": "Input voltage VIN", "value": vmax,
+                                 "unit": "V"}]}
+
+
+def _over(p, ref="U9"):
+    return [v for v in p["violations"] if v["refs"] == [ref]
+            and v["kind"] == "rating_over_voltage"]
+
+
+def _kside(tmp_path, vmax, extra=(), parts=None):
+    # /X: fed from a floating /IN, clamped by D1 with K on /X and A on GND
+    fps = [("R1", "C22", {"1": "/IN", "2": "/X"}, "x", "1k"),
+           ("D1", "C21", {"1": "/X", "2": "GND"}),
+           ("U9", "C30", {"1": "/X", "2": "GND"}),
+           ("J1", "C31", {"1": "+5V", "2": "GND"}), *extra]
+    return _run(_ws(tmp_path, fps, {"C21": _zener(3.3), "C30": _sink(vmax),
+                                    **(parts or {})}))
+
+
+def test_a_clamp_with_its_cathode_on_the_unknown_net_bounds_it(tmp_path):
+    hit = _over(_kside(tmp_path, 1))       # /X in 0..3.3 V
+    assert hit and hit[0]["bound_v"] == [0.0, 3.3]
+    assert not _over(_kside(tmp_path / "b", 5))
+
+
+def test_clamped_nets_chain_through_a_resistor(tmp_path):
+    # /Z fed from /X (0..3.3 V), clamped by D2 from +5V: 1.7..3.3 V
+    extra = [("R2", "C22", {"1": "/X", "2": "/Z"}, "x", "1k"),
+             ("D2", "C21", {"1": "+5V", "2": "/Z"}),
+             ("U8", "C30", {"1": "/Z", "2": "GND"})]
+    p = _kside(tmp_path, 3.0, extra)
+    hit = _over(p, "U8")
+    assert hit and hit[0]["bound_v"] == [pytest.approx(1.7), pytest.approx(3.3)]
+
+
+DRIVER = {"mpn": "TESTDRVOUT", "pinout": [
+    {"pin": "1", "name": "VDD", "type": "power_in"},
+    {"pin": "2", "name": "VSS", "type": "ground"},
+    {"pin": "3", "name": "OUT", "type": "output"}]}
+
+
+def _driven(tmp_path, vmax, supply="+3V3"):
+    fps = [("U1", "C40", {"1": supply, "2": "GND", "3": "/D"}),
+           ("U9", "C30", {"1": "/D", "2": "GND"}),
+           ("J1", "C31", {"1": "+5V", "2": "GND"})]
+    return _run(_ws(tmp_path, fps, {"C40": DRIVER, "C30": _sink(vmax)}))
+
+
+def test_a_net_is_bounded_by_its_drivers_rail(tmp_path):
+    hit = _over(_driven(tmp_path, 1))
+    assert hit and hit[0]["bound_v"] == [0.0, 3.3] and "U1" in hit[0]["msg"]
+    p = _driven(tmp_path / "b", 3.6)
+    assert not _over(p)
+    assert not [v for v in p["violations"] if v["refs"] == ["U1"]
+                and v["kind"] != "rating_unrated"]
+
+
+def test_a_driver_with_an_unknown_supply_bounds_nothing(tmp_path):
+    assert not _over(_driven(tmp_path, 1, supply="/VX"))
