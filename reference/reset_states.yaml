@@ -8,6 +8,17 @@
 # an EasyEDA "_<pin number>" suffix and KiCad's ~{...} overbar dropped
 # ("IO0_25" -> IO0, "~{INT}_1" -> INT); `aliases` maps other names a
 # symbol may use onto those.
+# straps: {pin: {pull, want, severity, why}}: pull is the chip's own at reset
+# (up | down | none); want is the level the pin must read: high, low, any (no
+# level is wrong, the finding is the reading) or defined (high or low, never
+# undefined or floating: a boot-mode pin the chip latches with no pull of
+# its own, where either level is a choice and no level is a fault).
+# vil, vih: the input thresholds, x VDD. vdd_pins: a regex on the names of
+# the supply pins of the IO bank the straps sit on (a SoC's boot pins on a
+# bank that runs at 1.8 V or 3.3 V): the rail on them, where the netlist's
+# net name gives one, is the straps' VDD in place of `vdd`, and `levels`
+# ([{vdd, vil, vih}], one per bank voltage) gives the thresholds of the
+# entry nearest it.
 # glitch: pins the chip itself drives or pulls during power-up, before
 # firmware runs (Espressif's "pins with glitches at power-up" tables, and
 # the ROM boot log on U0TXD), for check_reset_drive.py: `pins` a regex on
@@ -18,7 +29,7 @@
 # mcu_like: part Values that are an MCU, known here or not. A board with one
 # the `mcus` rows don't match has had nothing judged, and check_straps says so
 # (mcu_unknown) rather than passing.
-mcu_like: '^(STM32|STM8|GD32|CH32|CH5[0-9]|AT32|APM32|HC32|MM32|PY32|N32|ESP32|ESP8266|ESP8285|ESP8684|RP2040|RP2350|NRF5|NRF9|ATMEGA|ATTINY|ATSAM|AT90|SAM[DEL][0-9]|PIC1[0268]|PIC24|PIC32|DSPIC|MSP430|MSPM0|TM4C|TMS320|LPC[0-9]|MK[LEVWS][0-9]|MIMX|MCIMX|EFM32|EFR32|R7FA|R5F|CY8C|XMC[0-9]|LGT8|W80[0-9]|BL60[0-9])'
+mcu_like: '^(STM32|STM8|GD32|CH32|CH5[0-9]|AT32|APM32|HC32|MM32|PY32|N32|ESP32|ESP8266|ESP8285|ESP8684|RP2040|RP2350|NRF5|NRF9|ATMEGA|ATTINY|ATSAM|AT90|SAM[DEL][0-9]|PIC1[0268]|PIC24|PIC32|DSPIC|MSP430|MSPM0|TM4C|TMS320|LPC[0-9]|MK[LEVWS][0-9]|MIMX|MCIMX|EFM32|EFR32|R7FA|R5F|CY8C|XMC[0-9]|LGT8|W80[0-9]|BL60[0-9]|AM62[035]|OSD62[035])'
 
 mcus:
   - family: ESP32
@@ -236,6 +247,57 @@ mcus:
       SWCLK: {pull: up, why: "SWCLK's pull-up is on from reset"}
       SWD: {pull: up, why: "SWD's pull-up is on from reset"}
     source: RP2040 datasheet build 2025-02-20 (3184e62) Pinout section Reset State column (GPIO pull-down, QSPI_CSn/SWCLK/SWD/RUN pull-up, TESTEN pull-down), PADS_BANK0 GPIOn register, IO electrical table (VIH 2 V, VIL 0.8 V at 3.3 V, RPU/RPD 50-80 k), bootrom "Check if SPI CS pin is tied low", section 1.4.3 "TESTEN Factory test mode pin. Tie to GND."
+    verified: true
+
+  # TI AM62x (AM625, AM623, AM620) and Octavo's OSD62x SiPs built on it,
+  # whose symbols name the AM62x's own balls. BOOTMODE[15:0] share the
+  # GPMC0_AD0..15 balls, which have no pull during reset (Table 5-1, "during
+  # reset": RX on, pull off) and are latched on PORz_OUT's rising edge, so
+  # each needs a pull of its own to VDDSHV3 or VSS (Table 5-74): a ball left
+  # floating boots whatever level it drifts to.
+  - family: AM62x
+    match: '^(AM62[035]|OSD62[035])'
+    vdd: 3.3               # when the netlist names no rail on VDDSHV3
+    vdd_pins: '^VDDSHV3$'  # the BOOTMODE balls' IO bank, 1.8 V or 3.3 V
+    levels:                # LVCMOS VIL/VIH x VDDSHV3 (section 6.8.6)
+      - {vdd: 1.8, vil: 0.35, vih: 0.65}
+      - {vdd: 3.3, vil: 0.242, vih: 0.606}   # VIL 0.8 V, VIH 2.0 V
+    vil: 0.242
+    vih: 0.606
+    pull_ohm: 22000        # RPU, RPD 15-30 k
+    enable: [MCU_PORZ]
+    aliases: {GPMC0_AD0: BOOTMODE00, GPMC0_AD1: BOOTMODE01,
+              GPMC0_AD2: BOOTMODE02, GPMC0_AD3: BOOTMODE03,
+              GPMC0_AD4: BOOTMODE04, GPMC0_AD5: BOOTMODE05,
+              GPMC0_AD6: BOOTMODE06, GPMC0_AD7: BOOTMODE07,
+              GPMC0_AD8: BOOTMODE08, GPMC0_AD9: BOOTMODE09,
+              GPMC0_AD10: BOOTMODE10, GPMC0_AD11: BOOTMODE11,
+              GPMC0_AD12: BOOTMODE12, GPMC0_AD13: BOOTMODE13,
+              GPMC0_AD14: BOOTMODE14, GPMC0_AD15: BOOTMODE15,
+              BOOTMODE0: BOOTMODE00, BOOTMODE1: BOOTMODE01,
+              BOOTMODE2: BOOTMODE02, BOOTMODE3: BOOTMODE03,
+              BOOTMODE4: BOOTMODE04, BOOTMODE5: BOOTMODE05,
+              BOOTMODE6: BOOTMODE06, BOOTMODE7: BOOTMODE07,
+              BOOTMODE8: BOOTMODE08, BOOTMODE9: BOOTMODE09}
+    straps:
+      BOOTMODE00: &am62_boot {pull: none, want: defined, severity: error,
+                              why: "the boot mode is latched from BOOTMODE[15:0] on PORz_OUT's rising edge, and these balls have no pull during reset: each needs its own pull up or down (SPRSP58C Table 5-74)"}
+      BOOTMODE01: *am62_boot
+      BOOTMODE02: *am62_boot
+      BOOTMODE03: *am62_boot
+      BOOTMODE04: *am62_boot
+      BOOTMODE05: *am62_boot
+      BOOTMODE06: *am62_boot
+      BOOTMODE07: *am62_boot
+      BOOTMODE08: *am62_boot
+      BOOTMODE09: *am62_boot
+      BOOTMODE10: *am62_boot
+      BOOTMODE11: *am62_boot
+      BOOTMODE12: *am62_boot
+      BOOTMODE13: *am62_boot
+      BOOTMODE14: *am62_boot
+      BOOTMODE15: *am62_boot
+    source: TI SPRSP58C (AM625, AM623, AM620-Q1 datasheet, rev. C, October 2025) Table 5-1 Pin Attributes (GPMC0_AD0..15 carry BOOTMODE00..15 on VDDSHV3, 1.8 V / 3.3 V, pull off during and after reset), Table 5-74 Connectivity Requirements (each through its own external pull to the supply or VSS to select the boot mode), Table 6-15 BOOTMODE Timing Requirements (valid before PORz_OUT goes high), section 6.8.6 LVCMOS Electrical Characteristics (1.8 V mode VIL 0.35 VDD, VIH 0.65 VDD; 3.3 V mode VIL 0.8 V, VIH 2.0 V; RPU/RPD 15-30 k)
     verified: true
 
 parts:

@@ -46,8 +46,11 @@ Findings:
                       toward the load's on level, which no pull holds off
 
 The netlist is the board's own `<board>.net` beside the .kicad_pcb, or
---netlist; with none, or with no MCU reset_states.yaml knows, this check
-reports nothing_to_judge (check_straps raises no_netlist / mcu_unknown).
+--netlist, read as check_straps reads it (a net tie joins the nets its
+copper joins); with none, or with no MCU reset_states.yaml knows, this check
+reports nothing_to_judge (check_straps raises no_netlist / mcu_unknown). It
+reads the pins named IOn or GPIOn; a known MCU with none (an STM32's PA0, a
+SoC's ball names) goes in not_judged.
 
 CLI: --pcb board.kicad_pcb [--netlist board.net] [--out report.json]
      exit 0 pass / 1 violations / 2 error, per SPEC section 6.
@@ -65,7 +68,6 @@ sys.path.insert(0, str(HERE / "lib"))
 import checklib  # noqa: E402
 import check_straps as cs  # noqa: E402
 import geom  # noqa: E402
-import simlib  # noqa: E402
 
 SCRIPT = "check_reset_drive"
 SOURCE = SCRIPT
@@ -294,10 +296,15 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
         return [], {"netlist": None, "mcus": [],
                     "nothing_to_judge": "no netlist beside the board"}
     bg = geom.load_board(pcb)
-    board = cs.Board(simlib.parse_netlist(netlist))
-    viols, loads = [], []
+    board, _ = cs.netlist_board(netlist, bg)
+    viols, loads, left = [], [], []
     mcus = cs.find_mcus(board, kb)
     for mcu in mcus:
+        if not gpio_pins(board, mcu):
+            left.append(f"{mcu['ref']} ({mcu['value']}): no pin named IOn "
+                        "or GPIOn, the GPIO names this check reads, so "
+                        "nothing it drives was read")
+            continue
         v, f = check_mcu(board, kb, mcu, bg)
         viols += v
         loads += f
@@ -305,6 +312,8 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
     unknown = {r: values[r] for r in cs.unknown_mcus(values, kb)}
     seen = {"netlist": str(netlist), "mcus": [m["ref"] for m in mcus],
             "mcus_unknown": sorted(unknown), "loads": loads}
+    if left:
+        seen["not_judged"] = left
     why = cs.mcu_verdict(mcus, unknown)
     if why:
         seen["nothing_to_judge"] = why
@@ -325,8 +334,8 @@ def run(argv=None):
         raise checklib.CheckError(f"netlist not found: {nl}")
     viols, seen = check(pcb, nl)
     return checklib.report(SCRIPT, pcb, viols, checked=[seen],
-                           nothing_to_judge=seen.get("nothing_to_judge")
-                           ), args.out
+                           nothing_to_judge=seen.get("nothing_to_judge"),
+                           not_judged=seen.get("not_judged")), args.out
 
 
 def main(argv=None) -> int:

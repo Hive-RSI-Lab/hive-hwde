@@ -178,6 +178,16 @@ What moved where:
   (`tests/test_check_net_tie.py`). `scripts/check_net_tie.py` (+ its
   `checks.d` fragment and the `net-tie-open` mutant) fails a net tie whose
   pads its copper doesn't join. Offer the writer fix to KRT too.
+- `scripts/check_thermal.py` holds an entry's `min_vias` on every part,
+  rated and datasheet-theta ones too, not only where the copper estimate
+  already wanted vias, and on 4+ layers credits the inner planes only to a
+  part with vias into them (#1047, `tests/test_thermal_via_floor.py`).
+- `scripts/check_straps.py` and `scripts/check_reset_drive.py` know the TI
+  AM62x (and an Octavo OSD62x SiP that carries one): a
+  `reference/reset_states.yaml` row whose BOOTMODE straps, unpulled during
+  reset, need a defined level each (`want: defined`), VIL/VIH from the
+  bank's rail, and a net tie's copper joining the nets it bridges
+  (`tests/test_antenna_straps.py`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps

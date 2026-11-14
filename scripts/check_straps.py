@@ -13,12 +13,20 @@ reference/reset_states.yaml.
 
 How a net resolves (for one event, `por` or `mcu_reset`): every resistor
 to a rail is a pull; a resistor to another net brings that net's own pulls
-and drivers in series; 0 R, inductors, ferrites and fuses join nets; a part
+and drivers in series; 0 R, inductors, ferrites and fuses join nets, and so
+does a net tie (a bridged solder jumper, a NetTie) whose own copper on the
+board joins its pads: the netlist keeps each of its pads on its own net, so
+a bridge drawn only on silk joins nothing; a part
 in reset_states.yaml adds its pins' internal pulls; an oscillator output
 drives a clock while its enable resolves high or floating. An expander's
 pins hold whatever firmware set through an MCU-only reset unless its RESET
 pin is on the MCU's enable net. The level is the pulls' Thevenin voltage
-against the MCU's VIL/VIH (with its own internal pull). Capacitors, diodes,
+against the MCU's VIL/VIH (with its own internal pull), taken at the rail on
+the row's vdd_pins where it names one (a SoC whose boot pins sit on a 1.8 V
+or 3.3 V IO bank) and from the `levels` entry nearest that rail. A strap
+wants high, low, any (no level is wrong) or defined (high or low, never
+undefined or floating: a boot-mode pin the chip latches with no pull of its
+own). Capacitors, diodes,
 transistors and switches don't drive at reset (a transistor is taken as
 off). Any other IC pin, and any connector pin, is a part whose reset state
 the file doesn't know.
@@ -27,6 +35,7 @@ Findings:
   strap_level         error (the strap's severity): a strapping pin reads
                       the wrong level, an undefined one, a clock or a level
                       firmware left behind, at power-on or on an MCU reset
+                      (for want: defined, any level but high or low)
   strap_unknown       warning: a strap with a wanted level also reaches pins
                       with no known reset state (confirm each is an input or
                       hi-Z at reset, or add the part to reset_states.yaml)
@@ -70,6 +79,7 @@ import yaml
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "lib"))
+import check_net_tie  # noqa: E402
 import checklib  # noqa: E402
 import engcalc  # noqa: E402
 import geom  # noqa: E402
@@ -81,6 +91,7 @@ SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its che
 RESET_YAML = HERE.parent / "reference" / "reset_states.yaml"
 EVENTS = ("por", "mcu_reset")
 EVENT_TEXT = {"por": "at power-on", "mcu_reset": "on an MCU-only reset"}
+WANT_TEXT = {"defined": "a defined level (high or low)"}
 # an expander pin's load is taken as CMOS: VIL 0.3, VIH 0.7 of its supply
 IO_VIL, IO_VIH = 0.3, 0.7
 DEFAULT_VDD = 3.3
@@ -98,6 +109,8 @@ def load_kb(path: Path = RESET_YAML) -> dict:
     doc = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     for row in doc.get("mcus") or []:
         row["_match"] = re.compile(row["match"], re.I)
+        if row.get("vdd_pins"):
+            row["_vdd_pins"] = re.compile(row["vdd_pins"], re.I)
     for row in doc.get("parts") or []:
         row["_match"] = re.compile(row["match"], re.I)
         row["_pins"] = re.compile(row.get("pins") or "$^", re.I)
@@ -123,9 +136,12 @@ def prefix(ref: str) -> str:
 
 
 class Board:
-    """The netlist as nets and pins, with 0 R / inductor joins merged."""
+    """The netlist as nets and pins, with 0 R / inductor joins merged.
+    joins: more (net, net) pairs to merge (tie_joins: a net tie's copper);
+    ties: refs that join nets but are no part (a net tie), left out of
+    the nodes as a 0 R is."""
 
-    def __init__(self, parsed: dict):
+    def __init__(self, parsed: dict, joins=(), ties=()):
         self.comps = parsed["components"]
         self.pins: dict[str, dict[str, dict]] = {}
         for net, nodes in parsed["nets"].items():
@@ -147,11 +163,15 @@ class Board:
                 a, b = (p["net"] for p in pins.values())
                 parent[find(a)] = find(b)
                 self.shorts.add(ref)
+        for a, b in joins:
+            if a in parent and b in parent:
+                parent[find(a)] = find(b)
+        self.ties = set(ties)
         self.group = {n: find(n) for n in parent}
         self.nodes: dict[str, list] = {}
         for net, nodes in parsed["nets"].items():
             for nd in nodes:
-                if nd["ref"] in self.shorts:
+                if nd["ref"] in self.shorts or nd["ref"] in self.ties:
                     continue
                 self.nodes.setdefault(self.group[net], []).append(
                     (nd["ref"], nd["pin"]))
@@ -183,6 +203,43 @@ class Board:
 
     def unconnected(self, g: str) -> bool:
         return all(n.startswith("unconnected-") for n in self.names.get(g, []))
+
+
+def tie_joins(bg, parsed: dict) -> tuple[list, list, list]:
+    """([(net, net)] the board's net ties join, [their refs], [facts]).
+    A net tie's pads keep their own nets in the netlist; what joins them is
+    the copper its footprint draws, so this reads that copper (check_net_tie's
+    pieces) rather than the groups it declares: a bridge moved to silk joins
+    nothing, and the pin it fed reads floating."""
+    joins, refs, facts = [], [], []
+    if bg is None:
+        return joins, refs, facts
+    pin_net = {(nd["ref"], nd["pin"]): net
+               for net, nodes in parsed["nets"].items() for nd in nodes}
+    on_copper = set(bg.copper_layers)
+    for tie in bg.net_ties:
+        ref = tie["ref"]
+        copper = [g for g in tie["graphics"] if g["layer"] in on_copper]
+        split = check_net_tie.pieces(
+            tie["pads"], copper, {p.number for p in tie["pads"] if p.number})
+        joined = []
+        for piece in split:
+            nets = sorted({pin_net[(ref, n)] for n in piece
+                           if (ref, n) in pin_net})
+            joins += list(zip(nets, nets[1:]))
+            if len(nets) > 1:
+                joined.append(nets)
+        refs.append(ref)
+        facts.append({"ref": ref, "pieces": split, "joins": joined})
+    return joins, refs, facts
+
+
+def netlist_board(netlist: Path, bg) -> tuple[Board, list]:
+    """The Board for `netlist`, with the net ties on `bg` (the parsed
+    .kicad_pcb, or None) joined as their copper joins them."""
+    parsed = simlib.parse_netlist(netlist)
+    joins, refs, facts = tie_joins(bg, parsed)
+    return Board(parsed, joins=joins, ties=refs), facts
 
 
 class Resolver:
@@ -418,6 +475,29 @@ def mcu_pins(board: Board, mcu: dict) -> dict[str, str]:
     return out
 
 
+def io_levels(board: Board, mcu: dict) -> tuple[float, float, float]:
+    """(vdd, vil, vih) for one MCU's straps: the rail on the row's vdd_pins
+    (the IO supply its boot pins sit on) where the netlist names one, else
+    the row's vdd; VIL/VIH (x vdd) from the row's `levels` entry nearest
+    that rail, else its vil/vih."""
+    row = mcu["row"]
+    vdd = row.get("vdd", DEFAULT_VDD)
+    pat = row.get("_vdd_pins")
+    if pat is not None:
+        for pin, meta in sorted(board.pins[mcu["ref"]].items()):
+            if pat.match(meta["name"]):
+                v = board.rail(board.net(mcu["ref"], pin))
+                if v:
+                    vdd = v
+                    break
+    vil, vih = row.get("vil", 0.25), row.get("vih", 0.75)
+    levels = row.get("levels") or []
+    if levels:
+        near = min(levels, key=lambda lv: abs(lv["vdd"] - vdd))
+        vil, vih = near["vil"], near["vih"]
+    return vdd, vil, vih
+
+
 def pad_pos(bg, ref: str, pin: str):
     if bg is None:
         return None
@@ -431,7 +511,7 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
     viols, facts = [], []
     row = mcu["row"]
     res = Resolver(board, kb, mcu)
-    vdd = row.get("vdd", DEFAULT_VDD)
+    vdd, vil, vih = io_levels(board, mcu)
     pins = mcu_pins(board, mcu)
     unverified = "" if row.get("verified", False) else \
         " (reset_states.yaml: unverified)"
@@ -447,18 +527,18 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
                         f"{mcu['ref']} internal {spec['pull']}")
         want = spec.get("want", "any")
         fact = {"mcu": mcu["ref"], "strap": strap, "pin": pin,
-                "net": board.label(g), "want": want}
+                "net": board.label(g), "want": want, "vdd": vdd}
         bad = {}
         unknown = []
         for event in EVENTS:
             st = res.state(g, event, skip={(mcu["ref"], pin)}, vdd=vdd,
-                           vil=row.get("vil", 0.25), vih=row.get("vih", 0.75),
-                           internal=internal)
+                           vil=vil, vih=vih, internal=internal)
             fact[event] = st["text"]
             unknown = st["unknown"]
             ok = st["state"] == want or (
                 want == "any" and st["state"] in ("high", "low", "undefined",
-                                                  "floating"))
+                                                  "floating")) or (
+                want == "defined" and st["state"] in ("high", "low"))
             if not ok:
                 bad[event] = st["text"]
         facts.append(fact)
@@ -470,7 +550,8 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
                 SCRIPT, spec.get("severity", "error"), pos, None,
                 board.label(g), [mcu["ref"]],
                 f"{mcu['ref']} {strap} (pin {pin}, {board.label(g)}) must "
-                f"read {want} at reset, but {events} it reads "
+                f"read {WANT_TEXT.get(want, want)} at reset, but {events} it "
+                "reads "
                 f"{' / '.join(texts)}: {spec.get('why', '')}{unverified}",
                 SOURCE, kind="strap_level", strap=strap, events=sorted(bad),
                 states=bad))
@@ -606,7 +687,7 @@ def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
     but the MCU's own pull, whatever the connector feeds sees it."""
     viols, facts = [], []
     row = mcu["row"]
-    vdd = row.get("vdd", DEFAULT_VDD)
+    vdd, vil, vih = io_levels(board, mcu)
     ohm = row.get("pull_ohm", 45000)
     pins = mcu_pins(board, mcu)
     unverified = "" if row.get("verified", False) else \
@@ -633,8 +714,7 @@ def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
         g = board.net(mcu["ref"], pin)
         if board.unconnected(g):
             continue
-        st = res.state(g, "por", vdd=vdd, vil=row.get("vil", 0.25),
-                       vih=row.get("vih", 0.75))
+        st = res.state(g, "por", vdd=vdd, vil=vil, vih=vih)
         facts.append({"mcu": mcu["ref"], "pin": pin, "name": name,
                       "net": board.label(g), "pull": spec["pull"],
                       "por": st["text"]})
@@ -768,7 +848,7 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
             "states weren't checked: export it (kicad-cli sch export "
             "netlist)", SOURCE, kind="no_netlist")], {"netlist": None,
                                                       "mcus": mcus}
-    board = Board(simlib.parse_netlist(netlist))
+    board, ties = netlist_board(netlist, bg)
     viols, straps, ios = [], [], []
     mcus = find_mcus(board, kb)
     pulls = []
@@ -794,7 +874,7 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
             "mcus": [m["ref"] for m in mcus],
             "mcus_unknown": sorted(unknown),
             "straps": straps, "reset_pulls": pulls,
-            "expander_pins": ios}
+            "expander_pins": ios, "net_ties": ties}
     if not mcus and not ios:
         seen["nothing_to_judge"] = mcu_verdict(mcus, unknown)
     return viols, seen
