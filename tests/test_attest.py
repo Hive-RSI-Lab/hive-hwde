@@ -324,6 +324,26 @@ def test_build_idempotent_then_force_reissues(tmp_path, capsys):
     assert att["supersedes"] == first
 
 
+def test_unchanged_says_when_the_attested_commit_is_not_head(
+        tmp_path, capsys, monkeypatch):
+    """A kept attestation names the commit it was built on; after a commit
+    that touches no attested input, `unchanged` must say it is not HEAD."""
+    ws = green_ws(tmp_path)
+    monkeypatch.setattr(releaselib, "_git_head", lambda ws: "a" * 40)
+    assert attest.main(["build", "--workspace", str(ws)]) == 0
+    capsys.readouterr()
+    assert attest.main(["build", "--workspace", str(ws)]) == 0
+    same = json.loads(capsys.readouterr().out)
+    assert same["action"] == "unchanged" and "note" not in same
+    assert same["git_head"] == same["head"] == "a" * 40
+    monkeypatch.setattr(releaselib, "_git_head", lambda ws: "b" * 40)
+    assert attest.main(["build", "--workspace", str(ws)]) == 0
+    moved = json.loads(capsys.readouterr().out)
+    assert moved["action"] == "unchanged"
+    assert moved["git_head"] == "a" * 40 and moved["head"] == "b" * 40
+    assert "--force" in moved["note"]
+
+
 def test_sim_gate_required_when_sims_exist(tmp_path, capsys):
     ws = green_ws(tmp_path)
     sims = ws / "kicad" / "sims"
