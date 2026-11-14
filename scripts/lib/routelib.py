@@ -43,6 +43,7 @@ import subprocess
 import uuid
 from pathlib import Path
 
+import loadlib
 from checklib import CheckError
 
 WORKER = Path(__file__).resolve().parent / "route_swig.py"
@@ -130,14 +131,16 @@ def run_worker(bundled_python: Path, job: dict, stage: Path,
     job["result"] = str(result_file)
     job_file.write_text(json.dumps(job), encoding="utf-8")
     try:
-        cp = subprocess.run(
+        # `timeout` stretches on a busy machine, never for a wedged call (#970)
+        cp = loadlib.run(
             [str(bundled_python), str(worker or WORKER), str(job_file)],
             capture_output=True, text=True, encoding="utf-8",
             errors="replace", timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         raise CheckError(
             f"{(worker or WORKER).stem} {job.get('verb')} timed out after "
-            f"{timeout}s (wedged SWIG/wx call - board untouched)") from exc
+            f"{exc.timeout:.0f}s (limit {timeout}s; wedged SWIG/wx call - "
+            "board untouched)") from exc
     if not result_file.is_file():
         tail = (cp.stderr or cp.stdout or "").strip()[-300:]
         raise CheckError(
