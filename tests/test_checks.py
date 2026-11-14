@@ -469,6 +469,31 @@ def test_decoupling_short_copper_passes_and_unrouted_is_not_judged(tmp_path_fact
     assert not [v for v in vs if v["kind"] == "decoupler_copper"]
 
 
+def test_decoupling_t_junction_rail_is_named_not_skipped(tmp_path_factory):
+    """Both legs end on the trunk's body, with no vertex at the tees: the
+    copper touches, but the walk joins tracks only at their ends. KiCad's DRC
+    can pass a tee, so the report names it rather than flagging it."""
+    seg = '  (segment (start {}) (end {}) (width 0.25) (layer "F.Cu") (net "VDD"))\n'
+    legs = seg.format("5 5", "5 3") + seg.format("7.6 5", "7.6 3")
+    tee = legs + seg.format("4 3", "10 3")
+    bg = _rail_walk(tmp_path_factory, "teerail", tee)
+    vs, facts = check_decoupling.check_association(bg, dict(META), None, {})
+    assert facts["copper_mm"] is None
+    assert "T-junction" in facts["copper_unwalked"]
+    assert not [v for v in vs if v["kind"] == "decoupler_copper"]
+    # the trunk split at both tees: walked and judged, nothing to name
+    split = legs + seg.format("4 3", "5 3") + seg.format("5 3", "7.6 3") \
+        + seg.format("7.6 3", "10 3")
+    bg = _rail_walk(tmp_path_factory, "splitrail", split)
+    _, facts = check_decoupling.check_association(bg, dict(META), None, {})
+    assert facts["copper_mm"] == pytest.approx(6.6, abs=0.5)
+    assert "copper_unwalked" not in facts
+    # unrouted stays quiet
+    bg = _rail_walk(tmp_path_factory, "norail2", "")
+    _, facts = check_decoupling.check_association(bg, dict(META), None, {})
+    assert facts["copper_mm"] is None and "copper_unwalked" not in facts
+
+
 def _ground_detour(tmp_path_factory, name, meta_gnd):
     """C9.2 and U9.8 are 3 mm apart in plan, joined by 30 mm of track."""
     return _board(tmp_path_factory, name, f"""  (footprint "t:U" (at 5 5)

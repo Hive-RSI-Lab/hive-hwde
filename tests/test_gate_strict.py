@@ -204,6 +204,16 @@ def test_validate_report_returns_input(tmp_path):
         gate.validate_report("verify", {"tool": "verify"}, "not-a-dict", None)
 
 
+def test_validate_report_names_a_gate_result_passed_as_a_report(tmp_path):
+    """gate --out writes the gate's own result, not the tool's report: filed
+    as reports/verify_release.json it used to read as a stale schema."""
+    gate_result = {"script": "gate", "gate": "verify_release",
+                   "status": "pass", "board": str(_board(tmp_path))}
+    with pytest.raises(RuntimeError, match="gate.py result, not the tool"):
+        gate.validate_report("verify_release", {"tool": "verify"},
+                             gate_result, None)
+
+
 # ------------------------------------- coverage through evaluate (C7 tail)
 
 def test_evaluate_moves_fully_waived_check_in_coverage():

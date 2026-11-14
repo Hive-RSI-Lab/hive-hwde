@@ -164,6 +164,10 @@ def validate_report(gate_name: str, gate: dict, report,
 
     if not isinstance(report, dict):
         bad("not a JSON object")
+    if report.get("script") == "gate" and "report_schema" not in report:
+        bad("this is a gate.py result, not the tool's report - write the "
+            "report with the tool itself (verify_all --strict / dfm_check "
+            "--strict for the release reports) and pass that")
     if report.get("report_schema") != checklib.REPORT_SCHEMA:
         bad(f"report_schema {report.get('report_schema')!r} (expected "
             f"{checklib.REPORT_SCHEMA}) - regenerate with the current tools")
