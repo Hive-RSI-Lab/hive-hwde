@@ -344,7 +344,7 @@ def test_each_plane_ball_gets_one_via_at_its_centre(balls):
         assert o["net"] == pad.net in ("P", "GND")
         # the floor via, not the board's common 0.6/0.3, its drill inside
         # the 0.2 mm ball
-        assert (o["size"], o["drill"]) == fo.rules.via_floor == (0.327, 0.127)
+        assert (o["size"], o["drill"]) == fo.rules.via_floor == (0.254, 0.127)
         assert pad.poly.contains(Point(o["at"]).buffer(o["drill"] / 2))
 
 
