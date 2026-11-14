@@ -21,8 +21,11 @@ add up and the narrowest cross-section anywhere on the way is found:
                   layer does not
   pad, pour fill  no limit (pour necks are check_current's pour-neck
                   rule; a thermal-relief spoke is not modelled here)
-  joins           a track end in a pad, via or fill, a via in a pad or
-                  fill, a pad in a fill, two track ends overlapping
+  joins           a track end in a pad, via or fill, a track end on
+                  another track's body (a T-junction), a via in a pad or
+                  fill, a via on a track's body (its centre in the
+                  track's copper, or the track's centreline through its
+                  pad), a pad in a fill, two track ends overlapping
 
 The min cut is reported as the bottleneck: the tracks (width, layer) and
 via barrels that together carry the whole path's capacity. A path is
@@ -232,7 +235,11 @@ def build_graph(bg: geom.BoardGeom, net: str, dt_c: float,
         for xy in (t.shape.coords[0], t.shape.coords[-1]):
             ends.append((("pt", t.layer, _snap(xy)), xy, t.layer, t.width / 2))
     # a track end on another track's body (a T-junction) is copper joined
-    # there: that track is split at the end's foot
+    # there, and so is a via on its body (its centre in the track's copper,
+    # or the track's centreline through its pad): the track is split at the
+    # end's or the via's foot
+    on_track = {}  # via index -> the track nodes at its feet
+    via_pts = [Point(v.at) for v in vias]
     for i, t in enumerate(tracks):
         cuts = {0.0, t.length}
         for node, xy, layer, _hw in ends:
@@ -243,6 +250,19 @@ def build_graph(bg: geom.BoardGeom, net: str, dt_c: float,
                 d = t.shape.project(pt)
                 if TOL < d < t.length - TOL:
                     cuts.add(d)
+        feet = []
+        x0, y0, x1, y1 = t.shape.bounds
+        for vi, v in enumerate(vias):
+            reach = max(t.width, v.diameter) / 2 + TOL
+            x, y = v.at
+            if not v.spans(t.layer) or x < x0 - reach or x > x1 + reach \
+                    or y < y0 - reach or y > y1 + reach:
+                continue  # off the track's box: the exact test can't pass
+            if t.shape.distance(via_pts[vi]) <= reach:
+                d = t.shape.project(via_pts[vi])
+                if TOL < d < t.length - TOL:
+                    cuts.add(d)
+                feet.append((vi, d))
         cap = amps_for_width(t.width, cu.get(t.layer, check_current.OZ1_MM),
                              dt_c)
         pts = sorted(cuts)
@@ -250,6 +270,9 @@ def build_graph(bg: geom.BoardGeom, net: str, dt_c: float,
                  for d in pts]
         for k in range(len(pts) - 1):
             g.edge(nodes[k], nodes[k + 1], cap, ("track", i))
+        for vi, d in feet:
+            k = min(range(len(pts)), key=lambda k: abs(pts[k] - d))
+            on_track.setdefault(vi, []).append(nodes[k])
         for d, n in zip(pts[1:-1], nodes[1:-1]):
             ends.append((n, t.shape.interpolate(d).coords[0], t.layer,
                          t.width / 2))
@@ -289,6 +312,8 @@ def build_graph(bg: geom.BoardGeom, net: str, dt_c: float,
             if v.spans(layer) and math.dist(xy, v.at) <= \
                     v.diameter / 2 + TOL:
                 g.edge(node, ("via", vi, layer), INF)
+        for node in on_track.get(vi, ()):
+            g.edge(node, ("via", vi, node[1]), INF)
         for layer in v.layers:
             for p in pads_at(disc, layer):
                 g.edge(("via", vi, layer), ("pad", p.ref, p.number), INF)
