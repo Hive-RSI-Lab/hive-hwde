@@ -64,7 +64,9 @@ pad onto stubs KRT threaded past the pad); a clashing in-pad ball loses its
 escape and its neighbour keeps a clean one (DRC alone rips both). A ball
 net with a .kicad_dru track-width rule wider than the escape track
 (VBUS_J1's 0.32 neck) is not given to KRT (held_wide); left for the
-routers. The 150+ track_dangling warnings after an escape are the kept
+routers. A net whose balls sit in its courtyard neck zone (rules_gen's
+aiee_pwr_neck, lib/necklib) is judged at its neck width there (#937), and
+--pads lays a stub that stays in the zone at the neck width. The 150+ track_dangling warnings after an escape are the kept
 stubs themselves (open until routed), not rip leftovers.
 
 --toward-partner (#547, opt-in): the constraints' diff-pair and
@@ -143,6 +145,7 @@ import checklib  # noqa: E402
 import geom  # noqa: E402
 import hdilib  # noqa: E402
 import kc  # noqa: E402
+import necklib  # noqa: E402  (#937 neck zones)
 import route_critical as rc  # noqa: E402  (KRT staging, floors, DRC delta, rip)
 import routelib  # noqa: E402
 import stitch_vias  # noqa: E402
@@ -291,20 +294,46 @@ def toward_nets(cons: dict, board_nets, specs: list[dict]) -> list[str]:
 
 
 def fanout_nets(bga: bgalib.Bga, wide: dict[str, float], track: float,
-                plane_min: int = 6) -> tuple[list[str], list[str]]:
+                plane_min: int = 6, neck: dict[str, float] | None = None
+                ) -> tuple[list[str], list[str]]:
     """(nets KRT may fan out, nets held back because a .kicad_dru width rule
     is wider than the escape track). KRT fans every net it is given at one
     width (VBUS_J1 at U100: 0.089 mm under a 0.32 mm neck rule, #552), so a
-    wide net is left for the routers. KRT's own plane-ball rule (>= plane_min
-    balls on the part) is kept, since a --nets list switches it off."""
+    wide net is left for the routers. A net whose balls all sit in its neck
+    zone (field_necks, rules_gen's aiee_pwr_neck, #937) is judged at the neck
+    width: a neck no wider than the track lets KRT fan it out. KRT's own
+    plane-ball rule (>= plane_min balls on the part) is kept, since a --nets
+    list switches it off."""
+    neck = neck or {}
     count: dict[str, int] = {}
     for n in bga.nets.values():
         if n:
             count[n] = count.get(n, 0) + 1
-    held = sorted(n for n in count if wide.get(n, 0.0) > track + 1e-6
+    held = sorted(n for n in count
+                  if neck.get(n, wide.get(n, 0.0)) > track + 1e-6
                   and count[n] < plane_min)
     ok = sorted(n for n in count if count[n] < plane_min and n not in held)
     return ok, held
+
+
+def field_necks(bg, bga: bgalib.Bga, necks: dict) -> dict[str, float]:
+    """{net: neck width} for the field's nets whose every ball sits in a neck
+    zone of its net (necklib.board_necks, #937): the width an escape stub
+    from those balls may run at, inside the part's courtyard."""
+    out: dict[str, float] = {}
+    gone: set[str] = set()
+    for pd in bg.pads_of(ref=bga.ref):
+        if not pd.net or pd.net not in necks or pd.net in gone:
+            continue
+        ws = [necklib.neck_width(necks, pd.net, ly, pd.poly.centroid)
+              for ly in pd.layers if ly in bg.copper_layers]
+        ws = [w for w in ws if w is not None]
+        if not ws:
+            gone.add(pd.net)
+            out.pop(pd.net, None)
+            continue
+        out[pd.net] = max(out.get(pd.net, 0.0), min(ws))
+    return out
 
 
 def vip_conflicts(bg, bga: bgalib.Bga, new_uuids: set[str],
@@ -574,13 +603,15 @@ def planes_of(bg, bga: bgalib.Bga, planes: list[str]) -> dict[str, str]:
 
 
 def hdi_plan(bg, p: dict, spans: list, caps: dict, floors: dict,
-             wide: dict[str, float]) -> hdilib.FieldPlan:
+             wide: dict[str, float], necks: dict | None = None
+             ) -> hdilib.FieldPlan:
     b = p["bga"]
     track, clearance = hdi_geometry(b.pitch, b.pad_d, caps)
     fp = bg.footprints.get(b.ref, {})
     balls = bgalib._ball_pads([x for x in bg.pads_of(ref=b.ref)
                                if x.kind == "smd" and len(x.layers) == 1])
-    _, held = fanout_nets(b, wide, track, plane_min=10 ** 6)
+    _, held = fanout_nets(b, wide, track, plane_min=10 ** 6,
+                          neck=field_necks(bg, b, necks or {}))
     region = field_region(b)
     return hdilib.plan_field(
         b, balls, fp.get("at"), fp.get("angle", 0.0) or 0.0, bg.copper_layers,
@@ -875,6 +906,8 @@ def run(argv: list[str] | None = None):
     old_uuids = rc._copper_uuids(staged)
 
     wide = rc.dru_net_floors(dru, "track_width")
+    necks = necklib.board_necks(staged, bg0,
+                                rc.dru_neck_rules(dru, "track_width"))
     toward = set(toward_nets(cons_data, bg0.nets, all_specs)) \
         if args.toward_partner else set()
     keys = ("requested", "escaped", "failed", "unescaped_nets",
@@ -884,7 +917,8 @@ def run(argv: list[str] | None = None):
         b, ep = p["bga"], p["ep"]
         if build:
             bg_now = geom.BoardGeom.from_file(staged)
-            pl = hdi_plan(bg_now, p, spans, hdi_caps, floors, wide)
+            pl = hdi_plan(bg_now, p, spans, hdi_caps, floors, wide,
+                          necks)
             if pl.ops:
                 rc.route_edit.apply_ops(staged, pl.ops)
             results.append({
@@ -894,7 +928,8 @@ def run(argv: list[str] | None = None):
                 "via_in_pad": {"nets": 0, "vias": 0, "kept": True},
                 "_vip": set(), "_lost": set(pl.held)})
             continue
-        allowed, held = fanout_nets(b, wide, ep["track_width"])
+        allowed, held = fanout_nets(b, wide, ep["track_width"],
+                                    neck=field_necks(bg0, b, necks))
         only = allowed if held else None    # None: KRT's own net choice
         aset = set(allowed)
         first = None
