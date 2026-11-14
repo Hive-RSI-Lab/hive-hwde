@@ -101,6 +101,18 @@ def coverage_matrix(violations: list[dict], have_constraints: bool,
     }
 
 
+# Kinds that say a rule had nothing to judge, not that the placement breaks
+# one. Scores that count illegality (the bench's legality penalty, which the
+# placement tuning chases) leave them out: counting them would pay a placer
+# to pull a connector off the edge just to drop the note.
+NOTE_KINDS = ("mating_edge_unjudged",)
+
+
+def illegal(violations: list[dict]) -> list[dict]:
+    """The violations a placement score should count: all but NOTE_KINDS."""
+    return [v for v in violations if v.get("kind") not in NOTE_KINDS]
+
+
 def edge_unjudged(model, mating_facts: list[dict]) -> list[dict]:
     """A warning per edge connector no family knows (#954): the release gate
     fails on these (verify_all's mating_edge_unjudged, #911), but by then the

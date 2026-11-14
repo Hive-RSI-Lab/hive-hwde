@@ -173,3 +173,12 @@ def test_known_or_inner_connector_gets_no_placement_warning(tmp_path):
     pcb = _board(tmp_path, _fp("J6", "SOCKET-SMD_8P-UNLISTED", 15.0, 10.0,
                                cy=(-2, -2, 2, 2)))
     assert _edge_warnings(_place(pcb)) == []
+
+
+def test_the_note_is_not_counted_as_illegal_placement(tmp_path):
+    """The bench's legality score feeds placement tuning: the note must not
+    pay a placer to pull a connector off the edge."""
+    r = _place(_unlisted(tmp_path))
+    assert _edge_warnings(r)
+    assert not [v for v in place_metrics.illegal(r["violations"])
+                if v["kind"] == "mating_edge_unjudged"]
