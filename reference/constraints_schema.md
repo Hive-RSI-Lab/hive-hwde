@@ -381,6 +381,15 @@ Consumers per key (script -> phase):
               {"ref": "U3", "power_w": 3.0, "net": "GND", "dt_c": 70,
                "theta_ja_c_w": 29,
                "theta_source": "LMG2100R044 SNOSDF9B 5.4 Thermal Information"}],
+  //        min_vias: the datasheet's thermal-via floor (a count >= 0) for
+  //        the vias of net near the part; fewer is an error on any part,
+  //        whatever its copper says, and 0 asks none. Without it, an
+  //        array (one via per 1.1 mm square of the pad hull, 4 to 36) is
+  //        asked as a warning only when the copper alone can't meet dt_c.
+  //        On 4+ layers a copper-model part is credited with the net's
+  //        inner planes from 4 vias (or its min_vias, if lower, but at
+  //        least 1); short of that, a rise within dt_c with the planes but
+  //        over it on the part's own-side copper is listed in not_judged.
   //        airflow_lfm | airflow_m_s (never both): forced air over the part.
   //        Declare it only when the board has the fan (a requirement, not
   //        a hope); theta is cut by TI SCBA017D's least QFN improvement
