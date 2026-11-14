@@ -153,9 +153,19 @@ def test_supply_pin_on_a_known_rail_is_judged_not_named(tmp_path):
 
 
 def test_signal_pin_on_an_unknown_net_is_only_counted(tmp_path):
+    # VDD on a rail of unknown voltage (counted too): U1 can't bound /SIG
+    # by its rail (#869)
+    ws = _ws(tmp_path, [("U1", "C1", {"1": "VDD_X", "3": "/SIG"})], {"C1": MCU})
+    p = ratings_run(ws)
+    assert p["pins_on_unknown_nets"] == 2 and "/SIG" not in _text(p)
+
+
+def test_a_signal_pin_driven_from_a_known_rail_makes_its_own_bound(tmp_path):
     ws = _ws(tmp_path, [("U1", "C1", {"1": "+3V3", "3": "/SIG"})], {"C1": MCU})
     p = ratings_run(ws)
-    assert p["pins_on_unknown_nets"] == 1 and "/SIG" not in _text(p)
+    assert p["pins_on_unknown_nets"] == 0
+    assert any(c.startswith("U1.3 ") and "makes the bound on /SIG" in c
+               for c in p["pins_covered_by_rule"])
 
 
 def test_pad_missing_from_the_pinout_is_unrated(tmp_path):
