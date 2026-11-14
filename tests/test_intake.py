@@ -490,19 +490,18 @@ def _demo_dir() -> Path | None:
 # warnings, so the gates still pass. check_ratings: no datasheet extractions, so
 # the scaffold's empty parts/ leaves every part unrated, never a silent pass (#32).
 # check_connector_fit: KiCad's stock 1.0 mm header drill under IPC-2222 (#474, the
-# same known warning as test_checks_s5.GOLDEN_KNOWN_WARNINGS). check_straps: this
-# STM32F103 has no row in reference/reset_states.yaml (#591).
+# same known warning as test_checks_s5.GOLDEN_KNOWN_WARNINGS).
 GOLDEN_WARNINGS = {
     "check_ratings": ("rating_unrated", {"C1", "D1", "J1", "J2"}),
     "check_connector_fit": ("tht_hole_ipc2222", {"J1", "J2"}),
-    "check_straps": ("mcu_unknown", {"U1"}),
 }
-# The checks blinky2 gives nothing to judge: it has none of what they read
-# (check_reset_drive: the same missing row as check_straps above).
+# check_straps and check_reset_drive know blinky2's STM32F103 since #885 (the
+# STM32F1 row in reference/reset_states.yaml) and must pass it, as below.
+# The checks blinky2 gives nothing to judge: it has none of what they read.
 GOLDEN_NOTHING_TO_JUDGE = {
     "check_antenna", "check_cap_load", "check_creepage", "check_ddr_timing", "check_diffpair",
     "check_isolation", "check_kelvin", "check_length_groups", "check_mate_pins",
-    "check_reset_drive", "check_rf_match", "check_stackup", "check_surge", "check_thermal",
+    "check_rf_match", "check_stackup", "check_surge", "check_thermal",
     "check_transformer", "check_usb_phy", "check_via_stubs",
 }
 
