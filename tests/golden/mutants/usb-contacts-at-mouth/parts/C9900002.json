@@ -1,0 +1,37 @@
+{
+  "mpn": "USB-MICRO-INNER-LEAD",
+  "lcsc": "C9900002",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "P1",
+      "type": "passive"
+    },
+    {
+      "pin": "2",
+      "name": "P2",
+      "type": "passive"
+    },
+    {
+      "pin": "3",
+      "name": "P3",
+      "type": "passive"
+    },
+    {
+      "pin": "4",
+      "name": "P4",
+      "type": "passive"
+    },
+    {
+      "pin": "5",
+      "name": "P5",
+      "type": "passive"
+    }
+  ],
+  "mechanical": {
+    "entry": {
+      "contacts_at": "mouth",
+      "source": "planted fault"
+    }
+  }
+}

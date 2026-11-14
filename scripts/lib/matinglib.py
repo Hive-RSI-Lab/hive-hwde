@@ -94,7 +94,18 @@ EPS_AREA = 0.01
 AXES = {"+x": (1.0, 0.0), "-x": (-1.0, 0.0), "+y": (0.0, 1.0), "-y": (0.0, -1.0)}
 KINDS = ("mating_faces_inward", "mating_mouth_inset", "mating_zone_blocked",
          "mating_model_reversed", "mating_mate_misaligned",
-         "mating_mate_invalid", "mating_direction_unknown")
+         "mating_mate_invalid", "mating_direction_unknown",
+         "mating_mouth_disagrees")
+# reference designators that name a connector: only these are matched on
+# their value, MPN and LCSC category as well as the footprint name (#953)
+CONNECTOR_REF = re.compile(r"^(J|P|CN|CON)\d+$")
+# footprint properties that hold the manufacturer part number (lower case,
+# spaces, dots and underscores dropped)
+MPN_PROPS = ("mpn", "manufacturerpartnumber", "mfrpart", "mfrpartnumber",
+             "mfrpart#", "manufacturerpart", "partnumber", "mfrpn")
+# mechanical.entry.contacts_at in a part's extraction: where the contact
+# tails sit along the plug's way in (#952)
+CONTACTS_AT = ("back", "mouth")
 # a connector whose courtyard comes this close to the board outline is an
 # edge connector: one no family knows can't be shown to face off the board
 # (check_mating's edge_unjudged; an error at release, #911)
@@ -118,7 +129,15 @@ def load_table(path: str = str(TABLE)) -> dict:
     for fam in doc.get("families", []):
         fams.append({**d, **fam, "re": re.compile(fam["match"], re.I)})
     mouth = [(re.compile(k, re.I), v) for k, v in (doc.get("mouth") or {}).items()]
-    return {"families": fams, "mouth": mouth, "defaults": d}
+    by_name = {f["family"]: f for f in fams}
+    cats = []
+    for k, v in (doc.get("categories") or {}).items():
+        if v not in by_name:
+            raise checklib.CheckError(
+                f"{path}: categories '{k}' names no family '{v}'")
+        cats.append((re.compile(k, re.I), by_name[v]))
+    return {"families": fams, "mouth": mouth, "defaults": d,
+            "categories": cats}
 
 
 def _name(fpid: str) -> str:
@@ -127,11 +146,85 @@ def _name(fpid: str) -> str:
 
 def family_of(fpid: str, table: dict | None = None) -> dict | None:
     table = table or load_table()
-    name = _name(fpid)
+    return _family_of_text(_name(fpid), table)
+
+
+def _family_of_text(text: str, table: dict) -> dict | None:
     for fam in table["families"]:
-        if fam["re"].search(name):
+        if text and fam["re"].search(text):
             return fam
     return None
+
+
+def classify(ref: str, fpid: str, props: dict | None, row: dict | None,
+             table: dict | None = None) -> tuple[dict | None, str | None]:
+    """(family, what it was matched on) for one footprint (#953).
+
+    The footprint name first, as always. A connector reference
+    (CONNECTOR_REF) that it leaves unmatched is tried on its Value, then its
+    MPN (a footprint property, else its parts.json row), then on the row's
+    LCSC category (JLC's componentTypeEn, else the end of the row's LCSC
+    description) through the yaml's `categories` table: EasyEDA names such
+    as SIM-SMD_8P-1040310811 hide what the part is, but its value says
+    microSD and LCSC files it under the card sockets."""
+    table = table or load_table()
+    fam = family_of(fpid, table)
+    if fam is not None:
+        return fam, "footprint"
+    if not CONNECTOR_REF.match(ref):
+        return None, None
+    props, row = props or {}, row or {}
+    for on, text in (("value", props.get("Value", "")),
+                     ("mpn", part_mpn(props, row))):
+        fam = _family_of_text(text, table)
+        if fam is not None:
+            return fam, on
+    cat = row.get("category") or row.get("description") or ""
+    for rx, fam in table["categories"]:
+        if cat and rx.search(cat):
+            return fam, "category"
+    return None, None
+
+
+def part_mpn(props: dict, row: dict | None = None) -> str:
+    for k, v in props.items():
+        if re.sub(r"[\s._-]", "", k.lower()) in MPN_PROPS and v.strip():
+            return v.strip()
+    return str((row or {}).get("mpn") or "")
+
+
+def load_parts(parts: Path | None) -> dict:
+    """refdes -> parts.json row (the P3 BOM) from a board's parts dir;
+    empty when there is none."""
+    rows: dict = {}
+    if parts is None:
+        return rows
+    pj = Path(parts) / "parts.json"
+    if pj.is_file():
+        doc = checklib.load_json(pj, "parts.json")
+        items = doc.get("parts", []) if isinstance(doc, dict) else doc
+        for row in items if isinstance(items, list) else []:
+            if not isinstance(row, dict):
+                continue
+            refs = row.get("refdes") or row.get("refs") or []
+            for r in [refs] if isinstance(refs, str) else refs:
+                rows[str(r)] = row
+    return rows
+
+
+def mechanical_of(parts: Path | None, lcsc: str) -> dict:
+    """The `mechanical` block of LCSC part `lcsc`'s extraction, or {}: the
+    board's parts dir first, then reference/extractions."""
+    if not lcsc:
+        return {}
+    dirs = ([Path(parts)] if parts else []) + [TABLE.parent / "extractions"]
+    for d in dirs:
+        f = d / f"{lcsc}.json"
+        if f.is_file():
+            ext = checklib.load_json(f, f"extraction {f.name}")
+            return (ext.get("mechanical") or {}) if isinstance(ext, dict) \
+                else {}
+    return {}
 
 
 def _snap(dx: float, dy: float) -> str:
@@ -162,6 +255,47 @@ def mouth_local(f, table: dict | None = None) -> str | None:
     for rx, d in table["mouth"]:
         if rx.search(_name(f.fpid)):
             return d
+    return pad_mouth(f)
+
+
+OPPOSITE = {"+x": "-x", "-x": "+x", "+y": "-y", "-y": "+y"}
+
+
+def mouth_reading(f, table: dict | None = None,
+                  mech: dict | None = None) -> tuple[str | None, dict]:
+    """(mouth direction in the footprint's local frame, how it was read).
+
+    The part's datasheet extraction comes first (#952): its
+    mechanical.entry.contacts_at says whether the contact tails sit at the
+    back of the housing (the pad rule's reading) or at the mouth (the
+    opposite: Molex 104031 inner-lead microSD, many push-push SD and SIM
+    sockets). The yaml `mouth` override and then the pad rule are the
+    fallback. The second value records {"from": "extraction" | "override"
+    | "pads", "contacts_at", and "table": what the override or pad rule
+    reads when the extraction overrules it}."""
+    table = table or load_table()
+    table_d = mouth_local(f, table)
+    over = any(rx.search(_name(f.fpid)) for rx, _ in table["mouth"])
+    how = {"from": "override" if over else "pads"}
+    entry = (mech or {}).get("entry") or {}
+    at = entry.get("contacts_at") if isinstance(entry, dict) else None
+    if at in CONTACTS_AT:
+        pads = pad_mouth(f)
+        if pads is not None:
+            d = pads if at == "back" else OPPOSITE[pads]
+            how = {"from": "extraction", "contacts_at": at}
+            if table_d is not None and table_d != d:
+                how["table"] = table_d
+                how["table_from"] = "override" if over else "pads"
+            return d, how
+    if table_d is None:
+        how = {"from": None}
+    return table_d, how
+
+
+def pad_mouth(f) -> str | None:
+    """The pad rule alone: from the contact-pad centroid toward the body's,
+    or None when they (nearly) coincide."""
     cc = contact_centroid(f)
     if cc is None:
         return None
@@ -257,16 +391,18 @@ def _xyz(node, key: str, default: list[float]) -> list[float]:
 def board_meta(pcb: Path) -> dict[str, dict]:
     """ref -> {"model": (first 3D model path, its rotate xyz) or None,
     "offset"/"scale": that model's xyz, "smd_sides": the outer copper layers
-    ({"F", "B"}) its SMD pads sit on} from the board file."""
+    ({"F", "B"}) its SMD pads sit on, "props": its properties by name}
+    from the board file."""
     import sexpdata
     tree = sexpdata.loads(Path(pcb).read_text(encoding="utf-8"))
     out = {}
     for fp in _kids(tree, "footprint"):
-        ref = None
+        props = {}
         for prop in _kids(fp, "property"):
             s = _strs(prop)
-            if len(s) >= 2 and s[0] == "Reference":
-                ref = s[1]
+            if len(s) >= 2:
+                props.setdefault(s[0], s[1])
+        ref = props.get("Reference")
         if not ref:
             continue
         sides = set()
@@ -278,7 +414,8 @@ def board_meta(pcb: Path) -> dict[str, dict]:
                 if name in ("F.Cu", "B.Cu"):
                     sides.add(name[0])
         meta = {"model": None, "offset": [0.0, 0.0, 0.0],
-                "scale": [1.0, 1.0, 1.0], "smd_sides": frozenset(sides)}
+                "scale": [1.0, 1.0, 1.0], "smd_sides": frozenset(sides),
+                "props": props}
         m = _kid(fp, "model")
         if m is not None and _strs(m):
             meta["model"] = (_strs(m)[0], _xyz(m, "rotate", [0.0, 0.0, 0.0]))
@@ -386,28 +523,31 @@ def model_corners_local(f, meta: dict | None,
     return out
 
 
-def model_span_mm(f, d: str, meta: dict | None,
-                  pcb: Path) -> tuple[float, float] | None:
+def model_span_mm(f, d: str, meta: dict | None, pcb: Path,
+                  contacts_at: str | None = None
+                  ) -> tuple[float, float] | None:
     """How far the 3D model reaches behind (first, negative) and ahead of
     (second) the contact pads along the copper's mouth direction `d`.
 
     None when the contact pads sit at the front of the body (a `mouth`
     override that points toward them, as on Molex 104031 inner-lead
-    microSD): the measure assumes pads at the back, so it says nothing
-    there and model_reversed must not fire (#911)."""
+    microSD) and no extraction says so: the measure there is read by
+    model_reversed only when `contacts_at` is "mouth" (#911, #952)."""
     corners = model_corners_local(f, meta, pcb)
     cc = contact_centroid(f)
     if corners is None or cc is None:
         return None
     u = AXES[d]
     body = f.extents_local().centroid
-    if (cc[0] - body.x) * u[0] + (cc[1] - body.y) * u[1] > 0.3:
+    if contacts_at != "mouth" and \
+            (cc[0] - body.x) * u[0] + (cc[1] - body.y) * u[1] > 0.3:
         return None
     along = [(x - cc[0]) * u[0] + (y - cc[1]) * u[1] for x, y in corners]
     return min(along), max(along)
 
 
-def model_reversed(span: tuple[float, float] | None) -> bool:
+def model_reversed(span: tuple[float, float] | None,
+                   contacts_at: str | None = None) -> bool:
     """The model lies behind the contact pads: it reaches less than
     MODEL_AHEAD_MM ahead of them while it is MODEL_MIN_LEN_MM or longer.
 
@@ -416,10 +556,16 @@ def model_reversed(span: tuple[float, float] | None) -> bool:
     this asks the one thing a box does answer. A connector's contacts sit at
     the back of its housing, so a model of any length must reach forward of
     them. A model that is merely offset still does (PCB-0025-A J101 sits
-    5.6 mm too far back and reaches 5 mm ahead; PCB-0016-A J1 2.2 mm)."""
+    5.6 mm too far back and reaches 5 mm ahead; PCB-0016-A J1 2.2 mm).
+
+    With `contacts_at` "mouth" (the extraction says the contacts sit at
+    the front, #952) the housing lies behind them instead, so the model is
+    reversed when it reaches less than MODEL_AHEAD_MM behind them."""
     if span is None:
         return False
     lo, hi = span
+    if contacts_at == "mouth":
+        return lo > -MODEL_AHEAD_MM and hi - lo >= MODEL_MIN_LEN_MM
     return hi < MODEL_AHEAD_MM and hi - lo >= MODEL_MIN_LEN_MM
 
 
@@ -533,14 +679,17 @@ def _onboard(ref, fam, f, d, u, body, others, mate, fact, out):
 
 # ------------------------------------------------------------ the check
 
-def _reversed(ref, fam, c, u, span) -> dict:
+def _reversed(ref, fam, c, u, span, contacts=None) -> dict:
     facing, back = _snap(*u), _snap(-u[0], -u[1])
+    where = (f"the model lies ahead of them, {span[0]:.1f} mm to "
+             f"{span[1]:.1f} mm forward" if contacts == "mouth" else
+             f"the model lies behind them, {-span[0]:.1f} mm back to "
+             f"{-span[1]:.1f} mm")
     return checklib.violation(
         "place", "error", c, None, None, [ref],
         f"{ref} ({fam['family']}): its 3D model points the "
         f"other way from its copper - the pads put the mouth "
-        f"at {facing} but the model lies behind them, "
-        f"{-span[0]:.1f} mm back to {-span[1]:.1f} mm, so every "
+        f"at {facing} but {where}, so every "
         f"render shows it facing {back}. One of the two is "
         "backwards: check the datasheet, then fix the model's "
         "rotate in the footprint (or the footprint)", SOURCE,
@@ -550,10 +699,12 @@ def _reversed(ref, fam, c, u, span) -> dict:
 
 
 def violations(model, pcb: Path | None = None,
-               placement: dict | None = None) -> tuple[list[dict], list[dict]]:
+               placement: dict | None = None,
+               parts: Path | None = None) -> tuple[list[dict], list[dict]]:
     """(violations, facts) for every mating connector on `model`
     (a placelib.PlaceModel); `placement` is constraints.json's placement
-    block, read for its declared mates."""
+    block, read for its declared mates; `parts` is the board's parts dir
+    (parts.json rows for classify, extractions for mouth_reading)."""
     table = load_table()
     pcb = Path(pcb or model.path)
     outline = model.outline
@@ -561,11 +712,40 @@ def violations(model, pcb: Path | None = None,
     mates, out = declared_mates(placement, fps)
     facts: list[dict] = []
     fam_of = {r: family_of(f.fpid, table) for r, f in fps.items()}
+    matched_on = {r: "footprint" for r, fam in fam_of.items() if fam}
+    need = any(fam_of.values()) or any(
+        CONNECTOR_REF.match(r) for r, fam in fam_of.items() if fam is None)
+    metas = board_meta(pcb) if pcb.is_file() and need else {}
+    rows = load_parts(parts)
+    for r, fam in fam_of.items():
+        if fam is None and CONNECTOR_REF.match(r):
+            fam_of[r], matched_on[r] = classify(
+                r, fps[r].fpid, (metas.get(r) or {}).get("props"),
+                rows.get(r), table)
     for r in mates:
         if fam_of[r] is None:
             fam_of[r] = {**table["defaults"], **DECLARED_FAMILY}
-    metas = board_meta(pcb) if pcb.is_file() and any(fam_of.values()) else {}
+            matched_on[r] = "declared mate"
     models = {r: m["model"] for r, m in metas.items() if m["model"]}
+
+    def mouth(ref, f, fam, fact):
+        props = (metas.get(ref) or {}).get("props") or {}
+        lcsc = (props.get("LCSC") or props.get("LCSC Part")
+                or (rows.get(ref) or {}).get("lcsc") or "").strip().upper()
+        d, how = mouth_reading(f, table, mechanical_of(parts, lcsc))
+        fact["mouth_from"] = how["from"]
+        if "table" in how:
+            out.append(checklib.violation(
+                "place", "warning", f.center_abs(), None, None, [ref],
+                f"{ref} ({fam['family']}): its datasheet extraction "
+                f"({lcsc}) puts the contacts at the {how['contacts_at']}, so "
+                f"the mouth is local {d}; the {how['table_from']} reading "
+                f"says {how['table']}. Going by the extraction - check it on "
+                "the drawing and fix whichever is wrong", SOURCE,
+                kind="mating_mouth_disagrees", connector=ref,
+                mouth_local=d, table_mouth_local=how["table"],
+                table_from=how["table_from"]))
+        return d, how.get("contacts_at")
 
     # the name says vertical but the copper clamps the board edge: horizontal
     entry_of = {r: ("horizontal" if fam["entry"] == "vertical"
@@ -579,7 +759,8 @@ def violations(model, pcb: Path | None = None,
         body = f.extents_abs()
         meta = metas.get(ref)
         entry = entry_of[ref]
-        fact = {"ref": ref, "family": fam["family"], "entry": entry}
+        fact = {"ref": ref, "family": fam["family"], "entry": entry,
+                "matched_on": matched_on.get(ref)}
         if entry != fam["entry"]:
             fact["entry_from"] = "pads on both outer layers"
         facts.append(fact)
@@ -590,7 +771,7 @@ def violations(model, pcb: Path | None = None,
             fact["entry_from"] = "declared mate"
             entry = fact["entry"] = "horizontal"
         if mate is not None:
-            d = mouth_local(f, table)
+            d, contacts = mouth(ref, f, fam, fact)
             u = _to_abs_dir(f, d) if d is not None else None
             if d is None:
                 out.append(checklib.violation(
@@ -601,12 +782,13 @@ def violations(model, pcb: Path | None = None,
                     "entry to reference/connector_mating.yaml", SOURCE,
                     kind="mating_direction_unknown", connector=ref))
             _onboard(ref, fam, f, d, u, body, others, mate, fact, out)
-            span = model_span_mm(f, d, meta, pcb) if d else None
-            if model_reversed(span):
-                out.append(_reversed(ref, fam, f.center_abs(), u, span))
+            span = model_span_mm(f, d, meta, pcb, contacts) if d else None
+            if model_reversed(span, contacts):
+                out.append(_reversed(ref, fam, f.center_abs(), u, span,
+                                    contacts))
             continue
         if entry == "horizontal":
-            d = mouth_local(f, table)
+            d, contacts = mouth(ref, f, fam, fact)
             if d is None:
                 fact["mouth"] = None
                 out.append(checklib.violation(
@@ -644,11 +826,11 @@ def violations(model, pcb: Path | None = None,
                     else "mating_mouth_inset",
                     connector=ref, mouth=facing, nearest_edge=nearest,
                     gap_mm=checklib.rnd(gap, 2)))
-            span = model_span_mm(f, d, meta, pcb)
+            span = model_span_mm(f, d, meta, pcb, contacts)
             fact["model_span_mm"] = None if span is None \
                 else [checklib.rnd(v, 2) for v in span]
-            if model_reversed(span):
-                out.append(_reversed(ref, fam, c, u, span))
+            if model_reversed(span, contacts):
+                out.append(_reversed(ref, fam, c, u, span, contacts))
             zone = _zone(body, u, gap, fam["plug_mm"], fam["grip_mm"])
             blockers = sorted(o.ref for o in others
                               if o.extents_abs().intersects(zone)

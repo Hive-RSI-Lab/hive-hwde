@@ -21,9 +21,17 @@ in front of it.
  - mating_direction_unknown (warning): the mouth cannot be read from the
    pad layout.
 
-CLI: --pcb board.kicad_pcb [--constraints c.json] [--out report.json]
+CLI: --pcb board.kicad_pcb [--constraints c.json] [--parts DIR]
+[--out report.json]
 constraints.json defaults to the board's own directory, as in the place
-gate.   exit 0/1/2 per SPEC section 6.
+gate; the parts dir to the board dir's parent's parts/ (P3's parts.json and
+extractions). With it a connector whose footprint name no family matches is
+matched on its value, MPN or LCSC category (#953), and a part's extraction
+saying which end its contacts are at (mechanical.entry.contacts_at) sets its
+mouth over the yaml and the pad rule (#952):
+ - mating_mouth_disagrees (warning): the extraction and the yaml `mouth`
+   entry or the pad rule read the mouth opposite ways.
+exit 0/1/2 per SPEC section 6.
 
 A J/P/CN/CON part whose footprint no family matches isn't judged: the report's
 not_judged names each (a side-entry wire-to-board socket no row knows reads
@@ -56,6 +64,9 @@ def run(argv=None):
     ap.add_argument("--pcb", required=True)
     ap.add_argument("--constraints", default=None,
                     help="constraints.json (default: next to the board)")
+    ap.add_argument("--parts", default=None,
+                    help="parts dir with parts.json and extractions "
+                         "(default: ../parts from the board's dir)")
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
     pcb = Path(args.pcb)
@@ -67,7 +78,9 @@ def run(argv=None):
     if args.constraints or cpath.is_file():
         placement = checklib.load_json(cpath, "constraints").get("placement")
     model = placelib.PlaceModel(pcb)
-    violations, facts = matinglib.violations(model, pcb, placement)
+    parts = Path(args.parts) if args.parts else pcb.parent.parent / "parts"
+    violations, facts = matinglib.violations(
+        model, pcb, placement, parts if parts.is_dir() else None)
     for v in violations:
         v["check"] = "mating"
         v["source"] = SCRIPT

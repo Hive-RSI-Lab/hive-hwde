@@ -80,12 +80,17 @@ modes:
     rule: mating_direction_unknown
     level: L1
   target_level: L2
-  gap: warning only; unknown families pass
+  gap: warning only; a connector no name, value, MPN or LCSC category matches
+    is unjudged (an edge one fails under --strict); a mouth read from the
+    extraction's entry.contacts_at needs that field filled
   hit_on:
   - usb-111FD
+  - laptop-hub-J6
   sources:
   - L677
   - cd6ca77
+  - '953'
+  - '952'
 - id: MECH-05
   category: MECH
   mode: Mated pair pinout mirrored or rows swapped
