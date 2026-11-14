@@ -12,3 +12,16 @@ mutants:
       kind: post_holes_missing
       ref: J2
       pos: [146.5, 110.5]   # J2's origin
+  solder-wire-hole-loose:
+    board: blinky2
+    script: mutations/solder_wire_hole_loose.py
+    check: check_connector_fit
+    defect: >-
+      J1 is a SolderWire footprint with 2.0 mm holes and a GND pad joined to
+      the pours by 0.2 mm thermal spokes: the copper feeding it carries
+      about 3.4 A, a 0.75 mm^2 wire, whose 1.25 mm conductor leaves the
+      joint loose (oasis v0.2 errata, J1's 3.0 mm holes, issue #881)
+    expect:
+      kind: tht_hole_loose
+      ref: J1
+      pos: [102.8, 103.5]   # J1's origin
