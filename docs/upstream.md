@@ -214,7 +214,10 @@ What moved where:
   any rail with one recorded 100 nF read as "no bulk reservoir". A footprint
   KiCad marks `dnp` (a contingency) ships empty and is not counted; `geom`
   now carries each footprint's `attr` flags for that
-  (`tests/test_false_pass.py`, `tests/test_sourcer_records.py`).
+  (`tests/test_false_pass.py`, `tests/test_sourcer_records.py`). The `core`
+  pin's ledger had judged two such findings real (+5VA, +3V3E); the board
+  holds 10 uF caps across both rails, so they are judged false now, a new
+  score baseline.
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps

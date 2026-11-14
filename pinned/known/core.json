@@ -1967,8 +1967,8 @@
    ],
    "pos": null,
    "kind": "pdn_no_bulk",
-   "verdict": "real",
-   "reason": "the rail has only ceramics, no bulk reservoir"
+   "verdict": "false",
+   "reason": "pcb-flow's mistake: check_pdn counted only decoupling.json's caps, which are recorded against IC pins; C21 and C59 (10 uF 0603) sit across +5VA and GND on the board, so the rail holds 20 uF at or above the check's 1 uF bulk line (#1056)"
   },
   {
    "gate": "verify",
@@ -1980,8 +1980,8 @@
    ],
    "pos": null,
    "kind": "pdn_no_bulk",
-   "verdict": "real",
-   "reason": "the rail has only ceramics, no bulk reservoir"
+   "verdict": "false",
+   "reason": "pcb-flow's mistake: check_pdn counted only decoupling.json's caps, which are recorded against IC pins; C22 (10 uF 0603) sits across +3V3E and GND on the board, at or above the check's 1 uF bulk line (#1056)"
   },
   {
    "gate": "verify",
