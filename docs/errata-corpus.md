@@ -51,9 +51,9 @@ what pcb-flow's checks do with the first revision. Written by
 | glasgow-2: U3 TMP112 and U21 DAC43204 answer on the same I2C address | SCH (I2C address map) | missed | an I2C address map per bus, with each strap's supply domain (#1034) |
 | glasgow-3: U25 ADDR strap tied to the wrong power domain | SCH (strap supply domain) | missed | an I2C address map per bus, with each strap's supply domain (#1034) |
 | glasgow-4: U4 FUSB302 SCL and SDA swapped on the schematic | SCH (bus pin map) | caught on rev A, gone on rev B (`netlist_audit` pin_net_swap) | netlist_audit's pin_net_swap reads U4's SCL pin on /SDA and its SDA pin on /SCL; revD1 swaps them back and the finding is gone. |
-| glasgow-5: STM32G031 MCU_nRST held near 1.2 V by an unprogrammed FX2/FPGA | ANA (pull vs pin leakage) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
-| glasgow-6: FX2 U8B and U2 can both drive MCU_nRST | SCH (driver contention) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
-| glasgow-7: R9 100k pull-up loses to the unconfigured FPGA's 150 uA pull-down, so nALERT sits asserted | ANA (pull vs pin leakage) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
+| glasgow-5: STM32G031 MCU_nRST held near 1.2 V by an unprogrammed FX2/FPGA | ANA (pull vs pin leakage) | caught on rev A, gone on rev B (`netlist_audit` pull_vs_leakage) | reference/pin_leakage.yaml (#1026): R26 47k and the STM32's own 25-55k pull-up against the unconfigured ECP5's 150 uA pull-down and the FX2's and ECP5's 10 uA leakage solves to 0 V, below the NRST VIL (an error). revD1 gates NRST through a 74LVC1G08 and the old net carries a 10k pull-down that holds the gate input at 0.15 V. |
+| glasgow-6: FX2 U8B and U2 can both drive MCU_nRST | SCH (driver contention) | caught on rev A, gone on rev B (`netlist_audit` driver_contention) | reference/pin_leakage.yaml (#1026) marks the STM32G031 PF2-NRST as a reset input; revD0 puts FX2 PD3 and ECP5 PT13B, both bidirectional, on it (a warning). revD1 drives NRST from a 74LVC1G08 alone. |
+| glasgow-7: R9 100k pull-up loses to the unconfigured FPGA's 150 uA pull-down, so nALERT sits asserted | ANA (pull vs pin leakage) | caught on rev A, gone on rev B (`netlist_audit` pull_vs_leakage) | reference/pin_leakage.yaml (#1026): R9 100k against the ECP5's 150 uA IPD (FPGA-DS-02012 Table 3.7) and 20 uA of leakage solves to 0 V (an error). revD1's 2.2k holds 2.9 V, above the FX2's 2 V VIH. |
 | glasgow-8: INTB/DRDY lines on U6 pins that cannot take an interrupt | FW-HW (pin function) | missed | MCU pin function against the net's role (timer, PWM, EXTI) (#1032) |
 | glasgow-9: ADC AICOM pin left off GND though single-ended mode is referenced to it | SCH (datasheet pin state) | caught on rev A, gone on rev B (`netlist_audit` pin_state) | reference/pin_states.yaml (#1033): NAFE71388 AICOM belongs on ground, directly or through its series resistor (section 7.3.2.2.1). revD0 runs it through R34 to /ADC/REMOTE_COM; revD1 takes it to GND. A warning. |
 | glasgow-10: BUSY/CSSPIN on RD instead of a FLAG pin | FW-HW (pin function) | missed | MCU pin function against the net's role (timer, PWM, EXTI) (#1032) |
@@ -89,7 +89,7 @@ what pcb-flow's checks do with the first revision. Written by
 |---|---|---|---|
 | pdlc-1: the driver does not wait for power-good before driving the panel | PI (power-good sequencing) | missed | a power-good pin that gates nothing; a switched load against the converter's limit (#1030) |
 | pdlc-2: no current limit on the panel drive, so large panels drain the output capacitor | PI (load current limit) | missed | a power-good pin that gates nothing; a switched load against the converter's limit (#1030) |
-| pdlc-3: the EN input is too sensitive when left floating | SCH (input pull strength) | missed | pull strength against pin leakage and driver contention on a DC-solved net (#1026) |
+| pdlc-3: the EN input is too sensitive when left floating | SCH (input pull strength) | missed | cable pickup on a floating off-board input: no datasheet leakage to size against, so #1026's rule leaves it (survey #1079) |
 
 ## megabuzz: revA -> revA1
 
@@ -118,4 +118,4 @@ what pcb-flow's checks do with the first revision. Written by
 
 ## Count
 
-41 defects: 19 caught, 21 missed, 1 not_static.
+41 defects: 22 caught, 18 missed, 1 not_static.
