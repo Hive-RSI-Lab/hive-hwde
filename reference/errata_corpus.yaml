@@ -144,8 +144,15 @@ boards:
     summary: board areas over 50 C at 4 A per motor phase
     source_quote: "Some areas of the PCB reach over 50 C when operating the motor at 4 A peak per phase"
     fault_class: TH (copper area under a power IC)
-    verdict: caught_with_constraints
-    note: check_thermal estimates rise from the power and copper constraints.json gives; on the foreign board it has no input. v4's 4-layer pours are the fix.
+    verdict: caught
+    catch: {script: check_thermal, kind: thermal_area, net: GND}
+    note: >-
+      With no constraints.json check_thermal screens the power ICs
+      reference/thermal_parts.yaml knows (#884): v3's MCF8316D (U5) sheds heat
+      into 2-layer copper that gives 58 C/W against the datasheet's 25.7, so
+      its 135 C thermal warning comes at ~4.2 A peak per phase from 25 C
+      ambient (6.4 A on the datasheet's board). v4's 4-layer pours give U4
+      42 C/W (1.65x, under the 2x bar) and the finding is gone.
   - id: minuet-4
     summary: ESP32-C3 GPIO6 (MTCK) pulled up by the ROM at reset turns the LED strip on before firmware runs
     source_quote: "The bootloader enables the GPIO6 pull-up on reset which interferes with its use for the Minuet light accessory"

@@ -200,7 +200,26 @@ box air is life_h x 2^((rated_c - T)/10) (electrolytic) or
 (irms_a / rating)^2 (a cap's core rise at its full rating is ~5 K, typical
 of vendors' ripple ratings; a judgement); under life_min_h is a warning.
 
-CLI: --pcb board.kicad_pcb --constraints constraints.json [--out report.json]
+Known power ICs with no thermal entry (#884). A board arrives with no
+constraints.json, and a motor driver or regulator on thin copper still
+overheats (minuet v3's MCF8316D: over 50 C at 4 A per phase,
+over-temperature at 4.5 A). A part that reference/thermal_parts.yaml matches
+by Value / MPN, and that no thermal entry names, is screened on its own
+datasheet: the copper on its biggest pad's net (the exposed pad) through the
+model above at 1 W, the most favourable of the screen and the spreading
+theta (an inferred screen should fire only when even the kind reading
+fails), against the row's JEDEC theta_JA. Over THETA_RATIO_MAX (2x) is a
+warning: the part sheds under half the heat the board its ratings assume
+sheds, so it reaches its thermal limits at under half the loss. The 2x is a
+judgement: minuet v3 (2-layer, 58 C/W against 25.7) fails it, v4 (4-layer
+pours, the designer's fix, 42 C/W) passes, and so does the best 2-layer
+case (full pours, a via array). Where the row has tj_warn_c and a loss
+model, the finding gives the current at which the die reaches its thermal
+warning from INFERRED_AIR_C (25 C, JEDEC still air) or ambient_c, here and
+on the datasheet's board. Give the part a thermal entry with this board's
+load to replace the screen.
+
+CLI: --pcb board.kicad_pcb [--constraints constraints.json] [--out report.json]
      exit 0/1/2 per SPEC section 6.
 
 constraints.json["thermal"] entries:
@@ -244,6 +263,7 @@ import struct
 import sys
 from pathlib import Path
 
+import yaml
 from shapely.geometry import Point
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
@@ -306,6 +326,11 @@ MPN_PROPS = ("MPN", "Manufacturer Part", "Manufacturer_Part_Number",
 PADUP_THETA_RATIO = 0.9      # a theta_ja_c_w under 90 % of the table's: error
 NO_HEATSINK_FLOOR_CW = 10.0  # no SMD package's JEDEC theta_JA is this low
 HOLDS = {"clip", "screw", "pushpin", "adhesive", "lid"}
+# power ICs screened without a thermal entry (#884, module doc)
+THERMAL_PARTS_YAML = (Path(__file__).resolve().parent.parent / "reference"
+                      / "thermal_parts.yaml")
+THETA_RATIO_MAX = 2.0        # board copper vs the datasheet's JEDEC theta_JA
+INFERRED_AIR_C = 25.0        # JEDEC still air, when constraints give none
 HOLDS_ON_BOARD = {"clip", "screw", "pushpin"}
 
 # enclosure model (module doc)
@@ -1034,16 +1059,102 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
     return violations, facts
 
 
+def thermal_rows(path: Path = THERMAL_PARTS_YAML) -> list[dict]:
+    rows = yaml.safe_load(path.read_text(encoding="utf-8"))["parts"]
+    return [dict(r, rx=re.compile(r["match"], re.I)) for r in rows]
+
+
+def thermal_row(fp: dict, rows: list[dict]) -> dict | None:
+    """The thermal_parts.yaml row a footprint matches on Value / MPN."""
+    props = fp.get("props") or {}
+    texts = [fp.get("value") or ""] + [props.get(k) or "" for k in MPN_PROPS]
+    return next((r for r in rows
+                 if any(t and r["rx"].search(str(t).strip()) for t in texts)),
+                None)
+
+
+def heatsink_net(bg: geom.BoardGeom, ref: str) -> str | None:
+    """The net of the part's biggest pad (its exposed pad), if connected."""
+    pads = bg.pads_of(ref=ref)
+    if not pads:
+        return None
+    net = max(pads, key=lambda p: p.size[0] * p.size[1]).net
+    return net if net and not net.startswith("unconnected-") else None
+
+
+def loss_w(row: dict, peak_a: float) -> float | None:
+    """The row's loss model at a peak phase current (yaml header)."""
+    if row.get("loss") == "three_phase":
+        return 3 * (peak_a ** 2 / 2) * (float(row["r_hs_ls_ohm"]) / 2)
+    return None
+
+
+def warn_current_a(row: dict, theta: float, air_c: float) -> float | None:
+    """Peak phase current at which the die reaches tj_warn_c through theta."""
+    if "tj_warn_c" not in row or loss_w(row, 1.0) is None:
+        return None
+    budget = (float(row["tj_warn_c"]) - air_c) / theta
+    return math.sqrt(budget / loss_w(row, 1.0)) if budget > 0 else 0.0
+
+
+def check_inferred(bg: geom.BoardGeom, ref: str, row: dict,
+                   air_c: float | None):
+    """(violations, facts) for a known power IC no thermal entry names."""
+    fp = bg.footprints[ref]
+    part = fp.get("value") or ref
+    net = heatsink_net(bg, ref)
+    facts = {"ref": ref, "part": part, "inferred": True,
+             "theta_ja_datasheet_cw": float(row["theta_ja_c_w"]),
+             "source": row["source"]}
+    if net is None:
+        return [], dict(facts, skipped="its biggest pad has no net")
+    _, base = check_part(bg, {"ref": ref, "net": net, "power_w": 1.0,
+                              "dt_c": 1e9})
+    theta = min(base["theta_ja"], base.get("theta_spread_cw", base["theta_ja"]))
+    ds = float(row["theta_ja_c_w"])
+    ratio = theta / ds
+    air = INFERRED_AIR_C if air_c is None else air_c
+    facts.update(net=net, theta_board_cw=checklib.rnd(theta),
+                 theta_ratio=checklib.rnd(ratio), air_c=air)
+    here, there = warn_current_a(row, theta, air), warn_current_a(row, ds, air)
+    if here is not None:
+        facts.update(warn_peak_a=checklib.rnd(here),
+                     warn_peak_a_datasheet=checklib.rnd(there))
+    if ratio <= THETA_RATIO_MAX:
+        return [], facts
+    (cx, cy), side, _, _ = part_region(bg, ref)
+    msg = (f"{ref} ({part}) sheds heat through ~{theta:.0f} C/W of {net} "
+           f"copper, {ratio:.1f}x the {ds:g} C/W of its datasheet's JEDEC "
+           f"board")
+    if here is not None:
+        rated = (f", rated {float(row['peak_a']):g} A peak"
+                 if "peak_a" in row else "")
+        msg += (f": it reaches its thermal warning ({float(row['tj_warn_c']):g}"
+                f" C) at ~{here:.1f} A peak per phase from {air:g} C air, "
+                f"where the datasheet's board allows ~{there:.1f} A{rated}")
+    msg += (f"; add {net} copper and thermal vias under it, or more layers - "
+            f"inferred from reference/thermal_parts.yaml ({row['source'].split(':')[0]}); "
+            f"give {ref} a thermal entry in constraints.json with this board's "
+            "load to judge it instead")
+    v = violation(SCRIPT, "warning", (cx, cy), side, net, [ref], msg, SCRIPT,
+                  kind="thermal_area", inferred=True,
+                  theta_board_cw=checklib.rnd(theta),
+                  theta_ja_datasheet_cw=ds, theta_ratio=checklib.rnd(ratio))
+    return [v], facts
+
+
 def run(argv=None):
     ap = argparse.ArgumentParser(
         description="Dissipation vs copper heatsink area (theta_JA screen).")
     ap.add_argument("--pcb", required=True, help="path to .kicad_pcb")
-    ap.add_argument("--constraints", required=True,
-                    help="constraints.json with a thermal list")
+    ap.add_argument("--constraints",
+                    help="constraints.json with a thermal list; without it "
+                         "only the known power ICs are screened")
     ap.add_argument("--out", help="write JSON report here instead of stdout")
     args = ap.parse_args(argv)
 
-    cons = checklib.load_json(args.constraints, "constraints")
+    cons = (checklib.load_json(args.constraints, "constraints")
+            if args.constraints else {})
     bg = geom.load_board(Path(args.pcb))
     bg.assert_fresh()
 
@@ -1055,7 +1166,8 @@ def run(argv=None):
     if "enclosure" in cons:
         heat = sum(float(e.get("power_w", 0) or 0) for e in entries)
         air_c, extra["enclosure"], vs = enclosure_air(
-            cons["enclosure"], heat, Path(args.constraints).resolve().parent)
+            cons["enclosure"], heat,
+            Path(args.constraints or args.pcb).resolve().parent)
         violations.extend(vs)
     elif air_c is not None:
         air_c = float(air_c)
@@ -1064,9 +1176,18 @@ def run(argv=None):
         violations.extend(vs)
         checked.append(facts)
 
+    # a known power IC nobody gave a thermal entry: its datasheet's board
+    listed = {e.get("ref") for e in entries}
+    rows = thermal_rows()
+    for ref in sorted(bg.footprints):
+        row = None if ref in listed else thermal_row(bg.footprints[ref], rows)
+        if row is not None and bg.pads_of(ref=ref):
+            vs, facts = check_inferred(bg, ref, row, air_c)
+            violations.extend(vs)
+            checked.append(facts)
+
     # a pad-up part nobody gave a thermal entry: nothing says how its slug
     # is cooled
-    listed = {e.get("ref") for e in entries}
     for ref in sorted(bg.footprints):
         if ref in listed:
             continue
@@ -1093,7 +1214,8 @@ def run(argv=None):
     payload = checklib.report(
         SCRIPT, args.pcb, violations, checked=checked,
         nothing_to_judge=None if checked or ripple else
-        "no thermal or ripple entries in constraints", **extra)
+        "no thermal or ripple entries in constraints, and no power IC "
+        "reference/thermal_parts.yaml knows", **extra)
     return payload, args.out
 
 

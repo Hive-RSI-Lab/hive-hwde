@@ -1,0 +1,35 @@
+# Power ICs check_thermal screens when constraints.json gives no thermal
+# entry for them (the minuet v3 miss, #884: an MCF8316D three-phase motor
+# driver on 2-layer copper reached over-temperature at 4.5 A per phase, and
+# with no constraints.json nothing told check_thermal it dissipated at all).
+#
+# match: a regex tried against the part's Value and MPN fields
+# (case-insensitive). theta_ja_c_w: the datasheet's JEDEC junction-to-ambient
+# figure, the board its ratings assume. The check finds the copper on the
+# part's exposed-pad net and flags the board when even the most favourable of
+# its copper models gives more than THETA_RATIO_MAX (2x) that figure: the part
+# can then shed under half the heat the datasheet's board sheds before its
+# thermal warning.
+#
+# Optional, to put a current in the finding: tj_warn_c (the die temperature
+# its thermal warning trips at, the datasheet minimum) and a loss model:
+#   loss: three_phase, r_hs_ls_ohm: R   conduction in a three-phase bridge at
+#       a sinusoidal peak phase current I: P = 3 (I^2 / 2) (R / 2), R the
+#       high-side + low-side on-resistance (one of the two conducts per phase
+#       at a time). Switching and supply losses are left out, so the current
+#       reported is an upper bound.
+#   peak_a: the part's rated peak current, quoted beside it.
+# source / verified as in regulator_vref.yaml: `false` means typed from memory
+# of the datasheet, not re-read.
+parts:
+  - match: '^MCF8316D'
+    theta_ja_c_w: 25.7
+    tj_warn_c: 135
+    loss: three_phase
+    r_hs_ls_ohm: 0.140
+    peak_a: 8.0
+    source: >-
+      TI MCF8316D SLLSFX9A: 6.4 Thermal Information (RGF VQFN-40 RthetaJA
+      25.7 C/W); 6.5 RDS(ON) high-side + low-side 140 mOhm typ at TJ 150 C;
+      TOTW 135 C min; features (8-A peak)
+    verified: true
