@@ -1,0 +1,23 @@
+{
+  "mpn": "SEEDED-1V",
+  "lcsc": "C990865",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "VIN",
+      "type": "input"
+    },
+    {
+      "pin": "2",
+      "name": "GND",
+      "type": "ground"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "Input voltage VIN",
+      "value": 1,
+      "unit": "V"
+    }
+  ]
+}

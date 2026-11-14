@@ -1,0 +1,56 @@
+{
+  "mpn": "SEEDED-MCU",
+  "lcsc": "C990869",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "VDD",
+      "type": "power_in"
+    },
+    {
+      "pin": "9",
+      "name": "VDD",
+      "type": "power_in"
+    },
+    {
+      "pin": "24",
+      "name": "VDD",
+      "type": "power_in"
+    },
+    {
+      "pin": "36",
+      "name": "VDD",
+      "type": "power_in"
+    },
+    {
+      "pin": "48",
+      "name": "VDD",
+      "type": "power_in"
+    },
+    {
+      "pin": "8",
+      "name": "VSS",
+      "type": "ground"
+    },
+    {
+      "pin": "23",
+      "name": "VSS",
+      "type": "ground"
+    },
+    {
+      "pin": "35",
+      "name": "VSS",
+      "type": "ground"
+    },
+    {
+      "pin": "47",
+      "name": "VSS",
+      "type": "ground"
+    },
+    {
+      "pin": "15",
+      "name": "PA5",
+      "type": "output"
+    }
+  ]
+}
