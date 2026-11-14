@@ -787,6 +787,55 @@ def test_critical_routing_acceptance_usbbuck4(placed_board, krt_dir, tmp_path):
     assert len(bg.pads_of(net="/USB_DP")) == 3
 
 
+def _kp_board(d: Path, sense: bool) -> Path:
+    """blinky2 (routed) plus an unrouted rail KP from L911 to C911 and the
+    feedback divider top R911 below the rail's middle, where a tree router
+    tees it in. sense: declare R911.1 -> C911.1 as the sense line (#1043)."""
+    sys.path.insert(0, str(GOLDEN / "mutations"))
+    import sense_tap_teed_off_rail as m
+    text = (GOLDEN / "blinky2" / "blinky2.kicad_pcb").read_text(encoding="utf-8")
+    at = text.index("\t(segment\n")
+    parts = (m._fp("L911", "4.7uH", 122, 134, 1, [("1", 0, 2, "KP")])
+             + m._fp("C911", "22u", 134, 134, 2, [("1", 0, 2, "KP")])
+             + m._fp("R911", "100k", 127, 137.5, 3,
+                     [("1", 0, 1, "KP"), ("2", 2, 1, "KFB")]))
+    pcb = d / "blinky2.kicad_pcb"
+    pcb.write_text(text[:at] + parts + text[at:], encoding="utf-8")
+    shutil.copy2(GOLDEN / "blinky2" / "blinky2.kicad_pro", d)
+    cons = json.loads((GOLDEN / "blinky2" / "constraints.json")
+                      .read_text(encoding="utf-8"))
+    cons["power"].append({"net": "KP", "current_a": 0.1, "pdn": False,
+                          **({"sense_pads": SENSE_SPEC[0]["sense_pads"]}
+                             if sense else {})})
+    (d / "constraints.json").write_text(json.dumps(cons), encoding="utf-8")
+    return pcb
+
+
+@pytest.mark.smoke
+@pytest.mark.parametrize("sense", [False, True])
+def test_live_krt_rail_keeps_the_sense_pad_off_the_rail(sense, cli, krt_dir,
+                                                        tmp_path):
+    """#1043 planted fault: told nothing, KRT runs rail KP L911 -> R911.1 ->
+    C911, so the sense line reads 7 mm short of C911.1 (sense_tap_off_pad).
+    Given sense_pads, route_critical keeps R911.1 off the rail tree and lays
+    its own line to C911.1, and check_kelvin finds it clean."""
+    import check_kelvin
+    pcb = _kp_board(tmp_path, sense)
+    rep = tmp_path / "report.json"
+    assert rc.main(["--pcb", str(pcb), "--only", "power",
+                    "--out-report", str(rep)]) == 0
+    r = json.loads(rep.read_text(encoding="utf-8"))
+    assert r["status"] == "pass", r["violations"]
+    vios, facts = check_kelvin.judge_sense(geom.load_board(pcb), SENSE_SPEC)
+    if not sense:
+        assert [v["kind"] for v in vios] == ["sense_tap_off_pad"]
+        return
+    assert vios == [] and facts[0]["reached"]
+    lines = [f for f in r["facts"]["routed"] if f["kind"] == "sense"]
+    assert [(f["sense"], f["tap"], f["reached"]) for f in lines] == \
+        [("R911.1", "C911.1", True)]
+
+
 def test_nets_in_new_errors_names_the_routed_nets_that_broke_drc():
     """lite-main (hifi-receiver-2): KRT laid /OUT_L_N across the TPA3118's
     pins; only the nets in errors whose type grew are named."""
@@ -897,3 +946,152 @@ def test_nets_starving_thermals_names_new_copper_next_to_the_pad(monkeypatch):
     # no growth in starved_thermal: nothing named
     assert rc.nets_starving_thermals(after, after, nets, Path("x"),
                                      {"o1"}) == set()
+
+
+# ============================================================ #1043 sense lines
+
+def _sense_board(tmp_path, name="sense", extra=""):
+    """A rail KP from L911 to its output capacitor C911 on a 1 mm track, and
+    R911's sense pad (unrouted) above it. A GND track walls the way from
+    R911.1 to C911.1 down to the rail's edge: the short way runs on the
+    rail's own copper, the long way goes round the wall's far end."""
+    body = _fp("L911", 10, 20, pads=_pad("1", 0, 0, "KP", size=2))
+    body += _fp("C911", 22, 20, pads=_pad("1", 0, 0, "KP", size=2))
+    body += _fp("R911", 15, 17.5, pads=_pad("1", 0, 0, "KP", size=1)
+                + _pad("2", -2, 0, "KFB", size=1))
+    body += _seg(10, 20, 22, 20, "KP", "a1", w=1.0)
+    body += _seg(17.5, 12, 17.5, 19.2, "GND", "c1") + extra
+    return _pcb(tmp_path, name, body)
+
+
+SENSE_SPEC = [{"net": "KP", "sense_pads": {"R911.1": "C911.1"}}]
+
+
+def _lay(pcb, ops):
+    """Write route_edit add_track ops into the board text as segments."""
+    text = pcb.read_text(encoding="utf-8")
+    segs = "".join(_seg(*o["start"], *o["end"], o["net"], f"e{k:x}",
+                        w=o["width"])
+                   for k, o in enumerate(ops) if o["op"] == "add_track")
+    assert all(o["op"] == "add_track" for o in ops)
+    pcb.write_text(text.rstrip()[:-1] + segs + ")\n", encoding="utf-8")
+    return geom.BoardGeom.from_file(pcb)
+
+
+def test_power_specs_carry_sense_pads():
+    specs = rc.power_specs({"power": [
+        {"net": "KP", "current_a": 0.1,
+         "sense_pads": {"R911.1": "C911.1"}},
+        {"net": "KQ", "current_a": 0.1}]})
+    by = {s["net"]: s for s in specs}
+    assert by["KP"]["sense_pads"] == {"R911.1": "C911.1"}
+    assert by["KQ"]["sense_pads"] == {}
+    assert rc.sense_pairs(specs) == [("KP", "R911.1", "C911.1")]
+
+
+def test_sense_pad_targets_skip_bad_names_and_routed_pads(tmp_path):
+    bg = geom.BoardGeom.from_file(_sense_board(tmp_path))
+    assert rc.sense_pad_targets(bg, SENSE_SPEC) == [("R911", "KP", "1")]
+    bad = [{"net": "KP", "sense_pads": {"R911.2": "C911.1",   # not on KP
+                                        "R999.1": "C911.1",   # no such pad
+                                        "R911.1": "R911.1"}}]  # same pad
+    assert rc.sense_pad_targets(bg, bad) == []
+    done = geom.BoardGeom.from_file(_sense_board(
+        tmp_path, "done", _seg(15, 17.5, 15, 15, "KP", "b1")))
+    assert rc.sense_pad_targets(done, SENSE_SPEC) == []
+
+
+def test_sense_line_is_walled_off_its_rail(tmp_path):
+    """#1043 planted fault: routed with its rail as own-net copper, the sense
+    line from R911.1 takes the short way on the rail track, short of C911.1 (the voice
+    board's R113/R201, read 6-16 mm off their pads). With fence_rail the same
+    route lands on C911.1 on copper of its own."""
+    import check_kelvin
+    pcb = _sense_board(tmp_path)
+    bg = geom.BoardGeom.from_file(pcb)
+    sense = check_kelvin._pad_named(bg, "R911.1")
+    tap = check_kelvin._pad_named(bg, "C911.1")
+
+    bare = rc.mazeroute.Router(bg, layers=["F.Cu"])
+    teed = _lay(_sense_board(tmp_path, "teed"),
+                bare.route("KP", "R911.1", "C911.1"))
+    w = check_kelvin.sense_walk(teed, check_kelvin._pad_named(teed, "R911.1"),
+                                check_kelvin._pad_named(teed, "C911.1"))
+    assert w["joins"], "the unfenced route should tee off the rail"
+
+    router = rc.mazeroute.Router(bg, layers=["F.Cu"])
+    assert rc.fence_rail(router, "KP", sense, tap) == 2   # L911.1 + track
+    assert {it.net for it in router.obs.items if it.ref in ("L911",)} \
+        == {rc.SENSE_FENCE}
+    ops = router.route("KP", "R911.1", "C911.1")
+    laid = _lay(pcb, ops)
+    w = check_kelvin.sense_walk(laid, check_kelvin._pad_named(laid, "R911.1"),
+                                check_kelvin._pad_named(laid, "C911.1"))
+    assert w == {"reached": True, "joins": []}
+    facts = [{"kind": "sense", "nets": ["KP"], "sense": "R911.1",
+              "tap": "C911.1"}]
+    assert rc.sense_verdicts(laid, facts) == []
+    assert facts[0]["joins"] == 0 and facts[0]["reached"] is True
+
+
+def test_sense_verdicts_flag_a_teed_line(tmp_path):
+    """Planted fault: a sense line that tees into the rail track 7 mm short
+    of its tap, or stops short of it, is sense_route_off_pad."""
+    teed = geom.BoardGeom.from_file(_sense_board(
+        tmp_path, "teed", _seg(15, 17.5, 15, 20, "KP", "b1")))
+    facts = [{"kind": "sense", "nets": ["KP"], "sense": "R911.1",
+              "tap": "C911.1"}]
+    v = rc.sense_verdicts(teed, facts)
+    assert [x["kind"] for x in v] == ["sense_route_off_pad"]
+    assert v[0]["refs"] == ["C911", "R911"] and v[0]["joins"] == 1
+    short = geom.BoardGeom.from_file(_sense_board(
+        tmp_path, "short", _seg(15, 17.5, 15, 15, "KP", "b1")))
+    v = rc.sense_verdicts(short, facts)
+    assert [x["kind"] for x in v] == ["sense_route_off_pad"]
+    assert "never reaches" in v[0]["msg"]
+    # pre-routed lines are check_kelvin's to judge, not route_critical's
+    assert rc.sense_verdicts(teed, [{**facts[0], "pre_routed": True}]) == []
+
+
+def test_sense_keepout_covers_the_line_not_the_tap(tmp_path):
+    from shapely.geometry import Point, Polygon
+    import check_kelvin
+    pcb = _sense_board(tmp_path, "keep", _seg(15, 17.5, 22, 17.5, "KP", "n1")
+                       + _seg(22, 17.5, 22, 20, "KP", "n2"))
+    bg = geom.BoardGeom.from_file(pcb)
+    sense = check_kelvin._pad_named(bg, "R911.1")
+    tap = check_kelvin._pad_named(bg, "C911.1")
+    areas = rc.sense_keepout(bg, "KP", {"n1", "n2"}, sense, tap, 0.2)
+    assert areas and {a["layers"][0] for a in areas} == {"F.Cu"}
+    assert all(a["name"].startswith("aiee_sense_R911_1_") and a["pours"]
+               and not a["tracks"] and not a["vias"] for a in areas)
+    shape = Polygon(areas[0]["poly"]) if len(areas) == 1 else None
+    assert shape is not None
+    assert shape.contains(Point(15, 17.5))        # the sense pad
+    assert shape.contains(Point(16, 17.5))        # the line
+    assert shape.contains(Point(16, 17.65))       # its clearance
+    assert not shape.intersects(tap.poly)         # the tap stays poured
+    assert not shape.contains(Point(16, 20))      # the rail is not walled
+    # the old rail track is not the line's
+    assert rc.sense_keepout(bg, "KP", set(), sense, tap, 0.2)[0]["poly"] \
+        != areas[0]["poly"]
+
+
+def test_normalize_leaves_the_sense_pad_fenced(tmp_path, monkeypatch):
+    """#1043: a narrow rail segment beside the sense pad is not widened onto
+    it - the pad is detached while the rail routes, so without the fence the
+    widen would see free space there."""
+    seen = []
+    monkeypatch.setattr(rc.route_edit, "apply_ops",
+                        lambda path, ops: seen.extend(ops))
+    body = _fp("R911", 12, 20.6, pads=_pad("1", 0, 0, "KP"))
+    body += _seg(10, 20, 14, 20, "KP", "b1")
+    pcb = _pcb(tmp_path, "fence", body)
+    specs = [{"net": "KP", "ipc_min_mm": 1.0}]
+    r = rc.normalize_power_widths(pcb, specs, clearance=0.1)
+    assert r["widened"] == 1 and r["blocked"] == []
+    seen.clear()
+    r = rc.normalize_power_widths(pcb, specs, clearance=0.1,
+                                  fence={("R911", "1")})
+    assert r["widened"] == 0
+    assert [b["start"] for b in r["blocked"]] == [[10.0, 20.0]]

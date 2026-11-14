@@ -79,7 +79,9 @@ Consumers per key (script -> phase):
     // is where it really reads (sense_tap_off_pad, with the mm from the
     // pad); no copper of its own to the pad is sense_tap_missing; a pad not
     // on the board or not on this net is sense_tap_bad. The power track and
-    // the sense track may both end on the named pad.
+    // the sense track may both end on the named pad. route_critical honours
+    // it (#1043): the rail is routed with the sense pad left out, then the
+    // sense line is laid on its own and the pour kept off it.
     "net": "+5V", "current_a": 2.0,
     "sense_pads": {"R113.1": "C114.1"}
   }, {

@@ -214,6 +214,30 @@ def test_sense_line_teed_off_the_power_track_is_caught(tmp_path):
     assert v["pos"][0] == pytest.approx(20, abs=0.2)
 
 
+def test_sense_line_with_overlapping_jogs_is_clean(tmp_path):
+    """#1043: a router's line runs short 45-degree jogs whose ends overlap
+    in a cycle (each piece touches two others). It is still a dead end off
+    C1.1, not power copper: pruning dead ends one by one called it rail."""
+    t = (_seg("P", 30, 20, 30.35, 19.65, 0.2)
+         + _seg("P", 30.35, 19.65, 30.9, 19.65, 0.2)
+         + _seg("P", 30.9, 19.65, 30.95, 19.6, 0.2)
+         + _seg("P", 30.95, 19.6, 30.95, 10, 0.2))
+    vios, (f,) = _sense(_board(tmp_path, _rail(t)))
+    assert not vios and f["reached"] and not f["joins"]
+
+
+def test_root_block_finds_pieces_on_a_cycle_through_the_root():
+    r = ("root",)
+    edges = [(r, "p1"), (r, "p2"), ("p1", "t"), ("t", "p2"),   # rail
+             ("t", "s1"), ("s1", "s2"), ("s2", "s3"), ("s3", "s1"),  # spur
+             (r, "p3")]                                         # lone pad
+    neigh = {}
+    for a, b in edges:
+        neigh.setdefault(a, set()).add(b)
+        neigh.setdefault(b, set()).add(a)
+    assert check_kelvin.root_block(neigh, r) == {"p1", "p2", "t"}
+
+
 def test_sense_pad_sitting_in_a_pour_is_caught(tmp_path):
     """The voice board's fault: the sense pad and its track sit in the rail's
     own pour, so it reads the pour under it, not C1.1."""

@@ -21,7 +21,16 @@ Critical-net sources (constraints.json, sidecar default like place_metrics):
               (stitch_vias.py --fence-net <net> owns the fence).
   power       constraints["power"] [{net, current_a, dt_c?}]; width = IPC-2152
               minimum (check_current.required_width_mm, rules_gen's helper)
-              * 1.5 margin, clamped >= 0.3 mm.
+              * 1.5 margin, clamped >= 0.3 mm. An entry's sense_pads
+              {sense pad: Kelvin tap pad} (#936) is honoured (#1043): KRT
+              routes the rail with each sense pad detached (netless, so it
+              never tees the rail into it), then route_sense_lines lays each
+              sense line from its sense pad to its tap pad on copper of its
+              own (mazeroute, every other piece of rail copper a wall) and
+              keeps the pour off it with an aiee_sense_* rule area. After
+              the final refill sense_verdicts walks each line
+              (check_kelvin.sense_walk): a line that joins rail copper
+              before its tap is an error, sense_route_off_pad.
 
 KRT facts this adapter encodes (all machine-verified against KRT 0.19.0):
   * KRT scripts are invoked as subprocesses of THIS python with
@@ -132,6 +141,7 @@ Contract (SPEC section 6):
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import fnmatch
 import json
 import math
@@ -140,6 +150,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -158,6 +169,8 @@ import env  # noqa: E402
 import geom  # noqa: E402
 import impedance as imp  # noqa: E402
 import kc  # noqa: E402
+import check_kelvin  # noqa: E402  (#1043 sense_walk / _pad_named)
+import mazeroute  # noqa: E402  (#1043 sense lines)
 import pairlaunch  # noqa: E402  (#546 pair stubs a coupled router can launch from)
 import route_edit  # noqa: E402  (width normalization ops)
 import zrules  # noqa: E402  (#489 rules_gen's per-layer impedance widths)
@@ -310,7 +323,8 @@ def power_specs(constraints: dict, cu_mm: float = 0.035) -> list[dict]:
             w = round(max(w, float(entry["min_width_mm"])), 4)
         specs.append({"net": net, "current_a": cur, "dt_c": dt,
                       "ipc_min_mm": ipc, "width_mm": w,
-                      "switch_node": bool(entry.get("switch_node"))})
+                      "switch_node": bool(entry.get("switch_node")),
+                      "sense_pads": dict(entry.get("sense_pads") or {})})
     # a switch node goes first, while the pins to its inductor are open
     # (#924): its one short run on one layer has no detour to fall back on
     return sorted(specs, key=lambda s: not s["switch_node"])
@@ -1452,7 +1466,8 @@ def _widen_fits(poly, net: str, layer: str, trees: dict, added: list,
 
 def normalize_power_widths(staged: Path, specs: list[dict],
                            clearance: float = 0.0,
-                           edge_clearance: float | None = None) -> dict:
+                           edge_clearance: float | None = None,
+                           fence: set | None = None) -> dict:
     """Post-KRT width discipline (S11 acceptance finding): KRT can emit a few
     base-width segments and sub-grid crumbs on power nets even with
     --no-power-tap-neckdown, which violate rules_gen's aiee_pwr_width_* DRU
@@ -1470,6 +1485,8 @@ def normalize_power_widths(staged: Path, specs: list[dict],
     places and bridged mask at 40. A segment that can't take its floor is
     left as KRT drew it and listed in "blocked" - the honest track_width
     error, which the caller reports, instead of a short.
+    fence: (ref, pad number) pads kept clear as if they were another net's -
+    the Kelvin sense pads (#1043), which no rail segment may be widened onto.
     Returns {"widened": n, "crumbs_removed": n, "blocked": [...]}."""
     want = {s["net"]: s["ipc_min_mm"] for s in specs}
     text = staged.read_text(encoding="utf-8")
@@ -1481,7 +1498,8 @@ def normalize_power_widths(staged: Path, specs: list[dict],
     trees: dict = {}
     for layer in bg.copper_layers:
         items = [(t.poly, t.net) for t in bg.tracks_of(layer=layer)]
-        items += [(p.poly, p.net) for p in bg.pads_of(layer=layer)]
+        items += [(p.poly, SENSE_FENCE if (p.ref, p.number) in (fence or ())
+                   else p.net) for p in bg.pads_of(layer=layer)]
         items += [(v.poly, v.net) for v in bg.vias_of(layer=layer)]
         if items:
             polys = [q for q, _n in items]
@@ -1571,7 +1589,8 @@ def route_power_item(ctx: dict, specs: list[dict]) -> tuple[list, list]:
                  "PTH pads via thermal spokes"}
         for s in plane_carried]
     if not live:
-        return plane_facts, violations
+        f, v = route_sense_lines(ctx, plane_carried)
+        return plane_facts + f, violations + v
     outer = _outer_layers(bg)
     costs = ["1"] if len(outer) == 1 else ["1", "2"]
     # Per-net neckdown policy (S11 acceptance finding): KRT necks power taps
@@ -1586,6 +1605,13 @@ def route_power_item(ctx: dict, specs: list[dict]) -> tuple[list, list]:
     ncl = power_net_clearances(ctx, sorted(
         {tk.net for tk in bg.tracks_of() if tk.net} - power))
     facts, vs = list(plane_facts), []
+    # #1043: KRT sees each sense pad netless, an obstacle, so it never tees
+    # the rail into it; the sense line is laid after, from pad to tap
+    fence = sense_pad_targets(bg, live)
+    staged = ctx["staged"]
+    text, restores = detach_stub_pads(staged.read_text(encoding="utf-8"),
+                                      fence)
+    staged.write_text(text, encoding="utf-8")
     for group, extra in ((strict, ["--no-power-tap-neckdown"]), (relaxed, [])):
         if not group:
             continue
@@ -1603,14 +1629,19 @@ def route_power_item(ctx: dict, specs: list[dict]) -> tuple[list, list]:
             ncl)
         facts.extend(f)
         vs.extend(v)
+    if restores:
+        staged.write_text(restore_stub_pads(
+            staged.read_text(encoding="utf-8"), restores), encoding="utf-8")
     norm = normalize_power_widths(ctx["staged"], live,
                                   clearance=ctx["floors"]["clearance"],
                                   edge_clearance=ctx["floors"][
-                                      "edge_clearance"])
+                                      "edge_clearance"],
+                                  fence={(r, n) for r, _net, n in fence})
     if facts:
         facts[0]["width_normalization"] = norm
     vs.extend(power_width_blocked(norm["blocked"]))
-    return facts, violations + vs
+    f, v = route_sense_lines(ctx, plane_carried + live)
+    return facts + f, violations + vs + v
 
 
 def power_width_blocked(blocked: list[dict]) -> list[dict]:
@@ -1631,6 +1662,201 @@ def power_width_blocked(blocked: list[dict]) -> list[dict]:
             "(reference/remediations/track_width.md step 4)",
             SCRIPT, kind="power_width_blocked", segments=segs[:20],
             want_mm=first["want_mm"]))
+    return out
+
+
+SENSE_FENCE = "~sense"      # a net name no board carries (#1043)
+SENSE_PREFIX = "aiee_sense"  # route_critical's sense-line pour keepouts
+SENSE_TAP_KEEP_MM = 0.4      # the pour may still meet the line this near its
+#                              tap (under check_kelvin.SENSE_SLACK_MM)
+SENSE_TAP_SHARE_MM = 0.45    # rail copper this near the tap pad is the tap
+
+
+def sense_pairs(specs: list[dict]) -> list[tuple[str, str, str]]:
+    """(net, sense pad, tap pad) for each declared sense line (#936)."""
+    return [(s["net"], sense, tap) for s in specs
+            for sense, tap in sorted((s.get("sense_pads") or {}).items())]
+
+
+def sense_pad_targets(bg: geom.BoardGeom, specs: list[dict]
+                      ) -> list[tuple[str, str, str]]:
+    """detach_stub_pads targets (ref, net, number): each declared sense pad
+    that is on its rail and has no copper yet. A bad name is skipped here;
+    check_kelvin reports it (sense_tap_bad)."""
+    out = []
+    for net, s_name, t_name in sense_pairs(specs):
+        sense = check_kelvin._pad_named(bg, s_name)
+        tap = check_kelvin._pad_named(bg, t_name)
+        if sense is None or tap is None or sense is tap \
+                or sense.net != net or tap.net != net \
+                or _pad_copper(bg, sense):
+            continue
+        out.append((sense.ref, net, sense.number))
+    return sorted(set(out))
+
+
+def _pad_copper(bg: geom.BoardGeom, pad) -> bool:
+    """True when a track or via of the pad's net already touches it."""
+    for ly in pad.layers:
+        for t in bg.tracks_of(net=pad.net, layer=ly):
+            if t.poly.intersects(pad.poly):
+                return True
+    return any(v.poly.intersects(pad.poly) for v in bg.vias_of(net=pad.net)
+               if set(v.layers) & set(pad.layers))
+
+
+def fence_rail(router, net: str, sense, tap) -> int:
+    """Make every piece of `net`'s copper a wall for the sense line (#1043),
+    except its two ends and the rail copper within SENSE_TAP_SHARE_MM of the
+    tap pad (the rail lands on the tap too, and the line may meet it there:
+    that is the tap). A track that crosses that ring is split: the near piece
+    stays the rail's, the rest becomes a wall. Pours stay the rail's at the
+    router's pour cost; route_sense_lines keeps them off the line after.
+    Returns the number of items fenced."""
+    fenced = 0
+    for it in router.obs.items:
+        if it.net != net:
+            continue
+        if it.ref and (it.shape.equals(sense.poly)
+                       or it.shape.equals(tap.poly)):
+            continue
+        near = tap.poly.buffer(max(0.0, SENSE_TAP_SHARE_MM - it.half))
+        if it.half > 0 and it.shape.intersects(near):
+            rest = it.shape.difference(near)
+            if rest.is_empty:
+                continue            # all of it is at the tap
+            router.obs.added.append(dataclasses.replace(
+                it, shape=it.shape.intersection(near)))
+            it.shape = rest
+        it.net = SENSE_FENCE
+        fenced += 1
+    return fenced
+
+
+def sense_keepout(bg: geom.BoardGeom, net: str, new_uuids: set[str], sense,
+                  tap, clearance: float) -> list[dict]:
+    """aiee_sense_* rule areas (pours not allowed) round a laid sense line:
+    its new tracks and vias and its sense pad, grown by clearance, less the
+    ring round its tap pad where the pour meets the rail anyway."""
+    by_layer: dict[str, list] = {}
+    for t in bg.tracks_of(net=net):
+        if t.uuid in new_uuids:
+            by_layer.setdefault(t.layer, []).append(t.poly.buffer(clearance))
+    for v in bg.vias_of(net=net):
+        if v.uuid in new_uuids:
+            for ly in v.layers:
+                if ly in bg.copper_layers:
+                    by_layer.setdefault(ly, []).append(
+                        v.poly.buffer(clearance))
+    for ly in sense.layers:
+        if ly in bg.copper_layers:
+            by_layer.setdefault(ly, []).append(sense.poly.buffer(clearance))
+    cut = tap.poly.buffer(SENSE_TAP_KEEP_MM)
+    areas = []
+    tag = re.sub(r"[^A-Za-z0-9]+", "_", f"{sense.ref}_{sense.number}")
+    for ly in sorted(by_layer):
+        shape = unary_union(by_layer[ly]).difference(cut)
+        polys = getattr(shape, "geoms", [shape])
+        for k, poly in enumerate(q for q in polys
+                                 if q.geom_type == "Polygon" and not q.is_empty):
+            pts = [[round(x, 4), round(y, 4)]
+                   for x, y in list(poly.simplify(0.005).exterior.coords)[:-1]]
+            areas.append({"name": f"{SENSE_PREFIX}_{tag}_{k}", "layers": [ly],
+                          "poly": pts, "tracks": False, "vias": False,
+                          "pours": True})
+    return areas
+
+
+def _set_sense_keepouts(staged: Path, areas: list[dict]) -> dict:
+    cli = env.find_kicad_cli()
+    bp = env.find_kicad_python(cli) if cli else None
+    if bp is None:
+        raise CheckError("KiCad bundled python not found (env.py)")
+    stage = Path(tempfile.mkdtemp(prefix=".aiee_sense_", dir=staged.parent))
+    try:
+        return routelib.run_worker(
+            bp, {"verb": "set_rule_areas", "board": str(staged),
+                 "out": str(staged), "prefix": SENSE_PREFIX,
+                 "areas": areas}, stage)
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+
+
+def route_sense_lines(ctx: dict, specs: list[dict]) -> tuple[list, list]:
+    """Lay each declared sense line (#1043): from its sense pad to its Kelvin
+    tap pad on a track of its own (mazeroute; fence_rail walls off the rest
+    of the rail), then keep the pour off it (sense_keepout). A sense pad that
+    already has copper is left as it is (pre_routed): sense_verdicts judges
+    it with the rest after the final refill."""
+    staged = ctx["staged"]
+    facts, vios, areas = [], [], []
+    for net, s_name, t_name in sense_pairs(specs):
+        bg = geom.BoardGeom.from_file(staged)
+        sense = check_kelvin._pad_named(bg, s_name)
+        tap = check_kelvin._pad_named(bg, t_name)
+        fact = {"kind": "sense", "nets": [net], "sense": s_name,
+                "tap": t_name}
+        if sense is None or tap is None or sense is tap \
+                or sense.net != net or tap.net != net:
+            continue        # check_kelvin's sense_tap_bad names it
+        if _pad_copper(bg, sense):
+            facts.append({**fact, "pre_routed": True})
+            continue
+        before = {t.uuid for t in bg.tracks_of(net=net)} \
+            | {v.uuid for v in bg.vias_of(net=net)}
+        try:
+            router = mazeroute.Router(bg)
+            fence_rail(router, net, sense, tap)
+            ops = router.route(net, s_name, t_name)
+            route_edit.apply_ops(staged, ops)
+        except CheckError as exc:
+            vios.append(violation(
+                SCRIPT, "error", [checklib.rnd(c, 2) for c in sense.center],
+                None, net, sorted({sense.ref, tap.ref}),
+                f"sense line {s_name} -> {t_name} on {net} could not be laid "
+                f"on copper of its own: {str(exc)[:200]}. Make room for it "
+                f"from {s_name} to {t_name}, or route it by hand",
+                SCRIPT, kind="sense_route_failed"))
+            continue
+        bg = geom.BoardGeom.from_file(staged)
+        new = ({t.uuid for t in bg.tracks_of(net=net)}
+               | {v.uuid for v in bg.vias_of(net=net)}) - before
+        areas += sense_keepout(bg, net, new, sense, tap,
+                               ctx["floors"]["clearance"])
+        facts.append({**fact, "tracks": sum(o["op"] == "add_track"
+                                            for o in ops),
+                      "vias": sum(o["op"] != "add_track" for o in ops)})
+    if areas:
+        _set_sense_keepouts(staged, areas)
+    return facts, vios
+
+
+def sense_verdicts(bg: geom.BoardGeom, facts: list[dict]) -> list[dict]:
+    """Walk each sense line route_critical laid (#1043) on the refilled
+    board: one error, sense_route_off_pad, for a line that joins rail copper
+    before its tap pad or never reaches it."""
+    out = []
+    for f in facts:
+        if f.get("kind") != "sense" or f.get("pre_routed"):
+            continue
+        sense = check_kelvin._pad_named(bg, f["sense"])
+        tap = check_kelvin._pad_named(bg, f["tap"])
+        if sense is None or tap is None:
+            continue
+        w = check_kelvin.sense_walk(bg, sense, tap)
+        f["joins"], f["reached"] = len(w["joins"]), w["reached"]
+        if w["joins"] or not w["reached"]:
+            at = (w["joins"][0]["at"] if w["joins"]
+                  else [checklib.rnd(c, 2) for c in sense.center])
+            what = ("joins " + ", ".join(j["label"] for j in w["joins"][:3])
+                    if w["joins"] else "never reaches it")
+            out.append(violation(
+                SCRIPT, "error", at, None, f["nets"][0],
+                sorted({sense.ref, tap.ref}),
+                f"sense line {f['sense']} -> {f['tap']} on {f['nets'][0]} "
+                f"{what} before its tap pad: it reads the rail there, not "
+                f"at {f['tap']}", SCRIPT, kind="sense_route_off_pad",
+                joins=len(w["joins"])))
     return out
 
 
@@ -2018,6 +2244,9 @@ def run(argv: list[str] | None = None):
     dp_viol, dp_facts = diffpair_postcheck(
         staged, [f for f in routed if f["kind"] == "diff"])
     violations.extend(dp_viol)
+    if any(f["kind"] == "sense" for f in routed):
+        violations.extend(sense_verdicts(geom.BoardGeom.from_file(staged),
+                                         routed))
 
     board_updated = bool(routed)
     if board_updated:
