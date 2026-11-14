@@ -62,7 +62,9 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
                      "plane_fed": "bool", "tap_current_a": "num",
                      "overrides": "overrides",
                      # switch-node rules (#924, #923 point 6)
-                     "min_width_mm": "num", "switch_node": "switch_node"},
+                     "min_width_mm": "num", "switch_node": "switch_node",
+                     # check_kelvin sense taps (#936)
+                     "sense_pads": "pad_map"},
     },
     "diff_pairs": {
         "required": {"p": "str", "n": "str"},
@@ -274,6 +276,10 @@ def _type_ok(spec: str, v) -> bool:
                  "keep_away_mm": "num"}
         return isinstance(v, dict) and all(
             k in shape and _type_ok(shape[k], x) for k, x in v.items())
+    if spec == "pad_map":   # {"R113.1": "C114.1"}: REF.PAD to REF.PAD
+        return isinstance(v, dict) and bool(v) and all(
+            isinstance(x, str) and "." in x.strip(".")
+            for kv in v.items() for x in kv)
     if spec == "map":       # flat scalar map (operating points): str keys,
         return isinstance(v, dict) and all(     # number/str/bool values
             isinstance(k, str) and (_is_num(x) or isinstance(x, (str, bool)))

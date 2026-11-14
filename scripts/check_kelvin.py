@@ -33,16 +33,34 @@ resistance the amplifier reads as shunt.
             if it is wrong for all of them.
   pads      equipotential: a soldered pad has a part's terminal on it.
 
+Declared sense taps (#936): a constraints.json power entry's "sense_pads"
+{"R113.1": "C114.1"} names the pad a sense line starts on (a feedback
+divider's top, a regulator's SENSE pin) and the pad it must read, on that net.
+Power copper is every pad and pour on the net, and every track and via on a
+path between two of them; the sense line is the copper from the sense pad that
+is none of that. Where it first touches power copper is where it reads. A
+contact within SENSE_SLACK_MM of the named pad is the tap itself (the power
+track and the sense track may both end on it). The hit: the voice board's
+divider tops sat in their rails' pours, reading 6-16 mm from the pad named.
+
 Findings:
-  kelvin_error  error at ERROR_FRAC of the shunt or more across both taps,
-                warning at WARN_FRAC. Names each tap and the copper's mOhm.
+  kelvin_error       error at ERROR_FRAC of the shunt or more across both taps,
+                     warning at WARN_FRAC. Names each tap and the copper's mOhm.
+  sense_tap_off_pad  error: a declared sense line touches a pour, another pad,
+                     or a power track or via before the named pad. tap_mm is
+                     how far from the pad the farthest such contact reaches.
+  sense_tap_missing  error: no copper of its own from the sense pad to the
+                     named pad (not routed).
+  sense_tap_bad      error: a sense_pads entry names a pad not on the board,
+                     or a tap pad not on the entry's net.
 
 A shunt with no reader, a net too large to solve at CELL_MAX_MM and a side with
 nothing entering are listed in not_judged. Good to about +/-30 % on a neck
 a few cells long: the thresholds are for a tap in the wrong place, not for
 tuning one.
 
-CLI: --pcb board.kicad_pcb [--constraints c.json] [--out report.json]   exit 0/1/2 per SPEC section 6.
+CLI: --pcb board.kicad_pcb [--constraints c.json (power_paths, power[].sense_pads)]
+     [--out report.json]   exit 0/1/2 per SPEC section 6.
 """
 from __future__ import annotations
 
@@ -56,6 +74,9 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse.linalg import splu
+import shapely
+from shapely.geometry import Point
+from shapely.strtree import STRtree
 
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
@@ -78,6 +99,7 @@ CELL_BUDGET = 300_000
 IC_KINDS = ("U", "IC")
 EXTRA_SOURCE_KINDS = ("FB", "T", "NT")
 PAD_BOOST = 100.0
+SENSE_SLACK_MM = 0.5     # a contact this near the tap pad is the tap itself (#936)
 SENSE_PIN = re.compile(
     r"^[~/]?(V?IN\d*[-+−PN]\d*|[-+]\d*IN\d*|I?SENSE.*|I?SNS.*|ISEN.*|CS[-+PN]?\d*|"
     r"S[PN][ABC]?\d*|ISN\d*|ISP\d*|IS[-+]\d*|VS[-+]\d*)$", re.I)
@@ -442,22 +464,197 @@ def judge(bg, paths: list[dict]) -> tuple[list[dict], list[dict], list[str]]:
     return vios, facts, left
 
 
+# ---- declared Kelvin sense taps (#936) --------------------------------------
+
+def _pad_named(bg, name: str):
+    """"R113.1" -> that pad, or None."""
+    ref, _, num = str(name).rpartition(".")
+    if not ref or not num:
+        return None
+    return next((p for p in bg.pads_of(ref=ref) if p.number == num), None)
+
+
+def _sense_items(bg, nets: set[str]) -> list[tuple]:
+    """(kind, key, layer, shape, label, obj) for every piece of copper on
+    `nets`, and the copper of each net tie that joins two of them. key names
+    the item across its layers (a via or a through pad is one item)."""
+    items = []
+    for t in (t for n in nets for t in bg.tracks_of(n)):
+        items.append(("track", ("t", id(t)), t.layer, t.poly, "a power track", t))
+    for v in (v for n in nets for v in bg.vias_of(n)):
+        for l in v.layers:
+            if l in bg.copper_layers:
+                items.append(("via", ("v", id(v)), l, v.poly,
+                              "a power via", v))
+    ties = {c["ref"] for c in bg.fp_copper if len(c["nets"] & nets) >= 2}
+    for p in (p for n in nets for p in bg.pads_of(n)):
+        kind = "tie" if p.ref in ties else "pad"
+        for l in p.layers:
+            items.append((kind, ("p", id(p)), l, p.poly, f"{p.ref}.{p.number}", p))
+    for c in bg.fp_copper:
+        if c["ref"] in ties:
+            items.append(("tie", ("c", id(c)), c["layer"], c["shape"],
+                          f"net tie {c['ref']}", c))
+    for z in (z for n in nets for z in bg.zones_of(n)):
+        for l, polys in z.fills.items():
+            for k, poly in enumerate(polys):
+                items.append(("zone", ("z", z.zone_id, l, k), l, poly,
+                              f"the {z.net} pour" + (f" {z.name}" if z.name else ""),
+                              z))
+    return items
+
+
+def _far_mm(contact, pad_poly) -> float:
+    """How far the contact reaches from the tap pad: its farthest point."""
+    return max((pad_poly.distance(Point(c))
+                for c in shapely.get_coordinates(contact)), default=0.0)
+
+
+def sense_walk(bg, sense, tap) -> dict:
+    """Walk the copper joined to the sense pad, outward, until it meets the tap
+    pad. Power copper is every pad and pour, and every track and via on a path
+    between two of them (not a dead end); the first contact the sense line
+    makes with it is where the line really taps. A
+    contact inside the tap pad's outline (or within SENSE_SLACK_MM of it, the
+    overhang of a wide track ending on the pad) is the tap itself: the power
+    track and the sense track may both end on it. Returns
+    {reached, joins: [{label, layer, at, mm}]}."""
+    nets = {sense.net, tap.net} - {None}
+    items = _sense_items(bg, nets)
+    by_layer: dict[str, list[tuple]] = {}
+    by_key: dict[tuple, list[tuple]] = {}
+    for it in items:
+        by_layer.setdefault(it[2], []).append(it)
+        by_key.setdefault(it[1], []).append(it)
+    trees = {l: STRtree([it[3] for it in its]) for l, its in by_layer.items()}
+    near = tap.poly.buffer(SENSE_SLACK_MM)
+    start, goal = ("p", id(sense)), ("p", id(tap))
+
+    def touching(key):
+        """(other item, contact) for each item `key` touches off the tap."""
+        for me in by_key[key]:
+            l = me[2]
+            for k in trees[l].query(me[3], predicate="intersects"):
+                other = by_layer[l][int(k)]
+                if other[1] == key:
+                    continue
+                contact = me[3].intersection(other[3])
+                if not contact.is_empty:
+                    yield other, contact
+
+    # power copper carries current: prune dead ends (the sense line itself is
+    # one, since the sense pad is no terminal) until each piece left lies
+    # between two pads or pours
+    terminal = {it[1] for it in items if it[0] in ("pad", "zone")} - {start}
+    neigh: dict[tuple, set] = {k: set() for k in by_key if k != start}
+    for k in neigh:
+        for other, contact in touching(k):
+            o = other[1]
+            if o != start and (goal in (k, o) or not near.contains(contact)):
+                neigh[k].add(o)
+                neigh[o].add(k)
+    queue = [k for k in neigh if k not in terminal and len(neigh[k]) < 2]
+    while queue:
+        k = queue.pop()
+        for o in neigh.pop(k, ()):
+            if o in neigh:
+                neigh[o].discard(k)
+                if o not in terminal and len(neigh[o]) < 2:
+                    queue.append(o)
+    power = set(neigh)
+
+    seen, queue = {start}, [start]
+    joins, reached = [], False
+    while queue:
+        for other, contact in touching(queue.pop(0)):
+            if other[1] == goal:
+                reached = True
+                continue
+            if other[1] in seen or near.contains(contact):
+                continue
+            seen.add(other[1])
+            if other[1] in power:
+                rest = contact.difference(near)
+                c = rest.representative_point()
+                joins.append({"label": other[4], "layer": other[2],
+                              "at": [checklib.rnd(c.x, 2), checklib.rnd(c.y, 2)],
+                              "mm": checklib.rnd(_far_mm(rest, tap.poly), 2)})
+            else:
+                queue.append(other[1])
+    return {"reached": reached, "joins": joins}
+
+
+def judge_sense(bg, power: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Each power entry's sense_pads {sense end pad: Kelvin pad} (#936): the
+    sense line must leave the sense pad and end on the Kelvin pad on copper of
+    its own, touching no pour and no other pad on the way."""
+    vios, facts = [], []
+    for e in power:
+        net = e.get("net")
+        for s_name, t_name in sorted((e.get("sense_pads") or {}).items()):
+            sense, tap = _pad_named(bg, s_name), _pad_named(bg, t_name)
+            bad = (f"{s_name} is not a pad on this board" if sense is None
+                   else f"{t_name} is not a pad on this board" if tap is None
+                   else f"{t_name} is on {tap.net}, not {net}" if tap.net != net
+                   else f"{s_name} and {t_name} are the same pad"
+                   if sense is tap else None)
+            if bad:
+                vios.append(checklib.violation(
+                    SCRIPT, "error", None, None, net, [s_name, t_name],
+                    f"power {net} sense_pads {s_name} -> {t_name}: {bad}, so "
+                    "the sense line can't be checked. Name the pad the sense "
+                    "line starts on and the pad it must tap, as REF.PAD",
+                    SCRIPT, kind="sense_tap_bad"))
+                continue
+            w = sense_walk(bg, sense, tap)
+            facts.append({"net": net, "sense": s_name, "tap": t_name, **w})
+            refs = sorted({sense.ref, tap.ref})
+            if w["joins"]:
+                worst = max(w["joins"], key=lambda j: j["mm"])
+                where = "; ".join(
+                    f"{j['label']} at ({j['at'][0]}, {j['at'][1]}) on {j['layer']}, "
+                    f"{j['mm']:.1f} mm from {t_name}" for j in w["joins"][:4])
+                more = (f" and {len(w['joins']) - 4} more"
+                        if len(w["joins"]) > 4 else "")
+                vios.append(checklib.violation(
+                    SCRIPT, "error", worst["at"], worst["layer"], net, refs,
+                    f"{s_name}'s sense line on {net} joins other copper before "
+                    f"it reaches {t_name}: {where}{more}. It reads the voltage "
+                    f"there, not at {t_name}. Run it from {s_name} to {t_name} "
+                    "on a track of its own, cleared from the pour",
+                    SCRIPT, kind="sense_tap_off_pad",
+                    tap_mm=worst["mm"], joins=len(w["joins"])))
+            elif not w["reached"]:
+                vios.append(checklib.violation(
+                    SCRIPT, "error", [checklib.rnd(c, 2) for c in sense.center],
+                    None, net, refs,
+                    f"{s_name}'s sense line on {net} never reaches {t_name} on "
+                    f"copper of its own (not routed?). Run it from {s_name} to "
+                    f"{t_name} on a track that touches nothing else",
+                    SCRIPT, kind="sense_tap_missing"))
+    return vios, facts
+
+
 def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
-    ap.add_argument("--constraints", help="constraints.json, for power_paths")
+    ap.add_argument("--constraints", help="constraints.json, for power_paths and power[].sense_pads")
     ap.add_argument("--out")
     a = ap.parse_args(argv)
     bg = geom.load_board(Path(a.pcb))
-    if any(readers(bg, r, n) for r, _, n in shunts(bg)):
-        bg.assert_fresh()
     cons = checklib.load_json(a.constraints, "constraints") \
         if a.constraints else {}
+    power = [e for e in cons.get("power") or [] if e.get("sense_pads")]
+    if power or any(readers(bg, r, n) for r, _, n in shunts(bg)):
+        bg.assert_fresh()
     vios, facts, left = judge(bg, cons.get("power_paths") or [])
+    s_vios, sense = judge_sense(bg, power)
     return checklib.report(
-        SCRIPT, a.pcb, vios, shunts=facts, not_judged=left,
-        nothing_to_judge=None if facts else
-        "no shunt read by an amplifier on this board"), a.out
+        SCRIPT, a.pcb, vios + s_vios, shunts=facts, sense_taps=sense,
+        not_judged=left,
+        nothing_to_judge=None if facts or power else
+        "no shunt read by an amplifier and no sense_pads declared on this "
+        "board"), a.out
 
 
 def main(argv=None) -> int:

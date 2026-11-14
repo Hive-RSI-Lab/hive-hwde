@@ -11,3 +11,15 @@ mutants:
     expect:
       kind: kelvin_error
       refs: [R901, U901]
+  sense-tap-teed-off-rail:
+    board: blinky2
+    script: mutations/sense_tap_teed_off_rail.py
+    check: check_kelvin
+    defect: >-
+      MEASUREMENT fault: a feedback divider's sense line, declared in sense_pads to
+      read the output capacitor's pad, tees into the rail's power track 7 mm short of
+      it, so the regulator holds the rail there. Nets connect and widths are legal,
+      so nothing else sees it
+    expect:
+      kind: sense_tap_off_pad
+      refs: [C911, R911]
