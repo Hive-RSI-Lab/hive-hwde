@@ -152,12 +152,20 @@ class Rules:
                    self.net_clearance.get(b or "", 0.0)) + self.margin
 
 
+# A DRU rule conditioned on just this applies to every via, so its via
+# constraints are board floors (rules_gen writes the fab's that way, #981).
+VIA_ONLY = "A.Type == 'via'"
+VIA_CONSTRAINTS = ("via_diameter", "hole_size", "annular_width")
+KICAD_ANNULAR = 0.1
+
+
 def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
                 margin: float = 0.02, via_size: float | None = None,
                 via_drill: float | None = None) -> Rules:
     """The rules DRC grades this board at: the .kicad_dru's unconditioned
     rules win over the .kicad_pro netclass floors (KiCad custom rules take
-    precedence), per-net rules on top."""
+    precedence), per-net rules on top. A rule on `A.Type == 'via'` alone
+    counts as unconditioned for the via's size, drill and annular ring."""
     import route_critical as rc
     pro = pcb.with_suffix(".kicad_pro")
     dru = pcb.with_suffix(".kicad_dru")
@@ -165,7 +173,9 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
     base: dict[str, float] = {}
     if dru.is_file():
         for r in rc.parse_dru_rules(dru.read_text(encoding="utf-8")):
-            if not r["nets"] and r["condition"] is None:
+            if not r["nets"] and (r["condition"] is None or (
+                    r["constraint"] in VIA_CONSTRAINTS
+                    and r["condition"].strip() == VIA_ONLY)):
                 base[r["constraint"]] = max(base.get(r["constraint"], 0.0),
                                             r["min_mm"])
     pro_rules = {}
@@ -174,6 +184,11 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
             "board", {}).get("design_settings", {}).get("rules", {})
     except (OSError, ValueError):
         pass
+    # The via's annular ring: the DRU's, or the .kicad_pro's, whichever is
+    # larger (KiCad's 0.1 mm stock default when neither sets one).
+    annular = max(base.get("annular_width", 0.0),
+                  float(pro_rules.get("min_via_annular_width") or 0.0)) \
+        or KICAD_ANNULAR
     vias = {}
     for v in bg.vias_of():
         if v.kind != "through":     # the through via is what's being sized
@@ -204,7 +219,7 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         track_floor=max(floors["track_width"], base.get("track_width", 0.0)),
         via_floor=(min(vs, max(base.get("via_diameter", floors["via_diameter"]),
                                base.get("hole_size", floors["via_drill"])
-                               + 2 * base.get("annular_width", 0.1))),
+                               + 2 * annular)),
                    min(vd, base.get("hole_size", floors["via_drill"]))),
         via_size=vs, via_drill=vd,
         net_width=rc.dru_net_floors(dru, "track_width"),

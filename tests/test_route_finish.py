@@ -111,6 +111,58 @@ def test_rules_come_from_the_board(tmp_path):
     assert rules.clr("SIG", "GND") == 0.15 + rules.margin
 
 
+VIA_DRU = """(version 1)
+(rule "aiee_via_drill_floor"
+	(constraint hole_size (min 0.1270mm))
+	(condition "A.Type == 'via'")
+)
+(rule "aiee_via_diameter_floor"
+	(constraint via_diameter (min 0.2540mm))
+	(condition "A.Type == 'via'")
+)
+"""
+ANNULAR_DRU = VIA_DRU + """(rule "aiee_annular_floor"
+	(constraint annular_width (min 0.0635mm))
+	(condition "A.Type == 'via'")
+)
+"""
+
+
+def _via_floor(tmp_path, dru, pro_annular=None):
+    pcb = _board(tmp_path, _pad("U1", 5, 15, "SIG"), dru=dru)
+    rules = {"min_via_diameter": 0.254, "min_through_hole_diameter": 0.127}
+    if pro_annular is not None:
+        rules["min_via_annular_width"] = pro_annular
+    pcb.with_suffix(".kicad_pro").write_text(json.dumps(
+        {"board": {"design_settings": {"rules": rules}}}), encoding="utf-8")
+    return rf.board_rules(pcb, geom.BoardGeom.from_file(pcb)).via_floor
+
+
+def test_via_floor_reads_the_projects_annular_ring(tmp_path):
+    """#981: the .kicad_pro's 0.0635 mm ring lets the 0.127 drill take a
+    0.254 via; the stock 0.1 mm ring sized it 0.327 and left balls out."""
+    assert _via_floor(tmp_path, VIA_DRU, pro_annular=0.0635) == (0.254, 0.127)
+    # neither file sets a ring: KiCad's 0.1 mm stock one
+    assert _via_floor(tmp_path, VIA_DRU) == (0.327, 0.127)
+    # a ring wider than the floor via's sizes it up
+    assert _via_floor(tmp_path, VIA_DRU, pro_annular=0.1) == (0.327, 0.127)
+
+
+def test_via_floor_reads_a_via_only_dru_rule(tmp_path):
+    """#981: rules_gen writes the fab's via floors on `A.Type == 'via'`;
+    they are board floors, not conditioned rules to skip."""
+    assert _via_floor(tmp_path, ANNULAR_DRU) == (0.254, 0.127)
+    # the DRU's ring wins over a narrower one in the project
+    wide = ANNULAR_DRU.replace("0.0635mm", "0.1000mm")
+    assert _via_floor(tmp_path, wide, pro_annular=0.0635) == (0.327, 0.127)
+    # a ring on some vias only is not a board floor: the project's holds
+    some = VIA_DRU + """(rule "aiee_annular_X"
+	(constraint annular_width (min 0.1000mm))
+	(condition "A.Type == 'via' && A.NetName == 'X'")
+)
+"""
+    assert _via_floor(tmp_path, some, pro_annular=0.0635) == (0.254, 0.127)
+
 # ----------------------------------------------------------------- routes
 
 def test_routes_around_a_wall_on_one_layer(tmp_path):

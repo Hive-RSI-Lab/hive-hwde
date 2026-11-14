@@ -28,8 +28,8 @@ columns 1-4 right (A1 at (9.25,9.25)):
   D  GND P S6 P
 Plane nets P and GND. The DRU's via floor is 0.254/0.127 and the board's
 common via is GND's 0.6/0.3 at (3,3) and (17,17), far off: a ball takes the
-floor via (the .kicad_pro's 0.254 mm and 0.127 mm drill, which route_finish
-sizes 0.327/0.127 at its default 0.1 mm annular). A3 already holds a 0.254/0.127 P via; B4 is 0.71 mm from it and
+floor via (the .kicad_pro's 0.254 mm and 0.127 mm drill at its 0.0635 mm
+annular ring). A3 already holds a 0.254/0.127 P via; B4 is 0.71 mm from it and
 still needs its own. A 0.1 mm S4 track on F.Cu runs between rows B and C
 under column 2, 0.1 mm off both balls' copper: a via in B2 would sit
 0.073 mm from it, so B2 has no room.
