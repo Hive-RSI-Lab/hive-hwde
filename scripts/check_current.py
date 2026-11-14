@@ -290,6 +290,7 @@ from shapely import STRtree
 from shapely.geometry import Point
 from shapely.ops import unary_union
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
 import engcalc  # noqa: E402

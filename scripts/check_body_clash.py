@@ -36,6 +36,13 @@ Findings, one per pair or part, kind:
                     its antenna end: EDGE_PART, matched on the footprint name or
                     value) or by a declared intent, constraints
                     `mechanical.allow_off_board`: [{refs: [A], why: "..."}].
+                    With --parts, a part whose drawing puts its front past the
+                    PCB edge (its extraction's `mechanical.edge.overhang_mm`
+                    > 0, <parts>/<LCSC>.json as check_connector_fit reads it)
+                    may stand out that far plus OFF_BOARD_MM (or the drawing's
+                    tol_mm if larger), and that overhang isn't counted against
+                    its courtyard; farther still warns. check_connector_fit
+                    judges where the front stands against the drawing.
   body_unjudged     warning, one per board: connectors (J, CN, X, P) with no
                     readable model, so nothing here judged them.
 
@@ -50,7 +57,7 @@ This check doesn't judge whether the model is the real part: that's
 check_model_fit (model on its pads) and the drawing.
 
 CLI: --pcb board.kicad_pcb [--constraints constraints.json]
-     [--model-dir DIR ...] [--out report.json]
+     [--parts DIR] [--model-dir DIR ...] [--out report.json]
      exit 0 pass / 1 violations / 2 error, per SPEC section 6.
 """
 from __future__ import annotations
@@ -434,6 +441,45 @@ def _values(pcb: Path) -> dict[str, str]:
     return out
 
 
+def drawn_edges(pcb: Path, parts: Path | None) -> dict[str, dict]:
+    """ref -> {overhang_mm, tol_mm, lcsc} for each part whose datasheet
+    extraction (<parts>/<LCSC>.json, from the footprint's LCSC property, as
+    check_connector_fit finds it) draws its front past the PCB edge line:
+    `mechanical.edge.overhang_mm` > 0. Such a part overhangs on purpose. A
+    parts.json path stands for its folder. Empty without --parts."""
+    if parts is None:
+        return {}
+    if parts.is_file():
+        parts = parts.parent
+    if not parts.is_dir():
+        raise checklib.CheckError(f"parts dir not found: {parts}")
+    out = {}
+    for fp in re.split(r"\n\s*\(footprint ", Path(pcb).read_text(
+            encoding="utf-8", errors="replace"))[1:]:
+        r = re.search(r'\(property "Reference" "([^"]*)"', fp)
+        lc = re.search(r'\(property "LCSC(?: Part)?" "([^"]*)"', fp)
+        code = lc.group(1).strip().upper() if lc else ""
+        f = parts / f"{code}.json"
+        if not (r and code and f.is_file()):
+            continue
+        ext = checklib.load_json(f, f"extraction {f.name}")
+        mech = ext.get("mechanical") if isinstance(ext, dict) else None
+        edge = mech.get("edge") if isinstance(mech, dict) else None
+        if edge is None:
+            continue
+        try:
+            over = float(edge["overhang_mm"])
+            tol = float(edge.get("tol_mm") or 0.0)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise checklib.CheckError(
+                f"{f.name}: mechanical.edge needs a numeric overhang_mm "
+                f"(and tol_mm, if given): {edge}") from exc
+        if over > 0:
+            out[r.group(1)] = {"overhang_mm": over, "tol_mm": tol,
+                               "lcsc": code}
+    return out
+
+
 def allowed_off_board(constraints: dict | None) -> set[str]:
     out = set()
     mech = (constraints or {}).get("mechanical") or {}
@@ -447,12 +493,14 @@ def allowed_off_board(constraints: dict | None) -> set[str]:
     return out
 
 
-def check(pcb: Path, constraints: dict | None = None, model_dirs=()):
+def check(pcb: Path, constraints: dict | None = None, model_dirs=(),
+          parts_dir: Path | None = None):
     bg = geom.load_board(pcb)
     thickness = float(bg.thickness or 1.6)
     allow = allowed_pairs(constraints)
     off_ok = allowed_off_board(constraints)
     values = _values(pcb)
+    drawn = drawn_edges(pcb, parts_dir)
     parts, facts = bodies(pcb, thickness, model_dirs)
     viols: list[dict] = []
     place = placelib.PlaceModel(pcb)
@@ -496,7 +544,8 @@ def check(pcb: Path, constraints: dict | None = None, model_dirs=()):
         cy = check_courtyard.courtyard_abs(fp) if fp is not None else None
         if cy is not None:
             own = pts
-            if outline is not None and EDGE_REFS.match(b.ref) and len(pts):
+            if (outline is not None and len(pts)
+                    and (EDGE_REFS.match(b.ref) or b.ref in drawn)):
                 on = shapely.contains_xy(outline, pts[:, 0], pts[:, 1])
                 own = pts[on]
             d, at = _past(own, cy)
@@ -515,13 +564,25 @@ def check(pcb: Path, constraints: dict | None = None, model_dirs=()):
                 and b.ref not in off_ok
                 and not EDGE_PART.search(f"{fpid} {values.get(b.ref, '')}")):
             d, at = _past(pts, outline)
-            if d > OFF_BOARD_MM:
+            dr = drawn.get(b.ref)
+            if dr is None and d > OFF_BOARD_MM:
                 viols.append(checklib.violation(
                     SCRIPT, "warning", (float(at[0]), float(at[1])),
                     "B.Cu" if b.back else "F.Cu", None, [b.ref],
                     f"{b.ref}: the 3D body overhangs the board edge by "
                     f"{d:.2f} mm and isn't a connector",
                     SCRIPT, kind="body_off_board", past_mm=round(d, 2)))
+            elif dr is not None and d > dr["overhang_mm"] + max(
+                    OFF_BOARD_MM, dr["tol_mm"]):
+                viols.append(checklib.violation(
+                    SCRIPT, "warning", (float(at[0]), float(at[1])),
+                    "B.Cu" if b.back else "F.Cu", None, [b.ref],
+                    f"{b.ref}: the 3D body overhangs the board edge by "
+                    f"{d:.2f} mm; its drawing ({dr['lcsc']}.json "
+                    f"mechanical.edge) puts its front "
+                    f"{dr['overhang_mm']:.2f} mm past the edge",
+                    SCRIPT, kind="body_off_board", past_mm=round(d, 2),
+                    drawing_overhang_mm=dr["overhang_mm"]))
         for ref, x, y, drill in screw:
             if ref == b.ref:
                 continue
@@ -564,6 +625,8 @@ def check(pcb: Path, constraints: dict | None = None, model_dirs=()):
         "tallest_mm": round(max((b.height(thickness) for b in parts),
                                 default=0.0), 2),
         "not_judged": no_model,
+        **({"drawn_edges": {r: d["overhang_mm"] for r, d in drawn.items()}}
+           if parts_dir is not None else {}),
     }
 
 
@@ -630,6 +693,9 @@ def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
     ap.add_argument("--constraints")
+    ap.add_argument("--parts", help="the workspace parts dir (extractions): "
+                    "a part whose drawing puts its front past the PCB edge "
+                    "may overhang that far")
     ap.add_argument("--model-dir", action="append", default=[],
                     help="more *.3dshapes dirs to look a missing model up in")
     ap.add_argument("--out", help="write the JSON report here")
@@ -639,7 +705,8 @@ def run(argv=None):
         raise checklib.CheckError(f"board not found: {pcb}")
     cons = checklib.load_json(args.constraints, "constraints") \
         if args.constraints else None
-    viols, facts = check(pcb, cons, args.model_dir)
+    viols, facts = check(pcb, cons, args.model_dir,
+                         Path(args.parts) if args.parts else None)
     return checklib.report(SCRIPT, pcb, viols, **facts,
                            nothing_to_judge=None if facts.get("bodies") else
                            "no 3D model could be read"), args.out

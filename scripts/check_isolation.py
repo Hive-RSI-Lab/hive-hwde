@@ -76,7 +76,13 @@ Findings:
 A declaration the check can't read (missing value, unknown domain, one net in
 two domains, a voltage off the table) is exit 2, never a pass.
 
-CLI: bin/hwde check_isolation --pcb board.kicad_pcb --constraints c.json [--out F]
+With --parts (the workspace parts dir, or its parts.json), each part that
+crosses a barrier is named with its parts.json MPN in its finding and in the
+facts, so whoever declares its rating knows which datasheet to read. A rating
+still comes only from isolation.parts: the parts list never rates a part.
+
+CLI: bin/hwde check_isolation --pcb board.kicad_pcb --constraints c.json
+     [--parts DIR] [--out F]
 """
 from __future__ import annotations
 
@@ -613,7 +619,28 @@ def _pin_gap(pads_a, pads_b) -> tuple[float | None, tuple | None]:
     return best, where
 
 
-def _part_pass(ref, doms, b, req, rated, viols, report):
+def load_mpns(parts: Path | None) -> dict[str, str]:
+    """ref -> MPN from parts.json (`parts` is its folder or the file);
+    empty without --parts."""
+    if parts is None:
+        return {}
+    pj = parts if parts.is_file() else parts / "parts.json"
+    if not pj.is_file():
+        raise CheckError(f"parts.json not found: {pj}")
+    data = checklib.load_json(pj, "parts.json")
+    out = {}
+    for p in (data.get("parts") if isinstance(data, dict) else None) or []:
+        if not isinstance(p, dict):
+            continue
+        mpn = str(p.get("mpn") or "").strip()
+        refs = p.get("refdes") or []
+        for r in [refs] if isinstance(refs, str) else refs:
+            if mpn:
+                out[str(r)] = mpn
+    return out
+
+
+def _part_pass(ref, doms, b, req, rated, viols, report, mpns=None):
     da, db = b["between"]
     if da not in doms or db not in doms:
         return
@@ -625,13 +652,17 @@ def _part_pass(ref, doms, b, req, rated, viols, report):
         pa, pb = nearest_points(where[0].poly, where[1].poly)
         pos = ((pa.x + pb.x) / 2.0, (pa.y + pb.y) / 2.0)
     rating = rated.get(ref)
+    mpn = (mpns or {}).get(ref)
     row = {"ref": ref, "barrier": b["name"], "rated": rating is not None,
            "pin_gap_mm": None if gap is None else checklib.rnd(gap), "nets": nets}
+    if mpn:
+        row["mpn"] = mpn
     report.append(row)
     if rating is None:
+        who = f"{ref} ({mpn})" if mpn else ref
         viols.append(violation(
             SCRIPT, "error", pos, None, nets[0] if nets else None, [ref],
-            f"{ref} has pins in {da} and {db} ({', '.join(nets)}) and no declared "
+            f"{who} has pins in {da} and {db} ({', '.join(nets)}) and no declared "
             f"rating in isolation.parts: nothing but a rated part may cross "
             f"barrier {b['name']}", SOURCE, kind="iso_part_unrated",
             barrier=b["name"], nets=nets))
@@ -657,10 +688,12 @@ def _part_pass(ref, doms, b, req, rated, viols, report):
 
 # ----------------------------------------------------------------------- check
 
-def check(pcb: Path, cons: dict | None) -> tuple[list[dict], dict]:
+def check(pcb: Path, cons: dict | None,
+          parts_dir: Path | None = None) -> tuple[list[dict], dict]:
     iso = (cons or {}).get("isolation")
     if not iso:
         return [], {"judged": False, "why": "no isolation block in constraints"}
+    mpns = load_mpns(parts_dir)
     bg = geom.load_board(pcb)
     bg.assert_fresh()
     netmap, empty = domain_map(iso, sorted(bg.nets))
@@ -710,7 +743,7 @@ def check(pcb: Path, cons: dict | None) -> tuple[list[dict], dict]:
         _solid_pass(bg, per_layer, b, req, netmap, viols, layers)
         _floating_pass(bg, per_layer, b, req, netmap, viols, layers)
         for ref, doms in sorted(span.items()):
-            _part_pass(ref, doms, b, req, rated, viols, parts)
+            _part_pass(ref, doms, b, req, rated, viols, parts, mpns)
         facts_b.append({
             "name": b["name"], "between": b["between"], "standard": b["standard"],
             "grade": b["grade"], "required": req, "layers": layers, "parts": parts,
@@ -730,6 +763,8 @@ def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
     ap.add_argument("--constraints")
+    ap.add_argument("--parts", help="the workspace parts dir (or its "
+                    "parts.json): names each crossing part's MPN")
     ap.add_argument("--out", help="write the JSON report here")
     args = ap.parse_args(argv)
     pcb = Path(args.pcb)
@@ -737,7 +772,7 @@ def run(argv=None):
         raise CheckError(f"board not found: {pcb}")
     cons = (checklib.load_json(args.constraints, "constraints")
             if args.constraints else None)
-    viols, facts = check(pcb, cons)
+    viols, facts = check(pcb, cons, Path(args.parts) if args.parts else None)
     return checklib.report(SCRIPT, pcb, viols, checked=[facts],
                            nothing_to_judge=None if facts.get("judged", True)
                            else facts.get("why")), args.out

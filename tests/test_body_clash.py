@@ -4,6 +4,7 @@ board is the shape of hifi core's RCA jack, an ear past a too-small courtyard.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -321,3 +322,92 @@ def test_rasterise_fills_a_box_exactly():
     # 40 x 20 x 10 cells of solid, give or take a cell of surface each side
     assert 40 * 20 * 10 <= int(b.cells.sum()) <= 42 * 22 * 12
     assert not b.cells[0, 0, 0]
+
+
+# --parts: a part whose drawing puts its front past the PCB edge line (the
+# extraction's mechanical.edge.overhang_mm, as check_connector_fit reads it)
+
+def _lcsc(code, prop="LCSC"):
+    return f'(property "{prop}" "{code}" (at 0 0) (layer "F.Fab"))'
+
+
+def _extraction(tmp_path, code, edge):
+    d = tmp_path / "parts"
+    d.mkdir(exist_ok=True)
+    (d / f"{code}.json").write_text(
+        json.dumps({"mechanical": {"edge": edge}}), encoding="utf-8")
+    (d / "parts.json").write_text('{"parts": []}', encoding="utf-8")
+    return d
+
+
+SMA = [(-3, -3, 0, 12, 3, 6)]          # at x 95: 7 mm past the outline at 100
+
+
+def test_a_part_drawn_past_the_edge_may_stand_out_that_far(tmp_path):
+    sma = _wrl(tmp_path / "sma.wrl", SMA)
+    pcb = _board(tmp_path, _fp("U5", 95, 50, sma, cy=5.5, extra=_lcsc("C123")))
+    # without the drawing: past the outline and past its courtyard
+    kinds = _kinds(pcb)[0]
+    assert "body_off_board" in kinds and "body_past_courtyard" in kinds
+    parts = _extraction(tmp_path, "C123", {"overhang_mm": 7.0})
+    viols, facts = cbc.check(pcb, None, (), parts)
+    kinds = sorted(v["kind"] for v in viols)
+    assert "body_off_board" not in kinds and "body_past_courtyard" not in kinds
+    assert facts["drawn_edges"] == {"U5": 7.0}
+    # parts.json stands for its folder; the "LCSC Part" name and a lower-case
+    # code are read as check_connector_fit reads them
+    pcb2 = _board(tmp_path, _fp("U5", 95, 50, sma, cy=5.5,
+                                extra=_lcsc("c123", "LCSC Part")))
+    assert cbc.check(pcb2, None, (), parts / "parts.json")[1][
+        "drawn_edges"] == {"U5": 7.0}
+
+
+def test_planted_a_body_farther_out_than_its_drawing_still_warns(tmp_path):
+    sma = _wrl(tmp_path / "sma.wrl", SMA)
+    pcb = _board(tmp_path, _fp("U5", 95, 50, sma, cy=5.5, extra=_lcsc("C123")))
+    parts = _extraction(tmp_path, "C123", {"overhang_mm": 6.0})
+    viols = cbc.check(pcb, None, (), parts)[0]
+    hit = [v for v in viols if v["kind"] == "body_off_board"]
+    assert len(hit) == 1 and hit[0]["drawing_overhang_mm"] == 6.0
+    assert "C123.json" in hit[0]["msg"]
+    # the drawing's own tolerance widens the allowance
+    parts = _extraction(tmp_path, "C123", {"overhang_mm": 6.0, "tol_mm": 1.5})
+    assert "body_off_board" not in [
+        v["kind"] for v in cbc.check(pcb, None, (), parts)[0]]
+
+
+def test_parts_with_no_drawn_edge_are_judged_as_before(tmp_path):
+    sma = _wrl(tmp_path / "sma.wrl", SMA)
+    pcb = _board(tmp_path, _fp("U5", 95, 50, sma, cy=5.5, extra=_lcsc("C9")),
+                 _fp("U6", 95, 20, sma, cy=5.5))
+    for edge in ({"overhang_mm": 0}, {"overhang_mm": -1.0}):
+        parts = _extraction(tmp_path, "C9", edge)
+        viols, facts = cbc.check(pcb, None, (), parts)
+        assert sorted(v["refs"][0] for v in viols
+                      if v["kind"] == "body_off_board") == ["U5", "U6"]
+        assert facts["drawn_edges"] == {}
+    assert "drawn_edges" not in cbc.check(pcb)[1]
+
+
+def test_a_parts_dir_or_drawing_it_cant_read_is_an_error(tmp_path):
+    import checklib
+    sma = _wrl(tmp_path / "sma.wrl", SMA)
+    pcb = _board(tmp_path, _fp("U5", 95, 50, sma, cy=5.5, extra=_lcsc("C123")))
+    with pytest.raises(checklib.CheckError, match="parts dir not found"):
+        cbc.check(pcb, None, (), tmp_path / "nowhere")
+    parts = _extraction(tmp_path, "C123", {"overhang_mm": "far"})
+    with pytest.raises(checklib.CheckError, match="overhang_mm"):
+        cbc.check(pcb, None, (), parts)
+
+
+def test_cli_takes_parts(tmp_path):
+    sma = _wrl(tmp_path / "sma.wrl", SMA)
+    pcb = _board(tmp_path, _fp("U5", 95, 50, sma, cy=5.5, extra=_lcsc("C123")))
+    parts = _extraction(tmp_path, "C123", {"overhang_mm": 7.0})
+    out = tmp_path / "r.json"
+    assert cbc.main(["--pcb", str(pcb), "--parts", str(parts),
+                     "--out", str(out)]) == 0
+    got = json.loads(out.read_text(encoding="utf-8"))
+    assert got["drawn_edges"] == {"U5": 7.0}
+    assert cbc.main(["--pcb", str(pcb), "--parts", str(tmp_path / "nowhere"),
+                     "--out", str(out)]) == 2

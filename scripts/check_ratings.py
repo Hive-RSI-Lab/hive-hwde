@@ -184,6 +184,7 @@ from pathlib import Path
 import sexpdata
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "lib"))
 import checklib  # noqa: E402
 import engcalc  # noqa: E402

@@ -252,6 +252,50 @@ def test_non_rated_part_bridging_fails(tmp_path):
     assert hit[0]["nets"] == ["A_S", "B_S"]
 
 
+
+def _parts_dir(tmp_path, parts):
+    d = tmp_path / "parts"
+    d.mkdir(exist_ok=True)
+    (d / "parts.json").write_text(json.dumps({"parts": parts}), encoding="utf-8")
+    return d
+
+
+def test_parts_names_the_crossing_parts_mpn_and_rates_nothing(tmp_path):
+    """--parts names each crossing part by its parts.json MPN, so whoever
+    declares its rating knows which datasheet to read; the verdicts stay
+    those of isolation.parts."""
+    body = (pads_8mm() + part("R1", 0, 2, ["A_S", "B_S"])
+            + part("U1", 10, 2, ["A_T", "B_T"], dx=7.0))
+    pcb = board(tmp_path, body)
+    cons = iso(parts={"U1": RATING})
+    plain, plain_facts = ci.check(pcb, cons)
+    parts = _parts_dir(tmp_path, [
+        {"refdes": ["R1"], "mpn": "RC0805FR-0710KL"},
+        {"refdes": "U1", "mpn": "ISO7741DWR"},
+        "not a part line", {"refdes": ["R9"]}])
+    viols, facts = ci.check(pcb, cons, parts)
+    assert [(v["kind"], v["severity"]) for v in viols] == [
+        (v["kind"], v["severity"]) for v in plain]
+    hit = [v for v in viols if v["kind"] == "iso_part_unrated"]
+    assert [v["refs"] for v in hit] == [["R1"]]
+    assert hit[0]["msg"].startswith("R1 (RC0805FR-0710KL) has pins")
+    rows = {r["ref"]: r for r in facts["barriers"][0]["parts"]}
+    assert rows["R1"]["mpn"] == "RC0805FR-0710KL" and not rows["R1"]["rated"]
+    assert rows["U1"]["mpn"] == "ISO7741DWR" and rows["U1"]["rated"]
+    assert all("mpn" not in r for r in plain_facts["barriers"][0]["parts"])
+    # the file itself stands for its folder
+    assert ci.check(pcb, cons, parts / "parts.json")[1] == facts
+
+
+def test_parts_without_its_parts_json_is_an_error(tmp_path):
+    pcb = board(tmp_path, pads_8mm() + part("R1", 0, 2, ["A_S", "B_S"]))
+    (tmp_path / "empty").mkdir()
+    with pytest.raises(checklib.CheckError, match="parts.json not found"):
+        ci.check(pcb, iso(), tmp_path / "empty")
+    # a board with nothing to judge doesn't read it
+    assert ci.check(pcb, {}, tmp_path / "empty")[1]["judged"] is False
+
+
 def test_rated_part_passes_and_its_pin_gap_is_reported(tmp_path):
     """U1's pads 7 mm centre to centre, 1 mm wide: a 6.000 mm pin gap."""
     body = pads_8mm() + part("U1", 10, 2, ["A_S", "B_S"], dx=7.0)
@@ -411,6 +455,12 @@ def test_cli_exit_codes(tmp_path):
         {"isolation": {"domains": DOMAINS, "barriers": [{"name": "x"}]}}))
     assert ci.main(["--pcb", str(ok), "--constraints", str(tmp_path / "bad.json"),
                     "--out", str(tmp_path / "r2.json")]) == 2
+    parts = _parts_dir(tmp_path, [{"refdes": ["R1"], "mpn": "RC0805"}])
+    assert ci.main(["--pcb", str(ok), "--constraints", str(tmp_path / "c.json"),
+                    "--parts", str(parts), "--out", str(tmp_path / "r3.json")]) == 0
+    assert ci.main(["--pcb", str(ok), "--constraints", str(tmp_path / "c.json"),
+                    "--parts", str(tmp_path / "nowhere"),
+                    "--out", str(tmp_path / "r4.json")]) == 2
 
 
 # ---------------------------------------------------------------------- tables

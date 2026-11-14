@@ -16,6 +16,7 @@ holds the whole shape (a point, a track's centre line), or None.
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import shapely
@@ -62,6 +63,9 @@ def board_necks(pcb: Path, bg, neck_rules: list) -> dict:
 def read_necks(pcb: Path, bg=None) -> dict:
     """board_necks of a board file, its rules read from the .kicad_dru
     beside it."""
+    scripts_dir = Path(__file__).resolve().parents[1]   # python -I
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
     import geom
     import route_critical as rc
     pcb = Path(pcb)

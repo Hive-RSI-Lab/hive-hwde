@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import math
 import re
+import sys
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -63,6 +64,9 @@ def board_build(bg, name: str | None = None) -> tuple[str | None, dict | None]:
     """(entry name, entry) when the board's stack block matches an HDI build
     of stackups.yaml, else (None, None). Never a guess from the layer count: a
     standard build drills through vias only."""
+    scripts_dir = Path(__file__).resolve().parents[1]   # python -I
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
     import check_vias
     stackups = load_stackups()
     if name:
@@ -101,6 +105,9 @@ def spans_of(entry: dict, cu: list[str], gaps: list[float] | None = None,
     laser hole's drill is at least its dielectric (1:1 at most), so an 8-layer
     build's 0.116 mm prepreg gets 0.12, not the default 0.1. gaps: dielectric
     per copper gap (default: the entry's own stack)."""
+    scripts_dir = Path(__file__).resolve().parents[1]   # python -I
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
     import check_vias
     caps = caps or load_hdi_caps()
     gaps = gaps if gaps is not None else check_vias._entry_gaps(entry)

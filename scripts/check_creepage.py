@@ -95,6 +95,7 @@ from shapely import affinity
 from shapely.ops import nearest_points
 from shapely.strtree import STRtree
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
 import geom  # noqa: E402
