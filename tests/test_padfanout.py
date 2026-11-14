@@ -292,3 +292,143 @@ def test_live_via_in_pad_filled_and_drc_clean(kicad, tmp_path):
     assert f["in_pad"] == [{"ref": "U2", "pad": "1", "at": [8.0, 10.0],
                             "filled": True}]
     assert _drc(kicad, pcb) == []
+
+
+# ------------------------------------------------- plane balls (#956)
+
+BGA = FIX / "bga.kicad_pcb"
+PLANE = ["--plane-balls", "U3", "--plane-nets", "P,GND"]
+IN_PAD = {"U3.A1", "U3.A4", "U3.B4", "U3.C1", "U3.C3", "U3.D1", "U3.D2",
+          "U3.D4"}
+
+
+def _bga_board(tmp_path):
+    for src in FIX.glob("bga.*"):
+        shutil.copy2(src, tmp_path / src.name)
+    return tmp_path / "bga.kicad_pcb"
+
+
+@pytest.fixture(scope="module")
+def balls():
+    bg = geom.BoardGeom.from_file(BGA)
+    fo = padfanout.Fanout(bg, via_in_pad=True)
+    specs = route_escape.plane_ball_specs(bg, ["U3"], ["P", "GND"])
+    ops, rows = fo.fan(specs, in_pad_only=True)
+    return bg, fo, ops, {r["pad"]: r for r in rows}
+
+
+def test_plane_ball_specs_name_only_the_plane_nets():
+    bg = geom.BoardGeom.from_file(BGA)
+    specs = route_escape.plane_ball_specs(bg, ["U3"], ["P", "GND"])
+    assert set(specs) == IN_PAD | {"U3.A3", "U3.B2"}
+    assert {_pad(bg, s).net for s in specs} == {"P", "GND"}
+
+
+def test_plane_ball_specs_refuse_a_typo():
+    bg = geom.BoardGeom.from_file(BGA)
+    with pytest.raises(CheckError, match="on no ball of U3"):
+        route_escape.plane_ball_specs(bg, ["U3"], ["P", "+0V75"])
+    with pytest.raises(CheckError, match="no such part"):
+        route_escape.plane_ball_specs(bg, ["U9"], ["P"])
+
+
+def test_each_plane_ball_gets_one_via_at_its_centre(balls):
+    bg, fo, ops, rows = balls
+    got = {r["pad"] for r in rows.values() if r["result"] == "via in pad"}
+    assert got == IN_PAD
+    assert all(o["op"] == "add_via" for o in ops)  # no stubs, no joins
+    assert len(ops) == len(IN_PAD)
+    for o in ops:
+        pad = next(p for p in bg.pads_of(ref="U3")
+                   if math.dist(p.center, o["at"]) < 1e-6)
+        assert o["net"] == pad.net in ("P", "GND")
+        # the floor via, not the board's common 0.6/0.3, its drill inside
+        # the 0.2 mm ball
+        assert (o["size"], o["drill"]) == fo.rules.via_floor == (0.327, 0.127)
+        assert pad.poly.contains(Point(o["at"]).buffer(o["drill"] / 2))
+
+
+def test_signal_balls_are_left_alone(balls):
+    bg, _, ops, _ = balls
+    sig = [p for p in bg.pads_of(ref="U3") if p.net.startswith("S")]
+    for o in ops:
+        assert all(not p.poly.buffer(0.01).contains(Point(o["at"]))
+                   for p in sig)
+
+
+def test_a_ball_with_its_own_via_is_skipped_not_its_neighbour(balls):
+    """A3 holds a P via. B4 is 0.71 mm from it, inside the 0.9 mm `has via`
+    reach of a pad fanout: a plane ball counts only a via on its own copper,
+    so B4 still gets one."""
+    _, _, _, rows = balls
+    assert rows["U3.A3"]["result"] == "has via"
+    assert rows["U3.B4"]["result"] == "via in pad"
+
+
+def test_a_ball_with_no_room_is_reported(balls):
+    """The planted fault: the S4 track between rows B and C would sit
+    0.037 mm from a via in B2."""
+    bg, fo, ops, rows = balls
+    assert rows["U3.B2"]["result"] == "no spot"
+    track = bg.tracks_of(net="S4")[0]
+    b2 = _pad(bg, "U3.B2")
+    ring = Point(b2.center).buffer(fo.ball_via[0] / 2)
+    assert ring.distance(track.poly) < fo.rules.clearance
+    for o in ops:                                  # every via placed clears
+        r = Point(o["at"]).buffer(o["size"] / 2)
+        assert r.distance(track.poly) >= fo.rules.clearance - 1e-6
+
+
+def test_a_filled_ball_via_may_sit_on_its_own_nets_cap_pad(balls):
+    """C1's GND pad on B.Cu lies under ball D1. A plain via there is kept
+    off it (paste would drain down the hole); the ball's via is filled and
+    capped, so the pad is no obstacle."""
+    bg, _, _, rows = balls
+    fo = padfanout.Fanout(bg, via_in_pad=True)     # before D1's own via
+    d1 = _pad(bg, "U3.D1")
+    cap = next(p for p in bg.pads_of(ref="C1"))
+    assert cap.net == d1.net == "GND"
+    assert Point(d1.center).within(cap.poly)
+    assert not fo.via_ok(d1.center, "GND", own=d1, via=fo.ball_via)
+    assert fo.via_ok(d1.center, "GND", own=d1, via=fo.ball_via, filled=True)
+    assert rows["U3.D1"]["result"] == "via in pad"
+
+
+def test_plane_balls_need_the_fab_option(tmp_path):
+    with pytest.raises(CheckError, match="via_in_pad"):
+        padfanout.Fanout(geom.BoardGeom.from_file(BGA)).fan(
+            ["U3.A1"], in_pad_only=True)
+    pcb = _bga_board(tmp_path)
+    before = pcb.read_bytes()
+    with pytest.raises(CheckError, match="add --via-in-pad"):
+        route_escape.run(["--pcb", str(pcb), *PLANE])
+    with pytest.raises(CheckError, match="go together"):
+        route_escape.run(["--pcb", str(pcb), "--plane-balls", "U3",
+                          "--via-in-pad"])
+    assert pcb.read_bytes() == before
+
+
+def test_plane_balls_plan_fills_each_and_warns_on_the_rest(tmp_path):
+    pcb = _bga_board(tmp_path)
+    out = tmp_path / "ops.json"
+    payload, _ = route_escape.run(["--pcb", str(pcb), *PLANE, "--via-in-pad",
+                                   "--plan", "--out-ops", str(out)])
+    got = json.loads(out.read_text())
+    assert len(got["ops"]) == len(got["then"]) == len(IN_PAD)
+    assert all(t["op"] == "fill_vias" and t["filled"] for t in got["then"])
+    assert payload["facts"]["via_in_pad"] == len(IN_PAD)
+    assert [v["kind"] for v in payload["violations"]] == \
+        ["pad_fanout_incomplete"]
+    assert "U3.B2" in payload["violations"][0]["msg"]
+
+
+def test_live_plane_balls_filled_and_drc_clean(kicad, tmp_path):
+    import fab_export
+    pcb = _bga_board(tmp_path)
+    assert _drc(kicad, pcb) == []
+    payload, _ = route_escape.run(["--pcb", str(pcb), *PLANE, "--via-in-pad"])
+    assert payload["facts"]["board_updated"] is True
+    f = fab_export.via_fill_facts(pcb)
+    filled = {f"{v['ref']}.{v['pad']}" for v in f["in_pad"] if v["filled"]}
+    assert filled == IN_PAD
+    assert _drc(kicad, pcb) == []
