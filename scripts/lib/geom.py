@@ -1035,10 +1035,10 @@ class BoardGeom:
         polygon's AREA carries the sampling bias, so a board re-edited through
         board_edit would inflate its own radius a little each time.
 
-        `self.outline_items` counts the Edge.Cuts primitives BY KIND, before
-        any of the early returns below. That matters: this parser returns on
-        the FIRST gr_rect it finds, so a second one (an interior window) never
-        reaches `.outline` - the counts are the only place it shows up."""
+        `self.outline_items` counts the Edge.Cuts primitives BY KIND. Every
+        closed shape (gr_rect, gr_poly, gr_circle) is a face of its own next to
+        the faces the lines and arcs close, and the largest wins: a mounting
+        hole drawn as a circle is a window, never the board (#1015)."""
         self.outline_faces: list[Polygon] = []
         self.outline_arc_radii: list[float] = []
         self.outline_items: dict[str, int] = {}
@@ -1048,32 +1048,31 @@ class BoardGeom:
             if n:
                 self.outline_items[kind] = n
         edges = []
+        # closed shapes are faces in their own right; they compete with the
+        # line/arc faces on area, so a mounting-hole circle or an inner rect
+        # window never stands in for a line-drawn outline (#1015)
+        shapes: list[Polygon] = []
         for rect in _kids(root, "gr_rect"):
             if _layer_name(rect) != "Edge.Cuts":
                 continue
             s, e = _nums(_kid(rect, "start")), _nums(_kid(rect, "end"))
             if len(s) >= 2 and len(e) >= 2:
-                got = box(min(s[0], e[0]), min(s[1], e[1]),
-                          max(s[0], e[0]), max(s[1], e[1]))
-                self.outline_faces = [got]
-                return got
+                shapes.append(box(min(s[0], e[0]), min(s[1], e[1]),
+                                  max(s[0], e[0]), max(s[1], e[1])))
         for poly in _kids(root, "gr_poly"):
             if _layer_name(poly) != "Edge.Cuts":
                 continue
             pts = _pts(_kid(poly, "pts")) if _kid(poly, "pts") else _pts(poly)
             if len(pts) >= 3:
-                got = Polygon(pts)
-                self.outline_faces = [got]
-                return got
+                shapes.append(Polygon(pts))
         for circ in _kids(root, "gr_circle"):
             if _layer_name(circ) != "Edge.Cuts":
                 continue
             c, e = _nums(_kid(circ, "center")), _nums(_kid(circ, "end"))
             if len(c) >= 2 and len(e) >= 2:
                 r = math.hypot(e[0] - c[0], e[1] - c[1])
-                got = Point(c[0], c[1]).buffer(r, quad_segs=_QUAD_SEGS * 2)
-                self.outline_faces = [got]
-                return got
+                shapes.append(Point(c[0], c[1]).buffer(
+                    r, quad_segs=_QUAD_SEGS * 2))
         for gl in _kids(root, "gr_line"):
             if _layer_name(gl) != "Edge.Cuts":
                 continue
@@ -1091,12 +1090,11 @@ class BoardGeom:
                 r = _arc_radius(sp, mp, ep)
                 if r is not None:
                     self.outline_arc_radii.append(r)
-        if edges:
-            faces = sorted(polygonize(unary_union(edges)),
-                           key=lambda g: g.area, reverse=True)
-            if faces:
-                self.outline_faces = faces
-                return faces[0]
+        faces = list(polygonize(unary_union(edges))) if edges else []
+        faces = sorted(shapes + faces, key=lambda g: g.area, reverse=True)
+        if faces:
+            self.outline_faces = faces
+            return faces[0]
         return Polygon()
 
     # -------------------------------------------------- accessors
@@ -1286,8 +1284,8 @@ def _edge_shape_parts(node, tx, closed: list, open_: list, prefix: str) -> None:
 def _edge_faces(root) -> list[Polygon]:
     """Every closed face Edge.Cuts draws, largest first and with no interior
     rings: board-level shapes of every kind and footprint-level ones (a milled
-    slot in a footprint). `.outline` stops at the first gr_rect and ignores
-    footprints, so it can't answer "where are the slots"."""
+    slot in a footprint). `.outline` is only the largest board-level face and
+    ignores footprints, so it can't answer "where are the slots"."""
     closed: list = []
     open_: list = []
     shapes = ("rect", "poly", "circle", "line", "arc")

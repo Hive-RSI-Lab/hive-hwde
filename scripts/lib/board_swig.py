@@ -168,12 +168,12 @@ def _classify_cutouts(cuts, x1, y1, x2, y2, r, notes):
         elif abs(cx2 - x2) <= _CUT_TOL:
             side, span, depth = "right", (cy1, cy2), x2 - cx1
         if side is None:
-            # An interior window is emitted as an inner Edge.Cuts loop, but
-            # geom._parse_outline RETURNS on the first gr_rect it finds on
-            # Edge.Cuts - so the window silently becomes the board outline
-            # (measured: a 10x10 window on a 100x80 board parsed as area 100).
-            # Every downstream consumer then sees a 10x10 board. Refuse rather
-            # than emit something that mis-parses this badly.
+            # An interior window is emitted as an inner Edge.Cuts loop. Before
+            # #1015 geom._parse_outline returned the first gr_rect it found, so
+            # a window became the board outline (a 10x10 window on a 100x80
+            # board parsed as area 100); most consumers still read only
+            # `.outline` and would ignore the window. Refuse rather than emit
+            # a shape the checks do not judge.
             raise RuntimeError(
                 f"interior cutout {a},{b},{w},{h} is not supported - it must "
                 f"touch an outline edge to become a notch. Interior windows "

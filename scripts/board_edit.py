@@ -146,10 +146,10 @@ def describe_outline(faces: list, arc_radii: list[float] | None = None,
     interior windows: board_edit rewrites Edge.Cuts wholesale, so a shape it
     cannot restate must never be silently replaced by a rectangle.
 
-    The ITEM INVENTORY is part of that judgement, not a nicety: geom's parser
-    returns on the first gr_rect on Edge.Cuts, so a second rect (an interior
-    window - the exact shape board_init refuses to create) is invisible in the
-    parsed outline and would be deleted without a word.
+    The ITEM INVENTORY is part of that judgement, not a nicety: a second rect
+    (an interior window - the exact shape board_init refuses to create) is only
+    a window face behind the parsed outline, and would be deleted without a
+    word.
     """
     if not faces:
         raise CheckError("board has no closed Edge.Cuts outline - nothing to "
