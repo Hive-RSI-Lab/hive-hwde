@@ -248,13 +248,15 @@ def test_pin_names_normalise():
     assert check_straps.pin_name("GPIO12", "14") == "IO12"
 
 
-def test_no_netlist_without_an_mcu_passes(tmp_path):
+def test_a_known_mcu_without_a_netlist_says_so(tmp_path):
+    """blinky2's STM32F103 has a reset_states row (#885): with no netlist
+    beside the board the check says it couldn't judge, not pass."""
     pcb = tmp_path / "b.kicad_pcb"
     pcb.write_text((REPO / "tests" / "golden" / "blinky2" /
                     "blinky2.kicad_pcb").read_text(encoding="utf-8"),
                    encoding="utf-8")
     payload, _ = check_straps.run(["--pcb", str(pcb)])
-    assert payload["status"] == "pass"
+    assert [v["kind"] for v in payload["violations"]] == ["no_netlist"]
 
 
 def test_both_checks_join_verify_all():
@@ -430,3 +432,35 @@ def test_planted_unknown_part_on_io9_still_flags(tmp_path):
     """Planted fault: the same net with a part of unknown reset state on it
     is still strap_unknown; only switch values are let through."""
     assert "strap_unknown" in _c3_boot(tmp_path, "boot1", "74LVC1G125")
+
+
+# ------------------------------------------- STM32F1 (blinky2, #885)
+
+def _f103(tmp_path, boot0_to):
+    """blinky2's STM32F103: BOOT0 through R1 10k to boot0_to, SWDIO and
+    SWCLK out to the debug header J1."""
+    comps = {"U1": "STM32F103C8T6", "R1": "10k", "J1": "Conn_01x04"}
+    nets = {"+3V3": [("U1", "24", "VDD_24")] + (
+                [("R1", "2", "")] if boot0_to == "+3V3" else []),
+            "GND": [("U1", "23", "VSS_23")] + (
+                [("R1", "2", "")] if boot0_to == "GND" else []),
+            "/NRST": [("U1", "7", "NRST_7")],
+            "/BOOT0": [("U1", "44", "BOOT0_44"), ("R1", "1", "")],
+            "/SWDIO": [("U1", "34", "PA13_34"), ("J1", "2", "Pin_2")],
+            "/SWCLK": [("U1", "37", "PA14_37"), ("J1", "3", "Pin_3")]}
+    pcb = _netlist(tmp_path, comps, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    return payload
+
+
+def test_f103_boot0_pulled_down_with_swd_header_passes(tmp_path):
+    p = _f103(tmp_path, "GND")
+    assert p["violations"] == [], p["violations"]
+    assert p["checked"][0]["mcus_unknown"] == []
+
+
+def test_planted_f103_boot0_pulled_up_fails(tmp_path):
+    """Planted fault: BOOT0 to 3V3 boots the ROM loader, not the flash."""
+    (v,) = _by_kind(_f103(tmp_path, "+3V3"))["strap_level"]
+    assert v["strap"] == "BOOT0" and v["severity"] == "error"

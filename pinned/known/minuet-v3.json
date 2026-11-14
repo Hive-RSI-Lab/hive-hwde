@@ -6116,8 +6116,7 @@
     83.05
    ],
    "verdict": "real",
-   "reason": "GPIO10 drives Q1's base through R6 10k with no base pull-down: from reset until firmware drives GPIO10 the base floats (and GPIO10 glitches low at power-up), so Q1's load can switch on by itself",
-   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+   "reason": "GPIO10 drives Q1's base through R6 10k with no base pull-down: from reset until firmware drives GPIO10 the base floats (and GPIO10 glitches low at power-up), so Q1's load can switch on by itself (hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic)"
   },
   {
    "gate": "verify",
@@ -6132,8 +6131,7 @@
     92.061
    ],
    "verdict": "real",
-   "reason": "GPIO9 (BOOT) also reaches the expansion header J4.1: an accessory that pulls it low at power-up boots the download mode; the board can't tell the boot level",
-   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+   "reason": "GPIO9 (BOOT) also reaches the expansion header J4.1: an accessory that pulls it low at power-up boots the download mode; the board can't tell the boot level (hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic)"
   },
   {
    "gate": "verify",
@@ -6148,8 +6146,7 @@
     91.001
    ],
    "verdict": "real",
-   "reason": "GPIO8 strap doubles as SCL and reaches J4.7, J7.4 and U5 (MCF8316D): any of them holding SCL low at reset changes the boot mode, which the board leaves to its accessories",
-   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+   "reason": "GPIO8 strap doubles as SCL and reaches J4.7, J7.4 and U5 (MCF8316D): any of them holding SCL low at reset changes the boot mode, which the board leaves to its accessories (hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic)"
   },
   {
    "gate": "verify",
@@ -6164,8 +6161,7 @@
     74.383
    ],
    "verdict": "real",
-   "reason": "GPIO2 strap is the TSOP39238 IR receiver's output: an IR burst at power-up pulls it low against Espressif's ask that GPIO2 be high at boot",
-   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+   "reason": "GPIO2 strap is the TSOP39238 IR receiver's output: an IR burst at power-up pulls it low against Espressif's ask that GPIO2 be high at boot (hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic)"
   },
   {
    "gate": "verify",
@@ -6181,8 +6177,7 @@
     92.24
    ],
    "verdict": "real",
-   "reason": "the TCA9555 expander U3 has no RESET pin, so an ESP32 reset (EN, watchdog) leaves its outputs where firmware last set them; only a power cycle clears them",
-   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+   "reason": "the TCA9555 expander U3 has no RESET pin, so an ESP32 reset (EN, watchdog) leaves its outputs where firmware last set them; only a power cycle clears them (hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic)"
   }
  ]
 }

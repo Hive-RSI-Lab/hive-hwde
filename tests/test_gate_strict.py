@@ -956,12 +956,16 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path, monkeypatch,
     # blinky2's two stock 1.0 mm header drills under IPC-2222 (#474) are
     # warnings, below the fail bar; with KiCad on the host, netlist_audit
     # also warns that +3V3/+5V aren't declared in this constraints file
-    # (#877). Nothing else.
+    # (#877). Without KiCad there is no netlist to export, so check_straps
+    # says it couldn't judge blinky2's STM32F103 (no_netlist, #885).
+    # Nothing else.
     assert summary["status"] in ("pass", "violations")
     audit = 0 if no_models else 2
-    assert summary["counts"]["by_severity"] == {"warning": 2 + audit}
+    straps = 1 if no_models else 0
+    assert summary["counts"]["by_severity"] == {"warning": 2 + audit + straps}
     assert {k for k, v in summary["counts"]["by_check"].items() if v} \
-        == {"check_connector_fit"} | ({"netlist_audit"} if audit else set())
+        == {"check_connector_fit"} | ({"netlist_audit"} if audit else set()) \
+        | ({"check_straps"} if straps else set())
     cov = summary["coverage"]
     board_only = ["check_diffpair", "check_silk", "check_courtyard", "check_route_style",
                   "check_connector_fit", "check_ep_paste",

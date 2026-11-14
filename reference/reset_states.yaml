@@ -162,6 +162,29 @@ mcus:
 #   kind: input     - the named pins are inputs at reset (loads, not drivers)
   # Every GPIO is pulled down from reset (RP2040 datasheet Pinout table,
   # Reset State column; PADS_BANK0 GPIOn reset PDE=1, PUE=0).
+  - family: STM32F1
+    match: '^STM32F10[0-7]'
+    vdd: 3.3
+    vil: 0.35              # VIL 0.28 (VDD - 2) + 0.8 V = 1.16 V at 3.3 V
+    vih: 0.55              # VIH 0.41 (VDD - 2) + 1.3 V = 1.83 V at 3.3 V
+    pull_ohm: 40000        # RPU, RPD 30-50 k
+    enable: [NRST]
+    aliases: {SWDIO: PA13, JTMS: PA13, SWCLK: PA14, JTCK: PA14, JTDI: PA15,
+              NJTRST: PB4, BOOT1: PB2}
+    straps:
+      BOOT0: {pull: none, want: low, severity: error,
+              why: "BOOT0 = 1 boots the system memory (or SRAM with BOOT1 = 1) instead of the main flash"}
+    reset_pulls:
+      # The serial-wire/JTAG pins come out of reset in their debug function
+      # with pulls on; every other GPIO is a floating input. offboard: false,
+      # because these pins leave the board to a debug header by design.
+      PA13: {pull: up, offboard: false, why: "JTMS/SWDIO's pull-up is on from reset"}
+      PA14: {pull: down, offboard: false, why: "JTCK/SWCLK's pull-down is on from reset"}
+      PA15: {pull: up, offboard: false, why: "JTDI's pull-up is on from reset"}
+      PB4: {pull: up, offboard: false, why: "NJTRST's pull-up is on from reset"}
+    source: ST RM0008 §3.4 Boot configuration (BOOT0, BOOT1 = PB2), §9.1.1 GPIO reset state (floating input; JTAG pins PA15/PA13/PB4 pull-up, PA14 pull-down, PB3 floating); STM32F103x8/B datasheet DS5319 I/O static characteristics (VIL, VIH, RPU/RPD 30-50 k)
+    verified: false
+
   - family: RP2040
     match: '^RP2040'
     vdd: 3.3

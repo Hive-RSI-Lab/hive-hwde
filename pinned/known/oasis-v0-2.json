@@ -4014,8 +4014,7 @@
     155.4
    ],
    "verdict": "real",
-   "reason": "GPIO6 (MTCK) is pulled up by the C3 from reset and reaches the experiment header J3.5 with nothing else holding it: anything wired to that header sees it high from power-on until firmware drives it (the minuet v3 erratum's fault; nothing is plugged in on the pinned board)",
-   "source": "hwde #885: verify_all exports the schematic netlist; judged against the v0.2 schematic (J3 'unused pins accessible for experimentation')"
+   "reason": "GPIO6 (MTCK) is pulled up by the C3 from reset and reaches the experiment header J3.5 with nothing else holding it: anything wired to that header sees it high from power-on until firmware drives it (the minuet v3 erratum's fault; nothing is plugged in on the pinned board) (hwde #885: verify_all exports the schematic netlist; judged against the v0.2 schematic (J3 'unused pins accessible for experimentation'))"
   }
  ]
 }
