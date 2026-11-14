@@ -1,7 +1,10 @@
-# check_straps: an MCU's strapping pins, the pins it pulls at reset (a load
-# on before firmware), and an IO expander's pins at power-on
-# and on an MCU-only reset, internal pulls included (hifi-receiver-2 core,
-# review-2 DIGITAL-1/2). Reads the board's own <board>.net beside it.
+# check_straps: an MCU's strapping pins, the pins it pulls at reset (a load on
+# before firmware), and an IO expander's pins at power-on and on an MCU-only
+# reset, internal pulls included (hifi-receiver-2 core, review-2 DIGITAL-1/2).
+# Reads the board's own <board>.net beside it (or the one verify_all exports
+# from its schematic).
 name: check_straps
 needs: []
 args: []
+optional:
+  netlist: [--netlist, "{netlist}"]

@@ -6113,6 +6113,88 @@
    "verdict": "real",
    "reason": "erratum: the IR receiver's 3D model is raised 17 mm; the built standoff is 16 mm",
    "source": "https://github.com/brown-studios/minuet/blob/1e43aa3df01b33522db23f4b2139f89b5689da99/hardware/minuet/v3/design-and-errata.md"
+  },
+  {
+   "gate": "verify",
+   "check": "check_reset_drive",
+   "kind": "gate_floating",
+   "net": "Net-(Q1-B)",
+   "refs": [
+    "Q1",
+    "U4"
+   ],
+   "pos": [
+    81.062,
+    83.05
+   ],
+   "verdict": "real",
+   "reason": "GPIO10 drives Q1's base through R6 10k with no base pull-down: from reset until firmware drives GPIO10 the base floats (and GPIO10 glitches low at power-up), so Q1's load can switch on by itself",
+   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "kind": "strap_unknown",
+   "net": "BOOT",
+   "refs": [
+    "U4"
+   ],
+   "pos": [
+    51.316,
+    92.061
+   ],
+   "verdict": "real",
+   "reason": "GPIO9 (BOOT) also reaches the expansion header J4.1: an accessory that pulls it low at power-up boots the download mode; the board can't tell the boot level",
+   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "kind": "strap_unknown",
+   "net": "SCL",
+   "refs": [
+    "U4"
+   ],
+   "pos": [
+    50.255,
+    91.001
+   ],
+   "verdict": "real",
+   "reason": "GPIO8 strap doubles as SCL and reaches J4.7, J7.4 and U5 (MCF8316D): any of them holding SCL low at reset changes the boot mode, which the board leaves to its accessories",
+   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "kind": "strap_unknown",
+   "net": "GPIO2_STRAP",
+   "refs": [
+    "U4"
+   ],
+   "pos": [
+    58.387,
+    74.383
+   ],
+   "verdict": "real",
+   "reason": "GPIO2 strap is the TSOP39238 IR receiver's output: an IR burst at power-up pulls it low against Espressif's ask that GPIO2 be high at boot",
+   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "kind": "io_reset_holds",
+   "net": null,
+   "refs": [
+    "U3",
+    "U4"
+   ],
+   "pos": [
+    58.51,
+    92.24
+   ],
+   "verdict": "real",
+   "reason": "the TCA9555 expander U3 has no RESET pin, so an ESP32 reset (EN, watchdog) leaves its outputs where firmware last set them; only a power cycle clears them",
+   "source": "hwde #885: verify_all exports the schematic netlist, so check_straps/check_reset_drive read minuet's straps; judged against the v3 schematic"
   }
  ]
 }

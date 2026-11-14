@@ -120,10 +120,11 @@ mcus:
     # them: check_straps flags a load these switch on, or a connector they
     # reach with no other pull (load_on_at_reset, reset_pull_offboard).
     reset_pulls:
-      IO4: {pull: up, why: "MTMS: the JTAG pad's pull-up is on from reset"}
-      IO5: {pull: up, why: "MTDI: the JTAG pad's pull-up is on from reset"}
+      # Only MTCK: in the IO MUX table's reset column MTMS (GPIO4) and
+      # MTDI (GPIO5) are "1" (input, no pull); MTCK (GPIO6) is "1*", input
+      # with the pull-up on while EFUSE_DIS_PAD_JTAG = 0.
       IO6: {pull: up, why: "MTCK: the JTAG pad's pull-up is on from reset (minuet v3: the LED strip came on early)"}
-    source: ESP32-C3 datasheet v1.x §2.4 Strapping Pins, §2 power-up glitches (MTCK/MTDO high, GPIO10/U0RXD low, ~5 ns), Table 2-4 IO MUX reset column; ESP32-C3 Hardware Design Guidelines §2.6; minuet v3 design-and-errata.md (GPIO6 pull-up at reset)
+    source: ESP32-C3 datasheet v1.x §2.4 Strapping Pins, §2 power-up glitches (MTCK/MTDO high, GPIO10/U0RXD low, ~5 ns), Table 2-4 IO MUX reset column (MTMS/MTDI "1", MTCK "1*"); ESP32-C3 Hardware Design Guidelines §2.6; minuet v3 design-and-errata.md (GPIO6 pull-up at reset)
     verified: false
 
   - family: ESP32-C6

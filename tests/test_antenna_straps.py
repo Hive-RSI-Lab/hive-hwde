@@ -290,6 +290,24 @@ def test_c3_gpio6_bare_on_a_connector_warns(tmp_path):
     assert "strap_level" not in k
 
 
+def test_c3_gpio5_bare_on_a_connector_is_quiet(tmp_path):
+    """MTDI (GPIO5) and MTMS (GPIO4) are "1" in the C3 IO MUX reset column:
+    input, no pull. Only MTCK (GPIO6, "1*") is pulled up, so GPIO5 on
+    minuet's J4.6 is no reset_pull_offboard (it was, before #885)."""
+    c = {"U4": "ESP32-C3-WROOM-02-N4", "R9": "10k", "J4": "Conn_02x08"}
+    nets = {
+        "+3.3V": [("U4", "1", "3V3_1"), ("R9", "2", "")],
+        "GND": [("U4", "19", "GND_19")],
+        "BOOT": [("U4", "8", "GPIO9_8"), ("R9", "1", "")],
+        "GPIO5": [("U4", "4", "GPIO5_4"), ("J4", "6", "Pin_6_6")],
+        "GPIO4": [("U4", "3", "GPIO4_3"), ("J4", "7", "Pin_7_7")],
+    }
+    pcb = _netlist(tmp_path, c, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    assert "reset_pull_offboard" not in _by_kind(payload)
+
+
 def test_c3_gpio6_with_its_own_pull_is_quiet(tmp_path):
     """minuet v4's fix shape: a board pull on the line (here a pull-down
     that beats the chip's 45 k) says the idle level was chosen."""

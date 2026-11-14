@@ -100,6 +100,17 @@ phys:
       require any additional pull-ups or pull-downs ... these I/Os do require
       27 ohm series termination resistors (R3 and R4 in Figure 9), placed
       close to the chip".
+  - name: Espressif ESP32-C3 (chip and modules)
+    match: 'ESP32-C3'
+    series_r: optional
+    ohm: 22
+    dp_pullup: internal
+    source: >-
+      Espressif ESP Hardware Design Guidelines, ESP32-C3 schematic checklist
+      (docs.espressif.com, latest): GPIO18/GPIO19 are USB D-/D+; "It is
+      recommended to reserve series resistors (initial value can be 22/33
+      ohm) and capacitors to ground ... close to the chip". The USB pull-up
+      is the chip's own (USB_SERIAL_JTAG_DP_PULLUP; GPIO19 reset code 0*).
   - name: Espressif ESP32-S3 (chip and modules)
     match: 'ESP32-S3'
     series_r: optional

@@ -17,6 +17,15 @@ off-45 segments, warns on jogs);
 check_ratings needs the workspace parts dir (--parts, default <ws>/parts
 beside the board's kicad/ dir).
 
+The netlist checks (check_straps, check_usb_phy, check_reset_drive,
+check_cap_load, check_transformer) read the board's own <stem>.net. A board
+that carries only its schematic (#885: a pinned foreign board holds kicad/
+and state.json) gets one exported once per run from <stem>.kicad_sch into
+<reports dir>/netlist/ (never beside the board) and passed as --netlist;
+--netlist names one outright. With no kicad-cli, or an export that fails,
+the checks see no netlist and say so (no_netlist), and the summary's
+`netlist` entry says why.
+
 --strict (U2, codex C7 - release contexts): every APPLICABLE check must run;
 a missing input is a `skipped_error` coverage failure and the summary status
 becomes "error" ("could not verify"), never a pass. Applicability is DECLARED
@@ -109,7 +118,7 @@ import statelib  # noqa: E402
 SCRIPT = "verify_all"
 CHECKS_D = HERE / "checks.d"
 # the inputs a check may need; verify_all resolves each from the CLI
-INPUT_KEYS = ("constraints", "decoupling", "parts")
+INPUT_KEYS = ("constraints", "decoupling", "parts", "netlist")
 
 # Each check: how to invoke it and which inputs it requires. `report` is the
 # per-check JSON filename under the reports dir. New checks register through
@@ -312,6 +321,47 @@ def run_one(check: dict, inputs: dict, reports_dir: Path,
     }
 
 
+def board_netlist(pcb: Path, reports_dir: Path, given: str | None = None
+                  ) -> tuple[Path | None, dict | None]:
+    """The netlist to hand the netlist checks, and a note for the summary.
+    A given one wins; a .net the checks find beside the board themselves
+    (check_straps.find_netlist) is left to them (None, None). Otherwise the
+    board's own <stem>.kicad_sch is exported once into <reports
+    dir>/netlist/, so a schematic-only board is still judged (#885). No
+    schematic, no kicad-cli or a failed export returns None with the
+    reason: the checks then say there is no netlist."""
+    if given:
+        if not Path(given).is_file():
+            raise checklib.CheckError(f"netlist not found: {given}")
+        return Path(given), {"source": "given", "path": str(given)}
+    from check_straps import find_netlist  # noqa: PLC0415
+    if find_netlist(pcb) is not None:
+        return None, None
+    sch = pcb.with_suffix(".kicad_sch")
+    if not sch.is_file():
+        return None, {"source": None,
+                      "reason": f"no {pcb.with_suffix('.net').name} or "
+                                f"{sch.name} beside the board"}
+    from lib import env  # noqa: PLC0415
+    import kc  # noqa: PLC0415  (deferred: only this path needs kicad-cli)
+    try:
+        cli = env.find_kicad_cli()
+    except env.EnvError as exc:
+        return None, {"source": None, "reason": f"kicad-cli: {exc}"}
+    if cli is None:
+        return None, {"source": None,
+                      "reason": f"no kicad-cli on this host to export "
+                                f"{sch.name}"}
+    out = Path(reports_dir) / "netlist" / f"{pcb.stem}.net"
+    out.unlink(missing_ok=True)
+    r = kc.export_netlist(cli, sch, out)
+    if r.get("status") != "pass" or not out.is_file():
+        return None, {"source": None,
+                      "reason": f"netlist export from {sch.name} failed: "
+                                f"{str(r.get('error') or r)[:300]}"}
+    return out, {"source": "exported", "from": sch.name, "path": str(out)}
+
+
 def constraints_drift(constraints_path: str | None) -> dict | None:
     """Twin-sidecar preflight (T6, ladder row 154): the pipeline keeps
     constraints.json in BOTH <ws>/architecture/ and <ws>/kicad/; checks run
@@ -484,6 +534,9 @@ def run(argv=None):
     ap.add_argument("--reports-dir", help="dir for per-check + summary JSON "
                     "(default: <workspace>/reports/checks, or "
                     "<pcb dir>/reports/checks outside a workspace)")
+    ap.add_argument("--netlist", help="kicadsexpr netlist for the netlist "
+                    "checks (default: <stem>.net beside the board, else one "
+                    "exported from <stem>.kicad_sch into the reports dir)")
     ap.add_argument("--out", help="write the summary here (also to reports dir)")
     ap.add_argument("--jobs", type=int, default=8, help="max parallel checks")
     ap.add_argument("--strict", action="store_true",
@@ -504,6 +557,8 @@ def run(argv=None):
     inputs = {"pcb": str(pcb), "constraints": args.constraints,
               "decoupling": args.decoupling,
               "parts": str(parts) if parts.is_dir() else None}
+    netlist, netlist_note = board_netlist(pcb, reports_dir, args.netlist)
+    inputs["netlist"] = str(netlist) if netlist else None
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) \
             as ex:
@@ -513,6 +568,8 @@ def run(argv=None):
     # keep CHECKS order (ThreadPoolExecutor.map preserves input order)
     summary = merge(pcb, results, na, args.strict)
     checklib.stamp(summary, pcb)
+    if netlist_note:
+        summary["netlist"] = netlist_note
     drift = constraints_drift(args.constraints)
     if drift is not None:
         summary["violations"].append(drift)
