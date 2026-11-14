@@ -52,7 +52,7 @@ PINS = {
     "digits-v1": "9e0da1682142b785a75e4273ec6e0e465f2ddb22326fdfb0689ef94cf9aa0241",
     "hwde-led-test": "703f061b4277e434bddaa0acb388153ce3232eb6bd5e2908b44f78cdf7ae2b4f",
     "lite-main": "2ed9994f7c202a3905a1532b01a4d0faffdb892942bef838166fbd3aa4e2a2ec",
-    "minuet-v3": "28062de8e6609e77331b0a2df54a0f37039009159e11d8d492fce5c624d0fc70",
+    "minuet-v3": "8525f974e733328ec802cebbdc10f3e62ee40eb2509208be65d6fa891b6e63b3",
     "oasis-v0-2": "b419ac9867ed244b9c61d8baf2b9ef6ec67e360692a82b47243bc60b8fd6b134",
     "ultra-front": "bddfc3abdc82eec9cfdd6da10a1773b658e7b9fae2f54729f2f45aa20990159a",
 }

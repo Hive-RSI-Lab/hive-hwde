@@ -38,7 +38,9 @@ what pcb-flow's checks do with the first revision. Written by
 | minuet-3: board areas over 50 C at 4 A per motor phase | TH (copper area under a power IC) | caught_with_constraints | check_thermal estimates rise from the power and copper constraints.json gives; on the foreign board it has no input. v4's 4-layer pours are the fix. |
 | minuet-4: ESP32-C3 GPIO6 (MTCK) pulled up by the ROM at reset turns the LED strip on before firmware runs | FW-HW (reset-state pull on a load enable) | caught on rev A, gone on rev B (`check_straps` reset_pull_offboard) | check_straps reads the C3's reset_pulls (MTMS/MTDI/MTCK pull-ups) from reset_states.yaml: v3's GPIO6 leaves the board on the EXPANSION header J4.5 with only the chip's pull-up, so the light accessory's strip sees it high from reset. It also warns on GPIO5 (J4.6), bare the same way. v4 (ESP32-C6) puts R13 100 k to 3V3 on GPIO6, a pull the accessory is designed for, and the finding is gone. On a board whose load is on the board itself, load_on_at_reset names the gate or enable instead. |
 | minuet-5: an access-point WiFi connect resets the ESP32-C3 at full TX power | FW (radio power) | not_static |  |
+| minuet-6: fan motor connector J8 has no A/B/C phase labels on silk | DFA (connector pin labels) | caught on rev A, gone on rev B (`check_silk` pin_labels_missing) | J8's three pins carry /fan/A, /fan/B and /fan/C; check_silk reads a connector whose nets name three motor phases (A/B/C or U/V/W, bare or after PH/OUT/MOTOR) and looks for silk within 5 mm of its pads that names each one. On J8 only its refdes and two capacitors' are there; v4 labels the phases and the finding is gone. Two-pin power inputs are not judged: which pin is + is a polarity mark, not a pin label. |
+| minuet-7: IR receiver U1's 3D model raised 17 mm where the built standoff is 16 mm | MECH (3D model height) | missed | a stated mounting height (constraints or a mech block) for raised THT parts (#980) |
 
 ## Count
 
-13 defects: 10 caught, 1 caught_with_constraints, 1 missed, 1 not_static.
+15 defects: 11 caught, 1 caught_with_constraints, 2 missed, 1 not_static.

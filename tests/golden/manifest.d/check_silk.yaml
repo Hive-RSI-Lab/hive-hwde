@@ -1,0 +1,14 @@
+# Seeded fault for check_silk pin_labels_missing (errata issue #886).
+mutants:
+  pin-labels-missing:
+    board: blinky2
+    script: mutations/pin_labels_missing.py
+    check: check_silk
+    defect: >-
+      J2 carries three motor phases (/PH_A, /PH_B, /PH_C) and no silk text
+      near it names its pins, so the motor cable can go on in any order
+      (minuet v3 J8, errata issue #886)
+    expect:
+      kind: pin_labels_missing
+      ref: J2
+      pos: [142.9344, 110.5]   # J2's pad centroid

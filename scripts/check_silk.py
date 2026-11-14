@@ -26,6 +26,12 @@ One concern: silkscreen that will not assemble or read.
    on silk (hidden, or on a non-silk layer) is listed in the report's
    `refdes_off_silk` fact - not a violation, so the status is unchanged -
    so the assembly drawing knows which parts carry no silk label.
+ - PIN LABELS (#886): a connector (J/CN/P/X ref) whose pins carry three or
+   more motor-phase nets (A/B/C or U/V/W, bare or after PH/PHASE/OUT/MOTOR)
+   with no silk text within LABEL_MM of its pads naming each phase is
+   pin_labels_missing (warning, one per part): the cable goes on in any
+   order and the motor runs backwards or not at all (minuet v3 J8, the fan
+   motor's three phases, no A/B/C on the board).
 
 Silk geometry is parsed here (not in geom.py, which is copper-only): top-level
 gr_text / gr_line / gr_poly / gr_rect / gr_circle / gr_arc on *.SilkS, plus the
@@ -41,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -63,6 +70,12 @@ MIN_TEXT_H = 0.8      # legible silk text height floor (mm)
 MIN_TEXT_TH = 0.12    # legible silk stroke thickness floor (mm)
 MISATTR_OWN_MM = 1.0  # refdes farther than this from its own pads: suspect
 MISATTR_NEAR_MM = 1.0  # ... and this close to ANOTHER part's pads: flagged
+LABEL_MM = 5.0        # a pin label this near a connector's pads names them
+CONNECTOR_REF = re.compile(r"^(J|CN|P|X)\d", re.I)
+# a motor phase's net, by its last path segment: A, PH_B, PHASE-C, OUT_U,
+# MOTOR_W ... -> the phase letter
+PHASE_NET = re.compile(r"^(?:(?:PH|PHASE|OUT|MOTOR|MOT|M)[_-]?)?([ABCUVW])$",
+                       re.I)
 
 
 # ------------------------------------------------------------ s-expr helpers
@@ -525,6 +538,45 @@ def run_checks(bg: geom.BoardGeom, silks: list[Silk]):
     return violations
 
 
+def _phase(net: str | None) -> str | None:
+    m = PHASE_NET.match((net or "").rsplit("/", 1)[-1])
+    return m.group(1).upper() if m else None
+
+
+def check_pin_labels(bg: geom.BoardGeom, silks: list[Silk]) -> list[dict]:
+    """pin_labels_missing: a multi-phase connector with no phase names on
+    silk near its pads (see module docstring)."""
+    out = []
+    texts = [s for s in silks if s.kind == "text" and s.text]
+    for ref in sorted({p.ref for p in bg.pads_of()
+                       if p.ref and CONNECTOR_REF.match(p.ref)}):
+        pads = bg.pads_of(ref=ref)
+        phases = {_phase(p.net): p.net for p in pads if _phase(p.net)}
+        if len(phases) < 3:
+            continue
+        ext = unary_union([p.poly for p in pads])
+        tokens = set()
+        for s in texts:
+            if s.geom.distance(ext) <= LABEL_MM:
+                tokens.update(t.upper() for t in re.split(r"[^A-Za-z0-9]+",
+                                                          s.text) if t)
+        want = sorted(phases)
+        # each phase named on its own (A B C), or run together (ABC)
+        if all(ph in tokens for ph in want) or any(
+                len(t) == len(want) and sorted(t) == want for t in tokens):
+            continue
+        c = ext.centroid
+        nets = [phases[ph] for ph in want]
+        out.append(violation(
+            SCRIPT, "warning", (c.x, c.y), None, None, [ref],
+            f"{ref} carries {len(want)} motor phases ({', '.join(nets)}) but "
+            f"no silk text within {LABEL_MM} mm names its pins "
+            f"({'/'.join(want)}): the cable can go on in any order. Print "
+            "the phase names beside the pins", SCRIPT,
+            kind="pin_labels_missing", phases=want, nets=nets))
+    return out
+
+
 # ------------------------------------------------------------ CLI
 
 def run(argv=None):
@@ -539,6 +591,7 @@ def run(argv=None):
     silks = parse_silk(root)
     violations = run_checks(bg, silks)
     violations.extend(check_attribution(bg, root))
+    violations.extend(check_pin_labels(bg, silks))
 
     off_silk = refdes_off_silk(root)
     payload = checklib.report(
