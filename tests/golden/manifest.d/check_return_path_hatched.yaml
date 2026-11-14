@@ -1,0 +1,15 @@
+# Seeded fault for check_return_path on hatched planes (#870,
+# docs/failure-modes.yaml EMC-01).
+mutants:
+  hatched-plane-split:
+    board: rf4
+    script: mutations/hatched_plane_split.py
+    check: check_return_path
+    defect: >-
+      rf4's In1 GND plane hatched (as on a flex tail) with a slot cut under
+      RF_FEED; the hatch must read as solid and the slot as a void
+    expect:
+      kind: corridor_void
+      net: /RF_FEED
+      layer: In1.Cu
+      region: {x: [133.0, 134.4], y: [116.5, 127.5]}

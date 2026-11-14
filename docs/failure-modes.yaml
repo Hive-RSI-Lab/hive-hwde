@@ -1464,7 +1464,8 @@ modes:
     rule: corridor_void
     level: L2
   target_level: L2
-  gap: 2L coplanar FP; short fan-in land misread (T#235)
+  gap: 2L coplanar FP; short fan-in land misread (T#235); hatch read as
+    solid copper (cell pitch, not its impedance; #870)
   hit_on:
   - esp32c3-node
   - usbbuck4
