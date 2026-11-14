@@ -1568,6 +1568,13 @@ def check_placement(pcb: Path, cpl: Path, parts: Path | None,
             CHECK, "warning", None, None, None, refs,
             f"{len(refs)} ball grid part(s): {rep['footprint_basis']['note']}",
             SOURCE, kind="cpl_footprint_basis"))
+    if rep.get("pin_numbers_differ"):
+        refs = rep["pin_numbers_differ"]["refs"]
+        vios.append(checklib.violation(
+            CHECK, "warning", None, None, None, refs,
+            f"{len(refs)} part(s) ({', '.join(refs)}): "
+            f"{rep['pin_numbers_differ']['note']}",
+            SOURCE, kind="cpl_pin_map"))
     if rep.get("silk_mark_missing"):
         refs = rep["silk_mark_missing"]["refs"]
         vios.append(checklib.violation(

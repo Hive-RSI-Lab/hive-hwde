@@ -33,7 +33,13 @@ per LCSC number) and fits it onto the board footprint:
             pad number, and a 180-degree turn is never accepted for it.
   no data   No LCSC number, no cached or fetchable model, fewer than two
             shared pad numbers or no turn that fits is a FAILURE, never a
-            pass - `no_model` or `no_fit`. A model fetch that errored (network, HTTP status) is `fetch_failed`,
+            pass - `no_model` or `no_fit`. One exception (#1024): a part of
+            three or more pads whose board pad numbers are the model's in
+            another order, and whose pads land by geometry, is
+            `pin_numbers_differ`, a warning: JLC places by geometry, so the
+            CPL is judged at the geometric fit, and the pin map is named for
+            a person to check (oasis v0.3 Q1/Q3, a "pinswapped" SOT-23). A
+            CPL off every geometric fit is still `wrong_rotation`. A model fetch that errored (network, HTTP status) is `fetch_failed`,
             never `no_model`: it says nothing about the part or its pin 1.
             One exception: a two-pad part that is not polarised, keyed or a
             switch is checked against the shape every LCSC two-pad model has
@@ -147,6 +153,13 @@ FAIL_VERDICTS = ("wrong_rotation", "wrong_polarity", "no_model", "no_fit",
                  "fetch_failed", "wrong_offset")
 # Not in FAIL_VERDICTS, and not "ok": the CPL meets a convention, not a model.
 FOOTPRINT_MATCH = "footprint_match"
+# Not a failure either: the pads land, but by geometry, not by number (#1024).
+PIN_MAP = "pin_numbers_differ"
+PIN_MAP_NOTE = (
+    "the LCSC model's pads land on the board's only with their numbers "
+    "permuted: JLC places by pad geometry, so the CPL rotation given is the "
+    "geometric fit, but check the symbol-to-footprint pin map (which pin is "
+    "on which pad) against the part's datasheet before ordering")
 BOTTOM_PREVIEW_NOTE = (
     "bottom-side rotations follow (180 - kicad + correction), from two "
     "community exporters and the geometry, not from a JLC statement: check "
@@ -610,6 +623,33 @@ def analyse(fp: Footprint, model) -> dict:
                                                rot(m1.x, m1.y, c)[1] - k1.y))
         if corr:
             out["basis"] = "pad geometry (a switch's pin numbers carry no order)"
+    if not corr and not polar and len(kpads) >= 3 and Counter(
+            _pin_number(p.number) for p in model.pads) == Counter(
+            _pin_number(p.number) for p in kpads):
+        # The same pin numbers, drawn in another order (oasis Q1/Q3: a
+        # SOT-23 "pinswapped" footprint numbered to its symbol, pad 2 alone
+        # where the part's drain, pin 3, is). JLC places by pad geometry,
+        # so a geometric fit is where the part goes; whether that permuted
+        # pin map is meant is the schematic's question, not the CPL's.
+        geo = _geometry_fit(model.pads, kpads, tol)
+        # ...but a land pattern that is the part's mirror image (a bottom
+        # footprint stored unflipped) also lands by geometry: that one is
+        # no placement at all, and stays no_fit.
+        # (half the fit tolerance: at a full one a three-pad SOT-23's
+        # mirror "fits" a permuted one, 0.9 mm out at 0.95)
+        mirrored = [c for c, err in _fit(
+            {n: (-x, y) for n, (x, y) in _centres(
+                model.pads, lambda p: _pin_number(p.number)).items()},
+            _centres(kpads, lambda p: _pin_number(p.number)), tol)
+            if err <= tol / 2]
+        if geo and not mirrored:
+            out.update(verdict=PIN_MAP, corrections=geo,
+                       basis="pad geometry (pad numbers differ)",
+                       why="the LCSC model's pads land on the board "
+                           "footprint's only by geometry: the board's pad "
+                           "numbers are the part's in another order, so "
+                           "check the symbol-to-footprint pin map")
+            return out
     if not corr:
         out.update(verdict="no_fit",
                    why="the LCSC model's pads do not land on the board "
@@ -688,7 +728,7 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
            "model_package": model.package if model else None,
            "board_rot": round(fp.rot % 360.0, 3),
            "cpl_rot": cpl["rot"], **a}
-    if a["verdict"] != "ok":
+    if a["verdict"] not in ("ok", PIN_MAP):
         if "corrections" in a:
             row["expected_rot"] = [cpl_rotation(fp.side, fp.rot, c)
                                    for c in a["corrections"]]
@@ -704,6 +744,12 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
             row["why"] = (f"CPL rotation {cpl['rot']:g} follows the pad numbers, "
                           f"which puts the LCSC model's cathode/+ pin on the "
                           f"board's anode/- pad; it needs {want[0]:g}")
+        elif a["verdict"] == PIN_MAP:
+            row["verdict"] = "wrong_rotation"
+            row["why"] = (f"CPL rotation {cpl['rot']:g} does not land the LCSC "
+                          f"model's pads on the board's at all; by pad "
+                          f"geometry it needs {want[0]:g} (and the pad numbers "
+                          f"differ from the part's: check the pin map)")
         else:
             row["verdict"] = "wrong_rotation"
             row["why"] = (f"CPL rotation {cpl['rot']:g} puts pin 1 off pad 1; "
@@ -713,7 +759,7 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
     row["offset_mm"] = round(math.hypot(cpl["x"] - fp.x - dx,
                                         cpl["y"] - fp.y - dy), 3)
     row["offset_limit_mm"] = round(offset_limit_mm(fp), 3)
-    if row["verdict"] == "ok" and row["offset_limit_mm"] < OFFSET_WARN_MM \
+    if row["verdict"] in ("ok", PIN_MAP) and row["offset_limit_mm"] < OFFSET_WARN_MM \
             and row["offset_mm"] > row["offset_limit_mm"]:
         row["verdict"] = "wrong_offset"
         row["why"] = (f"the CPL position is {row['offset_mm']} mm off where the "
@@ -1040,6 +1086,7 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
     below = [r["ref"] for r in rows if r.get("side") == "bottom"
              and r["verdict"] not in FAIL_VERDICTS and not _either_way(r)]
     by_convention = [r["ref"] for r in rows if r["verdict"] == FOOTPRINT_MATCH]
+    pin_map = [r["ref"] for r in rows if r["verdict"] == PIN_MAP]
     no_mark = [r["ref"] for r in rows if r.get("silk_mark") == "none"]
     wrong_mark = [r["ref"] for r in rows if r.get("silk_mark") == "wrong"]
     led = record_footprints(pcb, rows, lcsc)
@@ -1052,12 +1099,14 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                                if below else None),
             "footprint_basis": ({"refs": by_convention, "note": FOOTPRINT_BASIS_NOTE}
                                 if by_convention else None),
+            "pin_numbers_differ": ({"refs": pin_map, "note": PIN_MAP_NOTE}
+                                   if pin_map else None),
             "silk_mark_wrong": wrong_mark,
             "silk_mark_missing": ({"refs": no_mark, "note": NO_SILK_MARK_NOTE}
                                   if no_mark else None),
             "offset_warnings": [r["ref"] for r in rows
                                 if r.get("offset_mm", 0) > r.get("offset_limit_mm", OFFSET_WARN_MM)
-                                and r["verdict"] == "ok"],
+                                and r["verdict"] in ("ok", PIN_MAP)],
             "fetch_failed": [r["ref"] for r in rows
                              if r["verdict"] == "fetch_failed"],
             "rate_limited": easyeda.rate_limited(),
@@ -1143,7 +1192,7 @@ def merge_visual(parts: list[dict], visual: dict | None) -> list[dict]:
                 r["agreement"] = "unclear"
             else:
                 vis_ok = all(m in (VISUAL_OK, "n/a", None) for m in marks)
-                scr_ok = r["verdict"] in ("ok", FOOTPRINT_MATCH)
+                scr_ok = r["verdict"] in ("ok", FOOTPRINT_MATCH, PIN_MAP)
                 r["agreement"] = "agree" if vis_ok == scr_ok else "disagree"
         out.append(r)
     return out
