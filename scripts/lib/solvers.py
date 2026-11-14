@@ -263,12 +263,17 @@ class Run:
 def run(tool: str, args: list[str], cwd: Path | str | None = None,
         timeout: float = 1800, stdin: str | None = None,
         root: Path | None = None) -> Run:
-    argv, env = command(tool, args, root)
     try:
-        p = subprocess.run(argv, cwd=cwd, env=env, input=stdin, text=True,
-                           capture_output=True, timeout=timeout)
+        from . import loadlib
+    except ImportError:
+        import loadlib
+    argv, env = command(tool, args, root)
+    try:   # `timeout` stretches on a busy machine, never for a stuck solver (#970)
+        p = loadlib.run(argv, cwd=cwd, env=env, input=stdin, text=True,
+                        capture_output=True, timeout=timeout)
     except subprocess.TimeoutExpired as e:
-        raise SolverError(f"{tool} ran past {timeout:.0f} s") from e
+        raise SolverError(f"{tool} ran past {e.timeout:.0f} s "
+                          f"(limit {timeout:.0f} s)") from e
     return Run(tool, argv, p.returncode, p.stdout, p.stderr)
 
 

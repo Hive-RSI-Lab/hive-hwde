@@ -9,7 +9,6 @@ re-recording fails tests/test_kicad_pin.py, so the tests can't go quiet (#795).
 import functools
 import os
 import shutil
-import signal
 import sys
 from contextlib import contextmanager
 from pathlib import Path
@@ -194,23 +193,28 @@ EM = {
 
 # What one test may take before it fails by name, seconds: a hang then costs its
 # limit and the rest of the run still reports, where it used to look like a suite
-# that never ends. About twice the slowest test of each tier, under load.
+# that never ends. About twice the slowest test of each tier on a quiet box; on a
+# busy one the limit stretches (loadlib, up to 4x) while the test is still getting
+# CPU, so the tower's load is not a red (#970) and a stuck test still is.
 TEST_LIMIT = {"em": 2700, "slow": 900}
 
 
 @contextmanager
-def time_limit(seconds: float, what: str = "this test"):
-    """Fail `what` after `seconds`. The exception lands in the main thread, and
-    subprocess.run kills its child on the way out, so no solver is left running."""
-    def expired(signum, frame):
-        pytest.fail(f"{what} ran past its limit of {seconds:g} s", pytrace=True)
-    old = signal.signal(signal.SIGALRM, expired)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    try:
+def time_limit(seconds: float, what: str = "this test", **lim_kw):
+    """Fail `what` after `seconds`, stretched for CPU pressure while the test's
+    process tree still uses CPU (loadlib.Limit). The exception lands in the main
+    thread, and subprocess.run kills its child on the way out, so no solver is
+    left running."""
+    lib = str(Path(__file__).resolve().parents[1] / "scripts" / "lib")
+    if lib not in sys.path:
+        sys.path.insert(0, lib)
+    import loadlib
+
+    def expired(lim):
+        pytest.fail(f"{what} ran past its limit of {seconds:g} s "
+                    f"({lim.why}, after {lim.elapsed():.0f} s)", pytrace=True)
+    with loadlib.alarm(seconds, expired, **lim_kw):
         yield
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old)
 
 
 @pytest.fixture(autouse=True)
