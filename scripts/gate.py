@@ -290,11 +290,13 @@ def dfm_vendor(board: Path) -> tuple[str | None, str]:
     else the fab of the stackups.yaml build the board's (stackup) block is,
     else (None, "default"): JLC's, the pipeline's default. JLC, chosen or
     matched, is None too, so its run is the default one."""
-    import dfm_check  # noqa: F401,E402  (puts scripts/lib on sys.path)
     from lib import ledgerlib
     vid, src = ledgerlib.chosen_vendor(board.parent.parent), "state.json"
     if not vid:
         # top-level names, as check_vias imports geom: one GeomError class
+        lib = str(Path(__file__).resolve().parent / "lib")
+        if lib not in sys.path:
+            sys.path.insert(0, lib)
         import geom  # noqa: E402
         import viastub  # noqa: E402
         try:
