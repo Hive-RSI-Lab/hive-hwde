@@ -4,7 +4,8 @@ Read-only. Emits the S2 normalized-violation schema for placement LEGALITY
 (courtyard overlaps, outline containment, declared-edge compliance, keepouts,
 missing courtyards, connector mating - lib/matinglib.py: a mating connector's
 mouth must face and reach a board edge with its insertion zone clear, and a
-vertical one needs finger room) plus decoupler DISTANCE violations (reusing S4
+vertical one needs finger room; an edge connector no family knows is a
+warning, mating_edge_unjudged, which the release gate makes an error, #954) plus decoupler DISTANCE violations (reusing S4
 check_decoupling's association logic, filtered to kind=decoupler_distance -
 loop/via inductance stays P8's job because it needs routing), and a `metrics`
 facts block for the annealer/agent:
@@ -73,7 +74,7 @@ PLACE_FAMILIES = {
     "edges": ("edge_violation",),
     "keepouts": ("keepout_violation",),
     "decoupler_distance": ("decoupler_distance",),
-    "mating": matinglib.KINDS,
+    "mating": matinglib.KINDS + ("mating_edge_unjudged",),
 }
 
 
@@ -100,6 +101,23 @@ def coverage_matrix(violations: list[dict], have_constraints: bool,
     }
 
 
+def edge_unjudged(model, mating_facts: list[dict]) -> list[dict]:
+    """A warning per edge connector no family knows (#954): the release gate
+    fails on these (verify_all's mating_edge_unjudged, #911), but by then the
+    board is routed; here turning the part is still cheap. Only a warning, so
+    placement is not held up on a family row still to come."""
+    return [checklib.violation(
+        "place", "warning", e["pos"], None, None, [e["ref"]],
+        f"{e['ref']} ({e['footprint']}) sits {e['edge_gap_mm']} mm from the "
+        "board edge but no connector_mating.yaml family knows it, so nothing "
+        "shows its mating face points off the board - check its drawing and "
+        "turn it now if it faces in; the release gate fails on it until a "
+        "family row, a placement.mates entry or a waiver covers it",
+        matinglib.SOURCE, kind="mating_edge_unjudged",
+        footprint=e["footprint"], edge_gap_mm=e["edge_gap_mm"])
+        for e in matinglib.edge_unjudged(model, mating_facts)]
+
+
 def collect(pcb: Path, constraints_path: Path | None,
             decoupling_path: Path | None, cell_mm: float):
     model = placelib.PlaceModel(pcb)
@@ -110,8 +128,13 @@ def collect(pcb: Path, constraints_path: Path | None,
             if decoupling_path else {})
 
     violations = placelib.legality_violations(model, placement)
-    mating_v, mating_facts = matinglib.violations(model, pcb, placement)
+    # the board's parts dir, as check_mating reads it, so a connector known
+    # by its LCSC category or extraction is judged the same here (#953)
+    parts = pcb.parent.parent / "parts"
+    mating_v, mating_facts = matinglib.violations(
+        model, pcb, placement, parts if parts.is_dir() else None)
     violations.extend(mating_v)
+    violations.extend(edge_unjudged(model, mating_facts))
     decoupling_facts: list[dict] = []
     if decoupling_path:
         import check_decoupling

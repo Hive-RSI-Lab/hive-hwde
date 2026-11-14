@@ -698,6 +698,26 @@ def _reversed(ref, fam, c, u, span, contacts=None) -> dict:
         model_span_mm=[checklib.rnd(v, 2) for v in span])
 
 
+def edge_unjudged(model, facts: list[dict]) -> list[dict]:
+    """The J/P/CN parts within EDGE_NEAR_MM of the outline that no family
+    judged (in `facts`, from violations()): nothing shows which way they mate.
+    check_mating lists them (an error at release, #911) and the place gate
+    warns on them while turning one is still cheap (#954)."""
+    judged = {f["ref"] for f in facts}
+    out = []
+    for r in sorted(model.footprints):
+        if not CONNECTOR_REF.match(r) or r in judged:
+            continue
+        f = model.footprints[r]
+        gap = edge_gap_mm(model, f)
+        if gap is not None and gap <= EDGE_NEAR_MM:
+            c = f.center_abs()
+            out.append({"ref": r, "footprint": _name(f.fpid),
+                        "pos": [checklib.rnd(c[0]), checklib.rnd(c[1])],
+                        "edge_gap_mm": checklib.rnd(gap, 2)})
+    return out
+
+
 def violations(model, pcb: Path | None = None,
                placement: dict | None = None,
                parts: Path | None = None) -> tuple[list[dict], list[dict]]:
