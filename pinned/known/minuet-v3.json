@@ -6038,7 +6038,10 @@
    "refs": [
     "J8"
    ],
-   "pos": null,
+   "pos": [
+    107.7,
+    56.321
+   ],
    "verdict": "real",
    "reason": "erratum: the fan motor connector carries no A/B/C phase labels on the silkscreen",
    "source": "https://github.com/brown-studios/minuet/blob/1e43aa3df01b33522db23f4b2139f89b5689da99/hardware/minuet/v3/design-and-errata.md"

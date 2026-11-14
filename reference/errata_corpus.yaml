@@ -165,3 +165,30 @@ boards:
     source_quote: "The microcontroller spontaneously resets ... Reducing the WiFi output power to 19 dB resolves the issue"
     fault_class: FW (radio power)
     verdict: not_static
+  - id: minuet-6
+    summary: fan motor connector J8 has no A/B/C phase labels on silk
+    source_quote: "Should add motor phase labels to the silkscreen for clarity"
+    fault_class: DFA (connector pin labels)
+    verdict: caught
+    catch: {script: check_silk, kind: pin_labels_missing, refs: [J8]}
+    note: >-
+      J8's three pins carry /fan/A, /fan/B and /fan/C; check_silk reads a
+      connector whose nets name three motor phases (A/B/C or U/V/W, bare or
+      after PH/OUT/MOTOR) and looks for silk within 5 mm of its pads that
+      names each one. On J8 only its refdes and two capacitors' are there;
+      v4 labels the phases and the finding is gone. Two-pin power inputs are
+      not judged: which pin is + is a polarity mark, not a pin label.
+  - id: minuet-7
+    summary: IR receiver U1's 3D model raised 17 mm where the built standoff is 16 mm
+    source_quote: "The 3D model for the IR receiver should have a 16 mm standoff, currently it's set to 17 mm"
+    fault_class: MECH (3D model height)
+    verdict: missed
+    note: >-
+      U1's (model) is offset 20 mm in Z (v4: 19). Placed, the upstream STEP
+      (library/TSOP39238/82827TVCastnonSMD.stp, not in the KiCad files the
+      corpus reads) has its body's underside 16.0 mm above the board and its
+      lead tips 1.4 mm past the bottom: a part that fits, and no reading of
+      the model gives the 17 mm the designer names. What is wrong is the
+      model against the build (a 16 mm printed standoff, the leads' reach),
+      which no file of the board records.
+    follow_up: a stated mounting height (constraints or a mech block) for raised THT parts (#980)

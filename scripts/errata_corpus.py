@@ -17,9 +17,9 @@ is fetched into this repo. Checks run here (RUNNERS), each with an empty
 constraints file, what hwde reads before anyone has written one:
 netlist_audit on the schematic, check_mate_pins and check_current on the
 board, check_straps on the board with the netlist kicad-cli exports from the
-schematic, check_connector_fit on the board (no parts/), check_bom_sync on
-the board with --live (the package of each LCSC part comes from JLC's
-record, as nothing in the foreign tree holds it). A
+schematic, check_connector_fit and check_silk on the board (no parts/),
+check_bom_sync on the board with --live (the package of each LCSC part
+comes from JLC's record, as nothing in the foreign tree holds it). A
 catch for another script is reported as not run.
 """
 from __future__ import annotations
@@ -105,6 +105,10 @@ def _check_connector_fit(b: dict, rev: str, repo: Path, empty: Path) -> list[str
     return ["check_connector_fit.py", "--pcb", str(repo / b[rev]["pcb"])]
 
 
+def _check_silk(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_silk.py", "--pcb", str(repo / b[rev]["pcb"])]
+
+
 def _check_bom_sync(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
     return ["check_bom_sync.py", "--pcb", str(repo / b[rev]["pcb"]), "--live"]
 
@@ -130,7 +134,8 @@ def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
 RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
            "check_current": _check_current, "check_straps": _check_straps,
            "check_bom_sync": _check_bom_sync,
-           "check_connector_fit": _check_connector_fit}
+           "check_connector_fit": _check_connector_fit,
+           "check_silk": _check_silk}
 
 
 def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
