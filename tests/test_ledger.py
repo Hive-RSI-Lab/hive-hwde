@@ -371,13 +371,18 @@ def test_cpl_verify_records_footprints(ws, tmp_path):
     pcb.write_text("(kicad_pcb)", encoding="utf-8")
     rows = [{"ref": "U8", "verdict": "ok", "basis": "pad number"},
             {"ref": "J1", "verdict": "no_fit", "why": "pads miss"},
-            {"ref": "C1", "verdict": "no_model", "why": "no model"}]
+            {"ref": "C1", "verdict": "no_model", "why": "no model"},
+            # a stand-in for a missing model verifies no footprint
+            {"ref": "C2", "verdict": "ok", "basis": cpl_verify.TWO_PAD_BASIS,
+             "why": "no LCSC model"}]
     assert cpl_verify.record_footprints(
-        pcb, rows, {"U8": "C84681", "J1": "C5184243", "C1": "C1525"})
+        pcb, rows, {"U8": "C84681", "J1": "C5184243", "C1": "C1525",
+                    "C2": "C1525"})
     f = ledgerlib.load(ws)["facts"]
     assert f["U8/footprint"]["status"] == "verified"
     assert f["J1/footprint"]["status"] == "failed"
     assert f["C1/footprint"]["status"] == "unknown"
+    assert f["C2/footprint"]["status"] == "unknown"
 
 
 # ------------------------------------------------- orphans: facts of gone parts

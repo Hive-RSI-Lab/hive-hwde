@@ -1839,3 +1839,91 @@ def test_a_shipped_package_without_its_models_is_not_written_into(
     parts = tmp_path / "board" / "parts.json"
     assert dfm_check._placement_cache(cpl, parts, False) == (
         tmp_path / "board" / "easyeda")
+
+
+# --------------------------------- two-pad part with no model (oasis v0.2 L3)
+
+def _two_pad(ref="L3", fpid="Inductor_SMD:L_Vishay_IHLP-2020", rot=180.0,
+             side="top", g=4.852):
+    pads = [cv.KPad("1", -g / 2, 0, 1.5, 2.0), cv.KPad("2", g / 2, 0, 1.5, 2.0)]
+    return cv.Footprint(ref, fpid, 10.0, 10.0, rot, side, pads)
+
+
+def test_two_pad_part_with_no_model_is_checked_on_its_axis():
+    """oasis v0.2's L3: an IHLP inductor EasyEDA has no model for, CPL at
+    the board's 180. It was a false `no_model` failure; either way round is
+    right, as for a modelled 0603."""
+    fp = _two_pad()
+    for rot in (180.0, 0.0):
+        row = _footprint_row(fp, rot)["parts"][0]
+        assert row["verdict"] == "ok", (rot, row)
+        assert row["basis"] == cv.TWO_PAD_BASIS
+    assert cv.two_pad_stand_in(fp) is not None
+
+
+@pytest.mark.parametrize("turn", [90.0, 270.0])
+def test_two_pad_part_with_no_model_still_fails_turned_across(turn):
+    """The real fault the stand-in must still catch: laid across its pads."""
+    rep = _footprint_row(_two_pad(), 180.0 + turn)
+    row = rep["parts"][0]
+    assert row["verdict"] == "wrong_rotation" and rep["failed"] == ["L3"]
+    assert "no LCSC model" in row["why"]
+
+
+def test_two_pad_part_with_no_model_still_fails_off_its_pads():
+    fp = _two_pad("C9", "Capacitor_SMD:C_0402_1005Metric", 0.0, g=1.0)
+    rep = cv.verify(Path("x.kicad_pcb"),
+                    {"C9": {"x": 11.0, "y": 10.0, "rot": 0.0, "layer": "Top"}},
+                    {}, Path("/nonexistent"), fetch=False, fps={"C9": fp})
+    assert rep["parts"][0]["verdict"] == "wrong_offset"
+
+
+@pytest.mark.parametrize("ref,fpid", [
+    ("D5", "Diode_SMD:D_SOD-123"),           # polar: the cathode is not in the shape
+    ("D6", "LED_SMD:LED_0603_1608Metric"),
+    ("J7", "Connector:Conn_01x02"),          # keyed by its ref
+])
+def test_polar_or_keyed_two_pad_part_with_no_model_stays_no_model(ref, fpid):
+    fp = _two_pad(ref, fpid, 0.0)
+    assert cv.two_pad_stand_in(fp) is None
+    assert _footprint_row(fp, 0.0)["parts"][0]["verdict"] == "no_model"
+
+
+def test_offline_two_pad_part_with_an_uncached_lcsc_number_stays_no_model(tmp_path):
+    """One fetch away from the real model: the stand-in waits, as a BGA does."""
+    fp = _two_pad()
+    rep = cv.verify(Path("x.kicad_pcb"), {"L3": {"x": 10.0, "y": 10.0, "rot": 180.0}},
+                    {"L3": "C999999"}, tmp_path, fetch=False, fps={"L3": fp})
+    assert rep["parts"][0]["verdict"] == "no_model"
+
+
+def test_two_pad_part_the_api_has_no_model_for_gets_the_stand_in(tmp_path, monkeypatch):
+    monkeypatch.setattr(easyeda, "get", lambda *a, **k: None)
+    fp = _two_pad()
+    rep = cv.verify(Path("x.kicad_pcb"), {"L3": {"x": 10.0, "y": 10.0, "rot": 180.0}},
+                    {"L3": "C844983"}, tmp_path, fetch=True, fps={"L3": fp})
+    row = rep["parts"][0]
+    assert row["verdict"] == "ok" and row["lcsc"] == "C844983"
+    assert rep["failed"] == []
+
+
+# ------------------------- bottom preview only where the reading matters (C4)
+
+def test_bottom_part_right_either_way_round_needs_no_preview(ws):
+    """oasis v0.2's C4: an unpolarised 0805 on the bottom is right under both
+    bottom-side readings (they differ by 180), so no preview ask. A bottom IC
+    beside it still gets one."""
+    pcb, cache = ws
+    v, rep = _verdicts(pcb, cache, _cpl(C3=90, U3=180))
+    assert v["C3"]["verdict"] == "ok" and v["U3"]["verdict"] == "ok"
+    assert rep["bottom_preview"]["refs"] == ["U3"]
+    v, rep = _verdicts(pcb, cache, _cpl(C3=90, C4=135, C5=90))
+    assert rep["bottom_preview"] is None
+
+
+def test_bottom_polar_two_pad_part_still_asks_for_the_preview(ws):
+    """The LED's two readings put its cathode on opposite pads: it asks."""
+    pcb, cache = ws
+    v, rep = _verdicts(pcb, cache, _cpl(D2=0))
+    assert v["D2"]["verdict"] == "ok"
+    assert rep["bottom_preview"]["refs"] == ["D2"]

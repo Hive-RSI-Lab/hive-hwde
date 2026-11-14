@@ -53,7 +53,12 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            the community exporters' plus the geometry, not JLC's, so any bottom
            part that passes also raises one warning for the run,
            cpl_bottom_preview: confirm them in JLC's order preview
-           (reference/jlc_bottom_cpl.md). A ball grid with no model is checked
+           (reference/jlc_bottom_cpl.md). A part right either way round (an
+           unpolarised two-pad part) is right under both readings and raises
+           none. An unpolarised, unkeyed two-pad part with no model is checked
+           against the shape every LCSC two-pad model has (pads along x,
+           centred): turned across its pads or off them it fails as above,
+           either way along them it passes. A ball grid with no model is checked
            against its footprint's own A1 corner: a turned CPL row is an ERROR
            (cpl_rotation), and a match raises one warning for the run,
            cpl_footprint_basis, because it rests on a convention JLC doesn't
