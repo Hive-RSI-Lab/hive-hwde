@@ -266,6 +266,17 @@ def test_mesh_smoothing_keeps_pins_and_grades():
     assert all(b <= 1.4 * a + 1e-6 for a, b in zip(d, d[1:]))
 
 
+def test_merge_lines_a_feed_wins_over_a_pinned_neighbour():
+    """Between two pinned lines the later is dropped: a port's feed behind a
+    conductor-edge line drove nothing and the run ended in 0/0 (#904)."""
+    assert eb.merge_lines([0, 3], 0.21, pinned=[1.0, 1.1]) == [0, 1.0, 3]
+    assert eb.merge_lines([0, 3], 0.21, pinned=[1.0], first=[1.1]) == [0, 1.1, 3]
+    assert eb.merge_lines([0, 3], 0.21, pinned=[1.2], first=[1.1]) == [0, 1.1, 3]
+    ls = eb.mesh_axis([], [(0.0, 3.0)], -5.0, 8.0, 0.35, 2.0, pinned=[1.0],
+                      edges=[(0.95, 1.2)], min_step=0.21, first=[1.1])
+    assert 1.1 in ls
+
+
 # ---------------------------------------------------------------- readers
 
 def _write_probe(path, phasor, f, t):

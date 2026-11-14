@@ -459,15 +459,13 @@ Three things decided the numbers:
 - **The mesh.** Without #622's clear thirds cells the patch read 2.226 GHz at 2 mm
   and 2.274 at 1 mm. Lines nearer than 0.6 of `fine` merge, because the time step
   follows the least cell: the 1 mm dipole went from about 16e9 to 5e9 cell-steps.
-  The merge can also drop the feed: a pinned line never gives way to another
-  pinned or edge line, so when the feed sits within 0.6 of `fine` of a
-  conductor edge's line, the feed line is the one skipped. The port then
-  drives nothing, its V and I come back exactly 0, and the solve stops with a
-  ZeroDivisionError at the impedance only after the whole run. Seen at
-  `fine` 0.35 and 0.5 mm on a printed antenna whose feed had mesh lines
-  0.23 mm either side; 0.3 mm and finer had a live port. Until it fails up front (#904), keep `fine` at
-  0.3 mm or below near a feed between close edges, and read an all-zero port
-  as this.
+  A feed's line outranks pinned and edge lines in that merge, so a feed
+  within 0.6 of `fine` of a conductor edge's line keeps its line and the edge
+  line gives way. Two feeds that close on one axis can't both stay, so
+  `emantenna` refuses before the run and names the feed that is off the mesh
+  (#904). Before that fix the edge line won, the port drove nothing, its V
+  and I came back exactly 0, and the solve stopped with a ZeroDivisionError
+  only after the whole run.
 - **The record.** Three corner-to-corner trips of the domain after the pulse. A
   run whose last tenth is over 1e-3 of its peak reruns from zero for a length
   extrapolated from its decay. So `converge` starts the finer mesh on the record

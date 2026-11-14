@@ -223,16 +223,22 @@ def extract(pcb, region, parts: dict | None = None, layers: list[str] | None = N
 
 # ================================================================ mesh
 
-def merge_lines(vals, min_step: float, pinned=()) -> list[float]:
+def merge_lines(vals, min_step: float, pinned=(), first=()) -> list[float]:
     """Sorted lines at least min_step apart; a pinned line never moves and
-    wins over an unpinned neighbour."""
-    pin = sorted({round(float(v), 6) for v in pinned})
+    wins over an unpinned neighbour. A `first` line (a port's feed) is pinned
+    and wins over a pinned neighbour too: between two plain pinned lines the
+    later one is dropped, and a feed dropped that way drives nothing."""
+    top = {round(float(v), 6) for v in first}
+    pin = sorted({round(float(v), 6) for v in pinned} | top)
     allv = sorted({round(float(v), 6) for v in vals} | set(pin))
     pset = set(pin)
+
+    def rank(v):
+        return 2 if v in top else 1 if v in pset else 0
     out: list[float] = []
     for v in allv:
         if out and v - out[-1] < min_step:
-            if v in pset and out[-1] not in pset:
+            if rank(v) > rank(out[-1]):
                 out[-1] = v
             continue
         out.append(v)
@@ -280,10 +286,12 @@ def smooth_lines(lines, max_step: float, ratio: float = 1.4) -> list[float]:
     return [round(v, 6) for v in out]
 
 
-def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=(), min_step=None, cu_edges=()) -> list[float]:
+def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=(), min_step=None, cu_edges=(),
+              first=()) -> list[float]:
     """One axis: the fixed lines, uniform `fine` lines inside each fine
     zone (a, b), the domain ends, merged at min_step (default fine/3; pinned
-    lines kept) and smoothed out to `coarse`. `edges` are the (a, b) cells of the thirds
+    lines kept, `first` lines over any other: see merge_lines) and smoothed
+    out to `coarse`. `edges` are the (a, b) cells of the thirds
     rule: a line inside one would put the conductor's edge in a cell of the
     wrong size, and the sheet takes the whole cell it starts in, so nothing
     is added there. `cu_edges` are the conductor edges themselves. Where two
@@ -300,9 +308,10 @@ def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=(), min_
         n = max(1, math.ceil((b - a) / fine))
         vals += [a + (b - a) * i / n for i in range(n + 1)]
     vals = [v for v in vals if lo - 1e-9 <= v <= hi + 1e-9]
-    pins = [p for p in pinned if lo - 1e-9 <= p <= hi + 1e-9]
+    tops = [p for p in first if lo - 1e-9 <= p <= hi + 1e-9]
+    pins = [p for p in pinned if lo - 1e-9 <= p <= hi + 1e-9] + tops
     keep = sorted({round(v, 6) for ab in edges for v in ab if lo - 1e-9 <= v <= hi + 1e-9})
-    ls = merge_lines(vals, min_step or fine / 3, pins + keep)
+    ls = merge_lines(vals, min_step or fine / 3, pins + keep, tops)
 
     def clear(lines):
         pset = {round(p, 6) for p in pins}

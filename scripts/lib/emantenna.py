@@ -359,8 +359,15 @@ def deck(geo: dict, feed, f0: float, fc: float, pattern=(), *, fine: float | Non
     for a in "xy":
         lo, hi = dom[a]
         fixed = [v for v in m.fixed[a] if lo < v < hi]
+        feeds = [pt["xy".index(a)] for pt in feed_pts]
         lines[a] = eb.mesh_axis(fixed, m.zones[a], lo, hi, fine, coarse, m.pinned[a], m.edges[a],
-                                min_step=MERGE * fine, cu_edges=sorted({round(e, 6) for e in cu[a]}))
+                                min_step=MERGE * fine, cu_edges=sorted({round(e, 6) for e in cu[a]}),
+                                first=feeds)
+        # a feed off every line drives nothing: V and I read 0 after the whole run
+        lost = [v for v in feeds if not any(abs(v - q) < 1e-6 for q in lines[a])]
+        if lost:
+            raise ValueError(f"the feed at {a} = {lost[0]:.4f} mm is not on a mesh line at fine "
+                             f"{fine}: another feed sits within {MERGE * fine:.4f} mm of it")
     zfix = sorted(set(round(v, 6) for v in zl))
     zmin, zmax = zlo - out, zhi + out
     zgrow = eb.smooth_lines(eb.merge_lines(zfix + [zmin, zmax], fz / 1.6, zs), coarse)
