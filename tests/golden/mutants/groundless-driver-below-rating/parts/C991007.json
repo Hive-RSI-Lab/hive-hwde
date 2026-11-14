@@ -1,0 +1,29 @@
+{
+  "mpn": "SEEDED-NEG03",
+  "lcsc": "C991007",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "VIN",
+      "type": "input"
+    },
+    {
+      "pin": "2",
+      "name": "GND",
+      "type": "ground"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "VIN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 6,
+      "ref": "GND",
+      "source": "seeded p.1"
+    }
+  ]
+}

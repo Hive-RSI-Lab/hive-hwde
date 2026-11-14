@@ -1,0 +1,23 @@
+{
+  "mpn": "SEEDED-3V6",
+  "lcsc": "C991010",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "VIN",
+      "type": "input"
+    },
+    {
+      "pin": "2",
+      "name": "GND",
+      "type": "ground"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "Input voltage VIN",
+      "value": 3.6,
+      "unit": "V"
+    }
+  ]
+}

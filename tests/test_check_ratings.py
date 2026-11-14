@@ -3304,3 +3304,92 @@ def test_a_driver_with_an_unknown_supply_bounds_nothing(tmp_path):
 def test_a_connector_is_not_a_driver(tmp_path):
     # J2's far side is off the board: its supply pins don't bound its others
     assert not _over(_driven(tmp_path, 1, ref="J2"))
+
+
+SINK_MIN = {"mpn": "TESTSINKMIN", "pinout": SINK["pinout"], "pin_ratings": [
+    {"pins": ["VIN"], "kind": "voltage", "level": "abs_max", "min": -0.3,
+     "max": 6, "ref": "GND", "source": "test p.1"}]}
+
+
+def _rev(p, ref="U9"):
+    return [v for v in p["violations"] if v["refs"] == [ref]
+            and v["kind"] == "rating_reverse_polarity"]
+
+
+def test_a_driver_with_no_ground_pin_swings_to_the_lowest_rail(tmp_path):
+    # U1's VSS is not on the board: its low side is -5V, not 0 V (#1006)
+    fps = [("U1", "C40", {"1": "+3V3", "3": "/D"}),
+           ("U9", "C32", {"1": "/D", "2": "GND"}),
+           ("J1", "C31", {"1": "+5V", "2": "-5V", "3": "GND"})]
+    hit = _rev(_run(_ws(tmp_path, fps, {"C40": DRIVER, "C32": SINK_MIN})))
+    assert hit and hit[0]["bound_v"] == [-5.0, 3.3]
+    assert cr._supply_rail({"pads": {"1": "+3V3", "3": "/D"}}, DRIVER,
+                           {"+3V3": 3.3}, -5.0) == (-5.0, 3.3)
+    assert cr._supply_rail({"pads": {"1": "+3V3", "2": "GND", "3": "/D"}},
+                           DRIVER, {"+3V3": 3.3, "GND": 0.0}, -5.0) == (0.0, 3.3)
+
+
+def _pulled(tmp_path, vmax, supply="+5V"):
+    # U1's OUT is typed push-pull but pulled up through R1 from /P, which
+    # U2 drives from its own rail: if OUT is open drain in fact, /D reaches
+    # U2's rail, not U1's (#1006)
+    fps = [("U1", "C40", {"1": "+3V3", "2": "GND", "3": "/D"}),
+           ("U2", "C40", {"1": supply, "2": "GND", "3": "/P"}),
+           ("R1", "C22", {"1": "/P", "2": "/D"}, "x", "4.7k"),
+           ("U9", "C30", {"1": "/D", "2": "GND"}),
+           ("J1", "C31", {"1": "+5V", "2": "GND"})]
+    return _run(_ws(tmp_path, fps, {"C40": DRIVER, "C30": _sink(vmax)}))
+
+
+def test_a_pull_up_past_an_outputs_rail_reaches_the_net(tmp_path):
+    hit = _over(_pulled(tmp_path, 3.6))
+    assert hit and hit[0]["bound_v"] == [0.0, 5.0]
+    assert "feed resistors" in hit[0]["msg"]
+    # a pull-up from a net inside the driver's own rail keeps /D in it
+    assert not _over(_pulled(tmp_path / "b", 3.6, supply="+3V3"))
+
+
+def test_a_driver_is_judged_when_the_bound_leaves_its_rail(tmp_path):
+    bounds, _ = cr.unstated_net_bounds(
+        [{"ref": "U1", "lcsc": "C40", "pads": {"1": "+3V3", "2": "GND",
+                                                "3": "/D"}},
+         {"ref": "R1", "lcsc": "C22", "value": "4.7k",
+          "pads": {"1": "+5V", "2": "/D"}}],
+        {"C40": DRIVER}, {}, {"+3V3": 3.3, "GND": 0.0, "+5V": 5.0})
+    assert bounds["/D"][:2] == (0.0, 5.0) and "U1" not in bounds["/D"][3]
+
+
+def test_a_push_pull_output_is_held_by_its_rail_past_an_unknown_net():
+    # R1 to /EXT, which nothing bounds, does not lift /D off U1's rail
+    bounds, _ = cr.unstated_net_bounds(
+        [{"ref": "U1", "lcsc": "C40", "pads": {"1": "+3V3", "2": "GND",
+                                                "3": "/D"}},
+         {"ref": "R1", "lcsc": "C22", "value": "100",
+          "pads": {"1": "/D", "2": "/EXT"}},
+         {"ref": "J2", "lcsc": "C31", "pads": {"1": "/EXT"}}],
+        {"C40": DRIVER}, {}, {"+3V3": 3.3, "GND": 0.0})
+    assert bounds["/D"][:2] == (0.0, 3.3) and "U1" in bounds["/D"][3]
+
+
+OC_DRIVER = {"mpn": "TESTOC", "pinout": [
+    *DRIVER["pinout"][:2], {"pin": "3", "name": "OUT",
+                            "type": "open_collector"}]}
+
+
+def test_a_soft_hull_does_not_judge_the_driver_or_lift_a_push_pull_pin():
+    # lumina-par's /FAULT shape: an open-collector pin pulled up to its own
+    # rail, with hysteresis into a net nothing holds; the 0..48 V hull that
+    # net gives is the board's rails, not a pull past the pin's rail
+    for drv, lcsc in ((OC_DRIVER, "C41"), (DRIVER, "C40")):
+        bounds, _ = cr.unstated_net_bounds(
+            [{"ref": "U1", "lcsc": lcsc, "pads": {"1": "+3V3", "2": "GND",
+                                                  "3": "/D"}},
+             {"ref": "R1", "lcsc": "C22", "value": "100k",
+              "pads": {"1": "+3V3", "2": "/D"}},
+             {"ref": "R2", "lcsc": "C22", "value": "100k",
+              "pads": {"1": "/D", "2": "/HYS"}},
+             {"ref": "J2", "lcsc": "C31", "pads": {"1": "/HYS"}}],
+            {lcsc: drv}, {}, {"+3V3": 3.3, "GND": 0.0, "+48V": 48.0})
+        assert "U1" in bounds["/D"][3]
+        want = (0.0, 48.0) if drv is OC_DRIVER else (0.0, 3.3)
+        assert bounds["/D"][:2] == want

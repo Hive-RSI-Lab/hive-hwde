@@ -27,12 +27,15 @@ Inputs (pure Python, no KiCad run):
    absolute K-vs-A max (#867). A driver is an output pin of a part whose
    supplies are all known (#869). The net lies in the hull of what its feed
    resistors reach (a known or bounded net's span, else the board's rails)
-   and its drivers' rails - a push-pull output's rail alone - narrowed by
-   each clamp from its other side: A in K - Vz .. K + a diode drop, K in
+   and its drivers' rails - a push-pull output's rail alone, unless a feed
+   from a stated or driven net pulls it past (an open drain typed output),
+   and a driver with no ground pin swings down to the board's lowest rail,
+   not 0 V (#1006) - narrowed by each clamp from its other side: A in K - Vz .. K + a diode drop, K in
    A - a diode drop .. A + Vz (#868). Bounded nets feed each other until
    nothing moves. The other parts on it are judged at both ends of that
    bound (a warning: the bound is derived). The parts that make the bound
-   are not judged against it: a driver is covered by its supply rating, a
+   are not judged against it: a driver is covered by its supply rating
+   unless such a feed pulls the net past its rail, a
    clamp passes when the current its feed can force through it, times its
    Vz, stays under the parts.json Pd; over it, rating_over_current.
 
@@ -881,11 +884,13 @@ def clamp_row(b: dict, ext: dict | None,
     return None
 
 
-def _supply_rail(b: dict, ext: dict | None,
-                 volts: dict) -> tuple[float, float] | None:
+def _supply_rail(b: dict, ext: dict | None, volts: dict,
+                 floor: float = 0.0) -> tuple[float, float] | None:
     """(lo, hi) of a part's supplies: every power_in pin on the board on a
     known net (at least one), and its ground pins. None when any supply's
-    net is unknown - the rail an output swings between is then unknown."""
+    net is unknown - the rail an output swings between is then unknown.
+    With no ground pin on the board the low side is the board's lowest
+    rail (floor), not 0 V: the part may sit on a negative rail (#1006)."""
     sup, gnd = [], []
     for p in (ext or {}).get("pinout") or []:
         net = b["pads"].get(p["pin"])
@@ -896,7 +901,7 @@ def _supply_rail(b: dict, ext: dict | None,
         (sup if p["type"] == "power_in" else gnd).append(volts[net])
     if not sup:
         return None
-    vals = sup + (gnd or [0.0])
+    vals = sup + (gnd or [floor])
     return min(vals), max(vals)
 
 
@@ -910,10 +915,15 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
     capacitor, an input pin, a clamp or a driver - an output pin of a part
     whose supplies are all known (#869), never a connector's. Each resistor
     to a known or bounded net contributes that net's span, each to any other
-    net the board's rails; a push-pull output pins the net to its part's
-    rail, other drivers (tristate, open collector, bidirectional) add their
-    rail to the feeds' hull. A zener/TVS clamp then narrows it from its other side: A in
-    K - Vz .. K + a diode drop, K in A - a diode drop .. A + Vz (#868).
+    net the board's rails; a driver adds its rail to the feeds' hull. A
+    push-pull output takes only the feeds from nets that are stated or
+    themselves driven: one to any other net (a series resistor to an LED,
+    hysteresis into a divider) is held at its rail, but a pull-up past its
+    rail reaches the net, as it would through an open-drain pin typed
+    `output` (#1006). A driver is a maker of the bound, and so not judged
+    against it, unless a feed from a stated or driven net pulls the net
+    past its own rail: a soft hull of the board's rails does not count. A zener/TVS clamp then narrows it from its other side: A
+    in K - Vz .. K + a diode drop, K in A - a diode drop .. A + Vz (#868).
     Bounded nets feed each other, so the passes repeat until nothing moves.
     clamp_power[ref] = (watts the clamp can dissipate, its Pd): a clamp is
     judged by the power it can carry, not against the bound it makes."""
@@ -951,7 +961,7 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
                 continue
             # a connector's pins are driven from off the board: its own
             # supply pins say nothing about what arrives on the others
-            rail = (_supply_rail(b, ext, volts) if ptype in OUT_TYPES
+            rail = (_supply_rail(b, ext, volts, floor) if ptype in OUT_TYPES
                     and not INPUT_CONN_RE.match(ref) else None)
             if rail is None:
                 ok = False
@@ -975,16 +985,28 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
         moved = False
         for net, (feeds, cl, drv) in info.items():
             pts = [span(o) or (floor, ceil) for _, o in feeds]
+            # held: a feed from a stated or itself driven net; one bounded
+            # only by resistors is a soft hull of the rails, not a source
+            held = [s for _, o in feeds if (s := span(o)) and (
+                o in volts or (o in info and info[o][2]))]
             if drv:
                 use = [d[2] for d in drv]
-                if not any(d[1] == "output" for d in drv):
-                    use += pts
+                if any(d[1] == "output" for d in drv):
+                    # a push-pull pin holds the net to its rail, but a
+                    # pull-up to a held net past it says the pin is open
+                    # drain in fact, typed `output` (#1006)
+                    known = held
+                else:
+                    known = pts
+                use += known
                 why = "driven by " + ", ".join(sorted({d[0] for d in drv})) \
                     + " from its rail"
+                if known:
+                    why += " and feed resistors"
             else:
                 use, why = pts, "feed resistors"
             lo, hi = min(u[0] for u in use), max(u[1] for u in use)
-            makers = {d[0] for d in drv}
+            makers = set()
             for c in cl:
                 kpin, vz = clamps[c["ref"]]
                 knet = c["pads"][kpin]
@@ -1002,6 +1024,13 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
                 makers.add(c["ref"])
             if lo > hi + EPS:
                 continue
+            # a driver made the bound unless a held feed pulls the net past
+            # its rail: then its own pin is judged at that pull (#1006)
+            hard = [d[2] for d in drv] + held
+            hlo = max(lo, min(u[0] for u in hard)) if hard else lo
+            hhi = min(hi, max(u[1] for u in hard)) if hard else hi
+            makers |= {d[0] for d in drv if d[2][0] - EPS <= hlo
+                       and hhi <= d[2][1] + EPS}
             new = (lo, hi, why, frozenset(makers))
             old = bounds.get(net)
             if old is None or abs(old[0] - lo) > EPS or abs(old[1] - hi) > EPS \
