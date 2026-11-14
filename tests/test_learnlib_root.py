@@ -1,11 +1,11 @@
 """Root lessons in the module: learnings.d/ is their home, and triage says so
 loudly when a checkout is missing what it counts.
 
-The module carries no root LEARNINGS.md archive or ladder-triage register
-(both stayed with the hwde repo), so `triage` used to print a clean pass with
-every count zero and `root_learnings` promotion refused every entry. Now the
-lesson files are the source; the archive pair is optional but must come
-together, and a missing learnings.d/ is a named failure.
+The module once carried no root LEARNINGS.md archive or ladder-triage
+register, so `triage` printed a clean pass with every count zero and
+`root_learnings` promotion refused every entry. Now the lesson files are the
+source, the archive pair (shipped at the root again) must come together, and
+a missing learnings.d/ is a named failure.
 """
 from __future__ import annotations
 
@@ -52,6 +52,9 @@ def test_module_triage_passes_with_real_sources():
     assert s["problems"] == []
     assert s["sources"]["lessons"].endswith("learnings.d")
     assert s["lessons"] == len(learnlib.lesson_files())
+    # The old skill's archive and its register ship at the module root.
+    assert s["sources"]["archive"] and s["sources"]["register"]
+    assert s["archive_entries"] >= 425 and s["rows"] >= 424
 
 
 def test_promote_without_archive_then_triage_counts_it(tmp_path):

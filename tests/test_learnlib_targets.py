@@ -65,11 +65,17 @@ def test_missing_workspace_is_a_problem(tmp_path):
     assert problems and "does not exist" in problems[0]
 
 
-def test_artifact_in_workspace_but_not_its_own_learnings(tmp_path):
+def test_artifact_in_workspace_but_not_its_own_learnings(tmp_path,
+                                                         monkeypatch):
     ws = _ws(tmp_path)
     (ws / "archive").mkdir()
     (ws / "archive" / "LEARNINGS.md").write_text("# archive\n")
     assert learnlib._artifact_exists("archive/LEARNINGS.md", ws)
+    # The module root carries the old archive as LEARNINGS.md; with the
+    # module side hidden, the workspace's own file must not stand in for it.
+    real_exists = learnlib._exists
+    monkeypatch.setattr(learnlib, "_exists",
+                        lambda rel: rel != "LEARNINGS.md" and real_exists(rel))
     assert not learnlib._artifact_exists("LEARNINGS.md", ws)
     assert not learnlib._artifact_exists("archive/missing.md", ws)
     assert learnlib._artifact_exists("agents/router.md", ws)

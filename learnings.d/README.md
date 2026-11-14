@@ -12,8 +12,8 @@ Two PRs that each add a lesson add two different files, so they never
 conflict. Nothing here is counted by hand: `python3 scripts/learnings.py
 triage` computes the ladder counts from these files.
 
-The old hwde archive (root `LEARNINGS.md`, entries 1-425, and its register
-`design/ladder-triage.md`) is not carried in this module. A copy of both is
-kept with the board it came from, in the rf-de-20m
-workspace under `archive/ai-ee/`. A checkout that does carry them at the repo root gets
-their rows counted too.
+The old skill's archive sits at the repo root: `LEARNINGS.md` (entries
+1-425, closed 2026-10-06) and its register `design/ladder-triage.md`. Both are
+frozen - remediation refs and register rows cite their line numbers - so a new
+lesson never goes there. `triage` counts their rows with the lesson files, and
+promotion refuses a lesson the archive already carries.
