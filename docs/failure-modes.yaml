@@ -351,9 +351,11 @@ modes:
   coverage:
     script: check_thermal
     rule: thermal_vias
-    level: L1
-  target_level: L2
-  gap: min_vias documentary; window too small (T#214, T#276)
+    level: L2
+  target_level: L3
+  gap: a declared min_vias fails the gate on any part; the count's window
+    (pad hull + 1.5 mm) misses vias further out (T#276), pitch is not
+    checked, and no generator lays the datasheet's array
   hit_on:
   - bb-buck
   - bb-ldo

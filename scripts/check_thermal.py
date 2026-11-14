@@ -62,11 +62,12 @@ solder fill and FR4 conduction, overstates theta. Example: 16 x 0.3 mm vias,
 ~120 mm2 connected top + ~640 mm2 bottom pour -> ~54 C/W (TPA3118D2 HTSSOP),
 against TI's 22 C/W measured on its 2-layer EVM (SLOS708G 6.4). A bare pad with no vias gets the
 area screen unchanged. 4-layer boards keep the area screen (it already sums
-the inner planes). Thermal vias and copper weight on 4 layers are NOT
-credited: the barrel network above needs a back pour that convects through
-its own calibrated curve, and an inner plane has no such curve - re-running
-MODEL_ML on each plane would count the planes twice, since that curve already
-includes them. The one cited 4-layer via anchor found (TI SCBA017D Fig. 15:
+the inner planes), read a second time on the part's own-side copper when
+too few vias reach those planes (below). Via resistance and copper weight on
+4 layers are NOT credited: the barrel network above needs a back pour that
+convects through its own calibrated curve, and an inner plane has no such
+curve - re-running MODEL_ML on each plane would count the planes twice, since
+that curve already includes them. The one cited 4-layer via anchor found (TI SCBA017D Fig. 15:
 a QFN's theta_JA falls 46.8 -> 29.9 C/W from JESD51-7 to JESD51-5, i.e. with
 vias into the planes) is for a 2 mm logic pad and has not been checked
 against a power package, so it is not applied here.
@@ -86,6 +87,39 @@ the largest drill found) into saturated pours on both sides, ~38 C/W on
 heatsink, or move to 4 layers" instead of "add thermal vias", because more
 vias can't fix it within this model.
 
+On 4+ layers the area screen sums the net's copper on every layer, so it
+reads the same with six vias under a pad or none, though only vias carry
+the heat into the inner planes. A copper-model part (no rating, datasheet
+theta, slug or heatsink) is credited with the planes when at least
+VIA_CREDIT_MIN vias of the net (or plated holes) sit near it, or as many as
+its min_vias when that is lower (but at least one). Short of that, the
+screen also reads the part on its own side's copper alone: the pieces its
+pads touch within reach, through MODEL_ML. The truth lies between the two
+readings. A rise over budget with the planes credited is an error, as
+before, and its message adds the own-side rise. A rise within budget there
+but over it on the own side is not judged: the report's not_judged names
+the part and the vias that would settle it. A part within budget on both
+passes. The facts carry both readings (planes_credited, area_side_mm2,
+theta_side_cw, rise_side_c, power_limit_side_w); theta_ja, rise_c and
+power_limit_w stay the planes-credited figures. Neither reading is right:
+a part with no via still heats the planes through the dielectric (JESD51-7's
+2s2p board has its planes and no vias, and SCBA017D's QFN reads 46.8 C/W
+there against 29.9 with vias on JESD51-5), so the own-side figure errs high
+and the credited one low. VIA_CREDIT_MIN is a judgement: four 0.3 mm vias
+to a plane 0.1-0.2 mm down are ~4-7 C/W in series, inside the screen's
++/-30 % of its 51 C/W floor, while a single one is ~15-30 C/W.
+
+Thermal vias. An entry's min_vias is the datasheet's floor for the part's
+via array (a PMIC datasheet's 9-via minimum under its exposed pad). It holds on
+every part, whatever the copper estimate says: fewer vias near the part is
+an error (thermal_vias, explicit), and min_vias 0 asks none. Without one,
+the screen computes an array (one via per VIA_PITCH_MM square of the pad
+hull, 4 to VIA_BENEFIT_CAP) and asks for it, as a warning, only when the
+budget is below the copper's floor, theta_JA(A_SAT) (no rated, pad-up or
+heatsinked part is asked). The count is the net's vias and plated pad
+drills within sqrt(pad hull area / pi) + 1.5 mm (2 mm at least) of the
+pads' centroid.
+
 A part rated by its own datasheet for self-heating (an inductor's "Irms:
 current for a 40 C rise", typically) is judged on that rating, not on the
 board copper: the area curve is an IC-package curve (theta_JA(0) = 140-174
@@ -104,7 +138,9 @@ planes, the part alone dissipating), so it is used AS-IS: it replaces the
 copper-area curve and the 2-layer via network, and is never combined with
 area or via credit. It is optimistic on a crowded board whose other parts
 heat the same copper, and on a layout without the vendor's thermal vias;
-the via-count warning still runs against the copper floor for that reason.
+for that reason an entry's min_vias still holds on it, and the computed
+array is still asked against the copper floor. It is not read a second
+time on its own-side copper: that bound is the copper model's alone.
 A part takes a rating or a theta_ja_c_w, not both.
 
 Forced air: an entry may declare the airflow over the part (airflow_lfm, or
@@ -188,7 +224,9 @@ Governor: an entry's power_max_w is the part's continuous worst case (full
 power into the lowest load). When that runs past the budget the part needs
 a limit in firmware, named in "governor"; without one it is a warning. The
 facts carry power_limit_w = allowed rise / theta, the number that limit
-needs.
+needs. On 4+ layers with the planes not credited (above), a maximum within
+the budget with them but over it on the part's own-side copper is not
+judged (rise_max_side_c, power_limit_side_w give that reading).
 
 Bulk capacitors (constraints "ripple"): each entry's irms_a (operating
 point) against its rating, rated_irms_a x freq_multiplier (the datasheet's
@@ -227,7 +265,8 @@ constraints.json["thermal"] entries:
      "power_w": 0.6,        # estimated dissipation
      "net": "GND",          # heatsink net (thermal-pad / tab net)
      "dt_c": 40,            # allowed junction-to-ambient rise (default 40)
-     "min_vias": 9,         # optional explicit thermal-via floor
+     "min_vias": 9,         # optional: the datasheet's thermal-via
+                            #   floor, held as an error (0 asks none)
      "airflow_lfm": 200,    # optional forced air over the part (or
                             #   "airflow_m_s"; never both)
      "rating": {"rise_c": 40, "current_a": 24.5, "dcr_ohm": 0.0028,
@@ -278,6 +317,7 @@ MODEL_ML = (140.0, 45.0, 235.0)
 DEFAULT_DT_C = 40.0
 VIA_PITCH_MM = 1.1           # recommended thermal-via pitch
 VIA_BENEFIT_CAP = 36         # array benefit flattens past ~36 vias
+VIA_CREDIT_MIN = 4           # 4+ layers: vias near the part before its planes count (module doc)
 REACH_MM = (A_SAT_MM2 / math.pi) ** 0.5   # ~14.3 mm: heat spreads only so far
 K_CU_W_MK = 380.0            # copper thermal conductivity
 H_SPREAD_W_M2K = 10.0        # per face, still air: ~5 convection + ~5 radiation
@@ -848,7 +888,8 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
     # thermal vias of the net under the part (needed once copper saturates):
     # board vias plus the plated drills of the net's own pads there (a
     # footprint's thermal-via pads, a THT tab) - both tie the layers together
-    region = Point(cx, cy).buffer(max(2.0, math.sqrt(fp_area / math.pi) + 1.5))
+    r_win = max(2.0, math.sqrt(fp_area / math.pi) + 1.5)
+    region = Point(cx, cy).buffer(r_win)
     vias = [v for v in bg.vias_of(net) if region.contains(Point(v.at))]
     drilled = [p for p in bg.pads_of(net=net) if p.drill and len(p.layers) > 1
                and region.contains(Point(p.center))]
@@ -952,11 +993,50 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
     floor_cw = theta_ja(A_SAT_MM2, multilayer) * af
     need_vias = ((dt / power) < floor_cw if power > 0 and not rated
                  and not slug and not has_hs else False)
-    min_vias = int(entry.get("min_vias",
-                             min(VIA_BENEFIT_CAP,
-                                 max(4, math.ceil(fp_area / VIA_PITCH_MM ** 2)))))
+    # an entry's min_vias is the datasheet's floor, held on every part; the
+    # computed array is asked only when the copper can't meet the budget
+    explicit = "min_vias" in entry
+    if explicit:
+        v = _num(entry, "min_vias", f"thermal {ref}", positive=False)
+        if not (math.isfinite(v) and v >= 0):
+            raise CheckError(f"thermal {ref}: min_vias must be a count >= 0: "
+                             f"{v:g}")
+        min_vias = math.ceil(v)
+    else:
+        min_vias = min(VIA_BENEFIT_CAP,
+                       max(4, math.ceil(fp_area / VIA_PITCH_MM ** 2)))
 
     copper_model = not (rated or slug or has_hs or datasheet)
+    # 4+ layers: a_eff sums the net's inner planes, which the part reaches
+    # only through vias. Short of VIA_CREDIT_MIN (or a lower explicit floor,
+    # but at least one) the screen also reads the part on its own side's
+    # copper, and the truth lies between the two (module doc).
+    bounded = multilayer and copper_model
+    credit_vias = (max(1, min(min_vias, VIA_CREDIT_MIN)) if explicit
+                   else VIA_CREDIT_MIN)
+    credited = not bounded or n_vias >= credit_vias
+    not_judged: list[str] = []
+    side_facts = {}
+    if bounded:
+        a_side = min(A_SAT_MM2, _connected_area(
+            bg.net_copper(net, side),
+            [p.poly for p in bg.pads_of(net=net, ref=ref)], reach))
+        theta_side = theta_ja(a_side, True) * af
+        rise_side = power * theta_side
+        # a small part's own copper can be its pads alone (a fraction of a mm2)
+        side_mm2 = f"{a_side:.0f}" if a_side >= 10 else f"{a_side:.1f}"
+        side_facts = {"planes_credited": credited,
+                      "planes_credit_vias": credit_vias,
+                      "area_side_mm2": checklib.rnd(a_side),
+                      "theta_side_cw": checklib.rnd(theta_side),
+                      "rise_side_c": checklib.rnd(rise_side),
+                      "power_limit_side_w": checklib.rnd(
+                          dt / theta_side if theta_side > 0 else math.inf)}
+    side_note = ("" if credited else
+                 f"; only {n_vias} via(s) near it reach the {net} planes "
+                 f"(the screen credits them from {credit_vias}), and on its "
+                 f"own {side} copper ({side_mm2} mm2) it rises "
+                 f"~{rise_side:.0f} C")
 
     def grow_hint(theta_big: float, what: str) -> str:
         """', or grow ...' when copper past the screen's 1 in^2 would meet
@@ -1019,11 +1099,32 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
             SCRIPT, "error", (cx, cy), side, net, [ref],
             f"{ref} dissipates {power:.2f} W {where}: "
             f"~{rise:.0f} C rise (theta_JA ~{theta:.0f} C/W) "
-            f"> {dt:.0f} C allowed; {remedy}", SCRIPT, kind="thermal_area",
+            f"> {dt:.0f} C allowed; {remedy}{side_note}", SCRIPT,
+            kind="thermal_area",
             power_w=power, area_mm2=checklib.rnd(a_eff),
             theta_ja=checklib.rnd(theta), rise_c=checklib.rnd(rise),
-            dt_allowed_c=dt))
-    if need_vias and n_vias < min_vias:
+            dt_allowed_c=dt,
+            **({} if credited else {"rise_side_c": checklib.rnd(rise_side)})))
+    elif not credited and rise_side > dt + 1e-6:
+        not_judged.append(
+            f"{ref}: ~{rise:.0f} C rise with the {net} inner planes "
+            f"credited, ~{rise_side:.0f} C on its own {side} copper "
+            f"({side_mm2} mm2), against {dt:.0f} C allowed; it has "
+            f"{n_vias} thermal via(s) near it, under the {credit_vias} the "
+            "screen needs to credit the planes, so it can't tell which "
+            f"holds (add >= {credit_vias} vias to the {net} planes to settle "
+            "it)")
+    if explicit and n_vias < min_vias:
+        violations.append(violation(
+            SCRIPT, "error", (cx, cy), side, net, [ref],
+            f"{ref} has {n_vias} thermal via(s) to {net} within "
+            f"{r_win:.1f} mm of its centre, under the {min_vias} its "
+            "min_vias asks: add the missing vias (min_vias is the "
+            "datasheet's floor; lower it only if the datasheet allows "
+            "fewer)", SCRIPT, kind="thermal_vias",
+            vias=n_vias, required=min_vias, power_w=power, explicit=True,
+            window_mm=checklib.rnd(r_win)))
+    elif not explicit and need_vias and n_vias < min_vias:
         violations.append(violation(
             SCRIPT, "warning", (cx, cy), side, net, [ref],
             f"{ref} ({power:.2f} W) needs a thermal-via array to {net} "
@@ -1036,18 +1137,32 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
     if "power_max_w" in entry:
         pmax = _num(entry, "power_max_w", f"thermal {ref}")
         extra["rise_max_c"] = checklib.rnd(pmax * theta)
+        if not credited:
+            extra["rise_max_side_c"] = checklib.rnd(pmax * theta_side)
         gov = str(entry.get("governor", "")).strip()
         if gov:
             extra["governor"] = gov
         elif pmax * theta > dt + 1e-6:
+            side_limit = ("" if credited else
+                          f"; ~{dt / theta_side:.1f} W on its own {side} "
+                          f"copper, with only {n_vias} via(s) to the planes")
             violations.append(violation(
                 SCRIPT, "warning", (cx, cy), side, net, [ref],
                 f"{ref} at its continuous maximum ({pmax:g} W) rises "
                 f"~{pmax * theta:.0f} C, over the {dt:.0f} C allowed: it "
                 f"needs a limit in firmware holding it under "
-                f"~{power_limit:.1f} W (name it in governor)", SCRIPT,
-                kind="thermal_governor", power_max_w=pmax,
+                f"~{power_limit:.1f} W{side_limit} (name it in governor)",
+                SCRIPT, kind="thermal_governor", power_max_w=pmax,
                 power_limit_w=checklib.rnd(power_limit)))
+        elif not credited and pmax * theta_side > dt + 1e-6:
+            not_judged.append(
+                f"{ref}: at its continuous maximum ({pmax:g} W) it rises "
+                f"~{pmax * theta:.0f} C with the {net} planes credited, "
+                f"~{pmax * theta_side:.0f} C on its own {side} copper, "
+                f"against {dt:.0f} C allowed; with {n_vias} via(s) near it "
+                "the screen can't tell whether it needs a limit in firmware "
+                f"(add >= {credit_vias} vias to the planes, or name one in "
+                "governor)")
     if air_c is not None:
         extra.update(air_c=checklib.rnd(air_c), tj_c=checklib.rnd(air_c + rise))
     facts = {"ref": ref, "net": net, "power_w": power,
@@ -1055,7 +1170,10 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
              "area_mm2": checklib.rnd(a_eff), "theta_ja": checklib.rnd(theta),
              "rise_c": checklib.rnd(rise), "dt_allowed_c": dt,
              "vias_near_part": n_vias, "multilayer": multilayer, **network,
-             **(spread_facts if copper_model else {}), **extra}
+             **(spread_facts if copper_model else {}), **side_facts,
+             **({"min_vias": min_vias} if explicit else {}), **extra}
+    if not_judged:
+        facts["not_judged"] = not_judged
     return violations, facts
 
 
@@ -1171,9 +1289,11 @@ def run(argv=None):
         violations.extend(vs)
     elif air_c is not None:
         air_c = float(air_c)
+    not_judged: list[str] = []
     for entry in entries:
         vs, facts = check_part(bg, entry, air_c)
         violations.extend(vs)
+        not_judged.extend(facts.pop("not_judged", []))
         checked.append(facts)
 
     # a known power IC nobody gave a thermal entry: its datasheet's board
@@ -1215,7 +1335,7 @@ def run(argv=None):
         SCRIPT, args.pcb, violations, checked=checked,
         nothing_to_judge=None if checked or ripple else
         "no thermal or ripple entries in constraints, and no power IC "
-        "reference/thermal_parts.yaml knows", **extra)
+        "reference/thermal_parts.yaml knows", not_judged=not_judged, **extra)
     return payload, args.out
 
 
