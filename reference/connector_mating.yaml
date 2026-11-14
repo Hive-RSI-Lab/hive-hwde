@@ -156,7 +156,7 @@ families:
      match: 'MMCX'}
   # Amphenol SMPM 925-143J-51P: straight surface-mount jack (925-126J is the
   # edge-mount one). Plug body diameter not found in a datasheet: default
-  # finger room until it is (survey issue).
+  # finger room until it is (#1016).
   - {family: smpm_vertical, entry: vertical,
      match: 'SMPM'}
   # SMA alone is also the DO-214AC diode package (SMA_L4.3-W2.6...), so the
