@@ -15,7 +15,11 @@ for at least 6 x 0.3 mm vias at every layer change of a 5 A path.
     (--region defaults to the polygon's bounding box).
   - Any PATCH_<net> zone on --layer whose bounding box lies inside --region
     is replaced. Running the command twice gives the same board, and
-    reshaping a patch is the same call with a new --poly.
+    reshaping a patch is the same call with a new --poly. An older
+    PATCH_<net> on --layer that overlaps the new outline but reaches outside
+    --region is refused, not kept: two same-net patches that overlap fail
+    DRC on zones_intersect. Give a --region that covers it, or merge both
+    outlines into one --poly.
   - --vias N makes sure N vias of the net sit inside the outline. Vias that
     are already there count towards N. New vias go on a 0.2 mm grid, and only
     where they clear other-net copper on every layer by 0.2 mm, stay off every
@@ -35,7 +39,8 @@ The edit runs on a staged copy. The zone goes in through the SWIG worker
 refilled against the board's own rules and checked: the patch is there with
 its outline and fills copper, and the vias are in. Only then is it swapped in.
 On a failure the board is left untouched. Status is violations when fewer
-than N vias fit or the patch fills nothing.
+than N vias fit or the patch fills nothing; the board is then left untouched
+too ("written": false in the report), so rerun with a wider outline.
 
 Replaces the board-local scripts via_array.py, patch_outline.py and
 drop_patch.py (pinned core).
@@ -120,6 +125,11 @@ def corridor_outline(bg, args) -> tuple[list[list[float]], list[float]]:
     return pts, box
 
 
+def _bounds(pts) -> list[float]:
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    return [min(xs), min(ys), max(xs), max(ys)]
+
+
 def _in_box(pts, box, slack=0.05) -> bool:
     return all(box[0] - slack <= x <= box[2] + slack
                and box[1] - slack <= y <= box[3] + slack for x, y in pts)
@@ -130,6 +140,24 @@ def patches(bg, net: str, layer: str, box) -> list:
     return [z for z in bg.zones_of(net=net, layer=layer)
             if z.name == f"PATCH_{net}" and z.outline
             and _in_box(z.outline, box)]
+
+
+def overlapping(bg, net: str, layer: str, pts, keep) -> list:
+    """The PATCH_<net> zones on layer, other than those in keep, whose
+    outline overlaps pts by more than a touch."""
+    from shapely.geometry import Polygon
+    new = Polygon(pts)
+    ids = {id(z) for z in keep}
+    out = []
+    for z in bg.zones_of(net=net, layer=layer):
+        if z.name != f"PATCH_{net}" or not z.outline or id(z) in ids:
+            continue
+        old = Polygon(z.outline)
+        if not old.is_valid:
+            old = old.buffer(0)
+        if old.intersection(new).area > 1e-6:
+            out.append(z)
+    return out
 
 
 def plan_vias(bg, net: str, pts, want: int, size: float, drill: float):
@@ -248,6 +276,16 @@ def run(argv: list[str] | None = None):
         pts, box = corridor_outline(bg, args)
     name = f"PATCH_{args.net}"
     old = patches(bg, args.net, args.layer, box)
+    clash = [] if args.remove else overlapping(bg, args.net, args.layer, pts,
+                                               old)
+    if clash:
+        b = [round(v, 3) for v in _bounds(clash[0].outline)]
+        raise CheckError(
+            f"an older {name} on {args.layer} overlaps the new outline but "
+            f"reaches outside {[round(v, 3) for v in box]} (its bounds "
+            f"{b}): it would stay and fail DRC on zones_intersect. Give a "
+            f"--region that covers it to replace it, or merge both outlines "
+            f"into one --poly")
     if args.remove:
         have, new = [], []
     else:
@@ -323,7 +361,9 @@ def run(argv: list[str] | None = None):
             raise CheckError("zone_patch verify failed (rolled back): "
                              + "; ".join(problems))
         facts["zones_removed"] = len(got.get("removed", []))
-        os.replace(staged, pcb)
+        facts["written"] = not violations
+        if not violations:          # a violation leaves the board untouched
+            os.replace(staged, pcb)
     finally:
         shutil.rmtree(stage, ignore_errors=True)
     return checklib.report("zone_patch", str(pcb), violations,

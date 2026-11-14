@@ -359,6 +359,25 @@ def test_unfilled_zone_stale_when_kicad_cant_say(syn, monkeypatch):
         bg.assert_fresh()
 
 
+@pytest.mark.parametrize("found", ["none", "bad pin"])
+def test_missing_kicad_cli_is_a_missing_tool_not_a_stale_fill(
+        syn, monkeypatch, found):
+    """#983: no kicad-cli (or a HWDE_KICAD_CLI pin left pointing at nothing)
+    is named as such. The refill raises KicadCliMissing, not StaleFillError,
+    and assert_fresh's stale-fill refusal says KiCad could not be asked."""
+    def find():
+        if found == "bad pin":
+            raise env.EnvError("HWDE_KICAD_CLI does not exist: /gone")
+        return None
+    monkeypatch.setattr(env, "find_kicad_cli", find)
+    with pytest.raises(geom.KicadCliMissing, match="kicad-cli not found") as e:
+        geom._refill_copy(syn.path)
+    assert not isinstance(e.value, geom.StaleFillError)
+    bg = _fresh(syn)
+    with pytest.raises(geom.StaleFillError, match="kicad-cli not found"):
+        bg.assert_fresh()
+
+
 def test_fill_status(syn):
     status = syn.fill_status()
     assert sum(status.values()) == 1  # one filled, one not

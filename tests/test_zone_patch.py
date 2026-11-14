@@ -94,6 +94,56 @@ def test_bad_input(args, msg):
         _dry(*args)
 
 
+def test_an_older_overlapping_patch_is_refused_not_kept():
+    """#983: an older PATCH_PVDD that overlaps the new outline but reaches
+    outside the box would stay and fail DRC on zones_intersect."""
+    with pytest.raises(CheckError, match="overlaps the new outline"):
+        _dry("--net", "PVDD", "--region", "58,165,62,172")
+    with pytest.raises(CheckError, match="overlaps the new outline"):
+        _dry("--net", "PVDD", "--poly", "58,166 62,166 62,171 58,171",
+             "--region", "58,165,62,172")
+    # a box that covers it replaces it; an outline that only abuts it is fine
+    p = _dry("--net", "PVDD", "--region", "53,165,62,172")
+    assert p["status"] == "pass" and p["replaced"] == 1
+    p = _dry("--net", "PVDD", "--region", "59.6,165.8,62,171.2")
+    assert p["replaced"] == 0
+
+
+def test_a_violation_leaves_the_board_untouched(tmp_path, monkeypatch):
+    """#983: a violations result used to swap the staged copy in. The KiCad
+    steps are stubbed: the zone worker adds nothing, the vias go in as text
+    and the refill is skipped, so the staged copy is the board plus the new
+    vias, and the patch keeps its pinned fill."""
+    import kc
+    import routelib
+    import route_edit
+
+    def add_vias(board, ops):
+        text = board.read_text().rstrip()
+        assert text.endswith(")")
+        vias = "".join(
+            f'\t(via (at {o["at"][0]} {o["at"][1]}) (size {o["size"]}) '
+            f'(drill {o["drill"]}) (layers "F.Cu" "B.Cu") '
+            f'(net "{o["net"]}") (uuid "00000000-0000-0000-0000-{i:012d}"))\n'
+            for i, o in enumerate(ops))
+        board.write_text(text[:-1] + vias + ")\n")
+    monkeypatch.setattr(route_edit, "apply_ops", add_vias)
+    work = tmp_path / "kicad"
+    shutil.copytree(CORE, work)
+    pcb = work / "core.kicad_pcb"
+    before = pcb.read_bytes()
+    monkeypatch.setattr(env, "find_kicad_cli", lambda: Path("kicad-cli"))
+    monkeypatch.setattr(env, "find_kicad_python", lambda cli: Path("python"))
+    monkeypatch.setattr(routelib, "run_worker",
+                        lambda *a, **k: {"removed": []})
+    monkeypatch.setattr(kc, "run_drc", lambda *a, **k: {})
+    p = _patch(pcb, "--net", "PVDD", "--region", PVDD_BOX, "--vias", "40")
+    assert p["status"] == "violations" and p["vias_added"]
+    assert p["written"] is False
+    assert pcb.read_bytes() == before
+    assert not list(work.glob(".aiee_patch_*"))
+
+
 # ------------------------------------------------------------ live
 
 @pytest.fixture

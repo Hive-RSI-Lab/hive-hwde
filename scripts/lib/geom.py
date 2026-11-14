@@ -46,7 +46,9 @@ the pcbnew round-trip oracle used only by the S3 tests.
     .unfilled_zones()               -> [Zone] with an outline but no fill
     .assert_fresh(refill=False)     raise StaleFillError on unfilled (or, with
                                     refill=True, on fills that differ from a fresh
-                                    `kicad-cli drc --refill-zones` via the S0 path)
+                                    `kicad-cli drc --refill-zones` via the S0 path);
+                                    KicadCliMissing when that refill has no
+                                    kicad-cli (a missing tool, not a stale fill)
 
 Flipped (back-side) footprints need no special handling anywhere: pcbnew bakes
 the mirror into the stored file (pad locals mirrored, angles negated, layers
@@ -88,6 +90,12 @@ class GeomError(RuntimeError):
 
 class StaleFillError(GeomError):
     """Zones are unfilled or their fill is stale (see assert_fresh)."""
+
+
+class KicadCliMissing(GeomError):
+    """A refill was needed but no kicad-cli could be found (env.find_kicad_cli
+    returned None, or a pin such as HWDE_KICAD_CLI points at nothing). A
+    missing tool, not a stale fill."""
 
 
 # ============================================================ s-expr helpers
@@ -1185,9 +1193,12 @@ class BoardGeom:
         unfilled = [z for z in self.unfilled_zones()
                     if z.zone_id not in self._empty_by_refill()]
         if unfilled:
+            why = getattr(self, "_refill_why", None)
             raise StaleFillError(
                 f"{len(unfilled)} zone(s) unfilled in {self.path.name}: "
-                f"ids {[z.zone_id for z in unfilled]}")
+                f"ids {[z.zone_id for z in unfilled]}"
+                + (f" (and KiCad could not be asked whether a refill leaves "
+                   f"them empty too: {why})" if why else ""))
         if not refill:
             return
         fresh = _refill_copy(self.path)
@@ -1215,12 +1226,16 @@ class BoardGeom:
         if getattr(self, "_refill_empty", None) is not None:
             return self._refill_empty
         self._refill_empty = set()
+        self._refill_why = None
         unfilled = self.unfilled_zones()
         if not unfilled:
             return self._refill_empty
         try:
             fresh = _refill_copy(self.path)
-        except Exception:                       # no kicad-cli, or it failed
+        except KicadCliMissing as exc:          # say so in assert_fresh
+            self._refill_why = str(exc)
+            return self._refill_empty
+        except Exception:                       # kicad-cli failed
             return self._refill_empty
         try:
             other = BoardGeom.from_file(fresh)
@@ -1333,9 +1348,15 @@ def _refill_copy(pcb: Path) -> Path:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))      # scripts/
     import env  # type: ignore
     import kc   # type: ignore
-    cli = env.find_kicad_cli()
+    try:
+        cli = env.find_kicad_cli()
+    except env.EnvError as exc:                 # a pin that points at nothing
+        raise KicadCliMissing(f"kicad-cli not found for the refill: {exc}") \
+            from exc
     if cli is None:
-        raise StaleFillError("no kicad-cli for refill (env.find_kicad_cli None)")
+        raise KicadCliMissing(
+            "kicad-cli not found for the refill (set HWDE_KICAD_CLI or "
+            "HWDE_KICAD_ROOT, or put kicad-cli on PATH)")
     tmp = Path(tempfile.mkdtemp(prefix="geom_refill_"))
     dst = tmp / pcb.name
     shutil.copy2(pcb, dst)
